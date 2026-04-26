@@ -358,7 +358,7 @@ header{background:linear-gradient(135deg,var(--dark),var(--dark2));padding:0 20p
         </select>
         <input id="orcSearch" placeholder="Pesquisar…" style="border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:12px;font-family:var(--font);outline:none;width:130px;min-height:36px" oninput="filterOrcamentos()"/>
         <button class="btn btn-g" onclick="loadOrcamentos()">↻</button>
-        <a href="https://cosmopolitanpartyorcamentos.netlify.app/" target="_blank" class="btn btn-p">+ Novo</a>
+        <a href="/orcamentos/" target="_blank" class="btn btn-p">+ Novo</a>
       </div>
     </div>
     <div style="overflow-x:auto">
@@ -502,7 +502,7 @@ header{background:linear-gradient(135deg,var(--dark),var(--dark2));padding:0 20p
   <div class="card" style="margin-bottom:16px">
     <div class="card-hdr"><span class="card-title">Ferramentas Operacionais</span></div>
     <div class="tools-grid">
-      <a href="https://cosmopolitanpartyorcamentos.netlify.app/" target="_blank" class="tool-card"><div class="tool-icon">📄</div><div class="tool-badge">ORÇAMENTOS</div><div class="tool-name">Gerador de Orçamentos</div><div class="tool-desc">Cria orçamentos e confirmações em PDF. Histórico no Supabase.</div></a>
+      <a href="/orcamentos/" target="_blank" class="tool-card"><div class="tool-icon">📄</div><div class="tool-badge">ORÇAMENTOS</div><div class="tool-name">Gerador de Orçamentos</div><div class="tool-desc">Cria orçamentos e confirmações em PDF. Histórico no Supabase.</div></a>
       <a href="https://docs.google.com/forms/d/e/1FAIpQLSdXojeBZeEKgUr05bGWwHYFrVypFL0XuQvnrWBYLw-KowfBLQ/viewform" target="_blank" class="tool-card"><div class="tool-icon">📝</div><div class="tool-badge">CONTRATOS</div><div class="tool-name">Registo de Evento</div><div class="tool-desc">Formulário de registo. Gera contrato e envia ao cliente.</div></a>
       <a href="https://mail.google.com/mail/u/0/#inbox" target="_blank" class="tool-card"><div class="tool-icon">✉️</div><div class="tool-badge">EMAIL</div><div class="tool-name">Caixa de Entrada</div><div class="tool-desc">cosmopolitanparty.loures@gmail.com — caixa de operações.</div></a>
       <a href="https://calendar.google.com/calendar/r?cid=cosmopolitanparty.loures@gmail.com" target="_blank" class="tool-card"><div class="tool-icon">📅</div><div class="tool-badge">CALENDÁRIO</div><div class="tool-name">Calendário de Festas</div><div class="tool-desc">Calendário Google sincronizado com todos os eventos.</div></a>
@@ -1441,7 +1441,7 @@ function abrirOrcParaEditar(){
   // Guarda o ID no localStorage para a ferramenta de orçamentos detectar
   localStorage.setItem('cp_edit_orc_id', curOrcId);
   localStorage.setItem('cp_edit_orc_num', d.document_number||'');
-  window.open('https://cosmopolitanpartyorcamentos.netlify.app/?edit='+curOrcId,'_blank');
+  window.open('/orcamentos/?edit='+curOrcId,'_blank');
   closeModal('orcModal');
   showToast('💡 Na ferramenta: vai ao Histórico e clica ✏️ Editar no documento '+( d.document_number||''));
 }
