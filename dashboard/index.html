@@ -243,9 +243,34 @@ header{background:linear-gradient(135deg,var(--dark),var(--dark2));padding:0 20p
 @media(min-width:768px){.overlay{align-items:center}.modal{border-radius:18px;max-width:600px}.drag-bar{display:none}.page{padding:22px 20px}}
 @media(max-width:767px){.pulse{grid-template-columns:repeat(2,1fr)}.g2,.g3{grid-template-columns:1fr}.span2{grid-column:span 1}.tools-grid{grid-template-columns:1fr 1fr}.tbl th:nth-child(n+5),.tbl td:nth-child(n+5){display:none}.ck-totals{grid-template-columns:1fr}.date-chip{display:none}}
 @media(max-width:480px){.tools-grid{grid-template-columns:1fr}.p-val{font-size:20px}}
+.lo-ov{display:none;position:fixed;inset:0;background:linear-gradient(135deg,#fdf2f8,#fce7f3);z-index:9999;align-items:center;justify-content:center;padding:20px}
+.lo-ov.on{display:flex}
+.lo-card{background:#fff;border-radius:18px;padding:32px 28px;box-shadow:0 20px 60px rgba(224,24,122,.18);max-width:380px;width:100%}
+.lo-card h2{font-family:var(--serif);font-size:24px;margin:0 0 4px;color:var(--pink)}
+.lo-card .lo-sub{font-size:12px;color:var(--muted);margin-bottom:22px;font-family:var(--mono);letter-spacing:1.5px;text-transform:uppercase}
+.lo-card label{display:block;font-family:var(--mono);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin:14px 0 4px}
+.lo-card input{width:100%;border:1px solid var(--border);border-radius:9px;padding:11px 12px;font-size:14px;font-family:var(--font);outline:none;box-sizing:border-box}
+.lo-card input:focus{border-color:var(--pink)}
+.lo-card button{width:100%;margin-top:18px;background:var(--pink);color:#fff;border:none;border-radius:10px;padding:13px;font-size:14px;font-weight:600;font-family:var(--font);cursor:pointer}
+.lo-card button:hover{opacity:.9}
+.lo-card .lo-err{margin-top:12px;font-size:12px;color:#c53030;min-height:14px}
+.logout-btn{background:none;border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;font-family:var(--mono);letter-spacing:1px;text-transform:uppercase;color:var(--muted);cursor:pointer}
+.logout-btn:hover{color:var(--pink);border-color:var(--pink)}
 </style>
 </head>
 <body>
+<div class="lo-ov" id="loginOv">
+  <form class="lo-card" onsubmit="doLogin(event)">
+    <h2>Cosmopolitan Party</h2>
+    <div class="lo-sub">Cockpit · Acesso</div>
+    <label>Email</label>
+    <input type="email" id="loginEmail" required autocomplete="email" autofocus/>
+    <label>Password</label>
+    <input type="password" id="loginPwd" required autocomplete="current-password"/>
+    <button type="submit" id="loginBtn">Entrar</button>
+    <div class="lo-err" id="loginErr"></div>
+  </form>
+</div>
 <header>
   <div class="brand">
     <div class="brand-logo">🍹</div>
@@ -254,6 +279,7 @@ header{background:linear-gradient(135deg,var(--dark),var(--dark2));padding:0 20p
   <div class="hdr-r">
     <span class="date-chip" id="dateLbl"></span>
     <div class="sync-row"><div class="sdot" id="syncDot"></div><span class="sync-lbl" id="syncLbl">A ligar…</span></div>
+    <button class="logout-btn" onclick="doLogout()" title="Sair">Sair</button>
   </div>
 </header>
 <div class="tabs">
@@ -734,15 +760,27 @@ function saveArchivedSet(){localStorage.setItem(LS_ARCH,JSON.stringify([...archi
 function isArchived(ev){return archivedSet.has(evKey(ev));}
 function isPastMonth(ev){if(!ev?.dataFesta)return false;const n=new Date();const startMonth=new Date(n.getFullYear(),n.getMonth(),1);const d=new Date(ev.dataFesta+'T00:00:00');return d<startMonth;}
 
-document.addEventListener('DOMContentLoaded',()=>{
+document.addEventListener('DOMContentLoaded',async()=>{
   $('dateLbl').textContent=getDateStr();
   $('notaArea').value=localStorage.getItem(LS_NOTA)||'';
   $('scriptUrlInput').value=SCRIPT_URL;
   $('contratosUrlInput').value=CONTRATOS_URL;
   loadFinFromLS();
-  try{sb=window.supabase.createClient(SB_URL,SB_KEY);syncSt('ok','Supabase ✓');}catch(e){syncSt('err','Offline');}
+  try{sb=window.supabase.createClient(SB_URL,SB_KEY);syncSt('ok','Supabase ✓');}catch(e){syncSt('err','Offline');return;}
+  const {data:{session}}=await sb.auth.getSession();
+  if(!session){$('loginOv').classList.add('on');return;}
   loadOrcamentos();loadEventos();loadTasks();loadContratosPendentes();renderFin();
 });
+async function doLogin(e){
+  e.preventDefault();
+  const email=$('loginEmail').value.trim();const password=$('loginPwd').value;
+  const btn=$('loginBtn');btn.textContent='A entrar…';btn.disabled=true;
+  $('loginErr').textContent='';
+  const {error}=await sb.auth.signInWithPassword({email,password});
+  if(error){$('loginErr').textContent='Credenciais inválidas.';btn.textContent='Entrar';btn.disabled=false;return;}
+  location.reload();
+}
+async function doLogout(){await sb.auth.signOut();location.reload();}
 
 // ─── CONTRATOS PENDENTES ───
 let contratosPend=[];

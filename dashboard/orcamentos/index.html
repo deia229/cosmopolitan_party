@@ -177,9 +177,34 @@ input[type=checkbox]{width:16px;height:16px;accent-color:var(--pink);cursor:poin
 
 @media(max-width:1100px){.wrap{grid-template-columns:1fr} #doc{width:100%;min-height:auto;padding:16px}}
 @media(max-width:700px){.two{grid-template-columns:1fr} .dh{flex-direction:column} .dh-right{text-align:left}}
+.lo-ov{display:none;position:fixed;inset:0;background:linear-gradient(135deg,#fdf2f8,#fce7f3);z-index:9999;align-items:center;justify-content:center;padding:20px}
+.lo-ov.on{display:flex}
+.lo-card{background:#fff;border-radius:18px;padding:32px 28px;box-shadow:0 20px 60px rgba(224,24,122,.18);max-width:380px;width:100%;font-family:var(--font)}
+.lo-card h2{font-size:22px;margin:0 0 4px;color:var(--pink);font-weight:700}
+.lo-card .lo-sub{font-size:11px;color:var(--muted);margin-bottom:22px;letter-spacing:1.5px;text-transform:uppercase}
+.lo-card label{display:block;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin:14px 0 4px;font-weight:700}
+.lo-card input{width:100%;border:1px solid var(--border);border-radius:9px;padding:11px 12px;font-size:14px;font-family:var(--font);outline:none;box-sizing:border-box}
+.lo-card input:focus{border-color:var(--pink)}
+.lo-card button{width:100%;margin-top:18px;background:var(--pink);color:#fff;border:none;border-radius:10px;padding:13px;font-size:14px;font-weight:600;font-family:var(--font);cursor:pointer}
+.lo-card button:hover{opacity:.9}
+.lo-card .lo-err{margin-top:12px;font-size:12px;color:#c53030;min-height:14px}
+.logout-btn{background:none;border:1px solid rgba(255,255,255,.3);border-radius:8px;padding:6px 10px;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.7);cursor:pointer;margin-left:auto;font-family:var(--font)}
+.logout-btn:hover{color:#fff;border-color:#fff}
 </style>
 </head>
 <body>
+<div class="lo-ov" id="loginOv">
+  <form class="lo-card" onsubmit="doLogin(event)">
+    <h2>Cosmopolitan Party</h2>
+    <div class="lo-sub">Orçamentos · Acesso</div>
+    <label>Email</label>
+    <input type="email" id="loginEmail" required autocomplete="email" autofocus/>
+    <label>Password</label>
+    <input type="password" id="loginPwd" required autocomplete="current-password"/>
+    <button type="submit" id="loginBtn">Entrar</button>
+    <div class="lo-err" id="loginErr"></div>
+  </form>
+</div>
 
 <nav>
   <div class="logo">
@@ -189,6 +214,7 @@ input[type=checkbox]{width:16px;height:16px;accent-color:var(--pink);cursor:poin
   <button class="tab on" onclick="showTab('gen',this)">Novo Documento</button>
   <button class="tab" onclick="showTab('hist',this)">Histórico</button>
   <div class="nav-status"><div class="dot" id="dot"></div><span id="statusMsg">A carregar...</span></div>
+  <button class="logout-btn" onclick="doLogout()">Sair</button>
 </nav>
 
 <!-- GERADOR -->
@@ -667,7 +693,7 @@ const EXTRAS = [
 ];
 
 // ─── INIT ──────────────────────────────────────────────────────────────────
-function init(){
+async function init(){
   packs = PACKS;
   extras = EXTRAS;
   $('issueDate').value = today();
@@ -678,16 +704,28 @@ function init(){
   updatePreview();
   try{
     sb = window.supabase.createClient(SB_URL, SB_KEY);
-    $('statusMsg').textContent = 'Ligado';
-    $('dot').className = 'dot ok';
-    // Verificar se veio do cockpit com ?edit=ID
-    const params = new URLSearchParams(window.location.search);
-    const editId = params.get('edit');
-    if(editId) setTimeout(()=>autoCarregarDocumento(editId), 800);
   }catch(e){
     $('statusMsg').textContent = 'Offline';
+    return;
   }
+  const {data:{session}} = await sb.auth.getSession();
+  if(!session){ $('loginOv').classList.add('on'); $('statusMsg').textContent='Sessão necessária'; return; }
+  $('statusMsg').textContent = 'Ligado';
+  $('dot').className = 'dot ok';
+  const params = new URLSearchParams(window.location.search);
+  const editId = params.get('edit');
+  if(editId) setTimeout(()=>autoCarregarDocumento(editId), 800);
 }
+async function doLogin(e){
+  e.preventDefault();
+  const email=$('loginEmail').value.trim();const password=$('loginPwd').value;
+  const btn=$('loginBtn');btn.textContent='A entrar…';btn.disabled=true;
+  $('loginErr').textContent='';
+  const {error}=await sb.auth.signInWithPassword({email,password});
+  if(error){$('loginErr').textContent='Credenciais inválidas.';btn.textContent='Entrar';btn.disabled=false;return;}
+  location.reload();
+}
+async function doLogout(){await sb.auth.signOut();location.reload();}
 
 async function autoCarregarDocumento(id){
   if(!sb) return;
