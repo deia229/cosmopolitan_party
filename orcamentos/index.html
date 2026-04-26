@@ -1,0 +1,1209 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Cosmopolitan Party — Orçamentos</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--pink:#e0187a;--pink2:#ff4da6;--pink3:#fce4ec;--dark:#1a0010;--text:#2d0020;--muted:#8a5a70;--border:#f0c8dc;--bg:#f8f0f5;--card:#fff;--font:'DM Sans',Arial,sans-serif}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh}
+
+/* NAV */
+nav{background:linear-gradient(135deg,#1a0010,#3d0030);height:52px;display:flex;align-items:center;padding:0 24px;gap:0;box-shadow:0 2px 12px rgba(0,0,0,.2)}
+.logo{display:flex;align-items:center;gap:10px;margin-right:28px}
+.logo-mark{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--pink),var(--pink2));display:flex;align-items:center;justify-content:center;font-size:15px}
+.logo-name{font-size:13px;font-weight:700;color:#fff}.logo-sub{font-size:10px;color:rgba(255,180,220,.5);letter-spacing:.5px}
+.tab{padding:0 18px;height:52px;border:none;background:transparent;color:rgba(255,180,220,.6);font-family:var(--font);font-size:13px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s}
+.tab:hover{color:#fff}.tab.on{color:#ff80c0;border-bottom-color:var(--pink)}
+.nav-status{margin-left:auto;font-size:11px;color:rgba(255,180,220,.6);display:flex;align-items:center;gap:6px}
+.dot{width:7px;height:7px;border-radius:50%;background:#ef4444;flex-shrink:0}.dot.ok{background:#34d399}
+
+/* LAYOUT */
+.page{display:none}.page.on{display:block}
+.wrap{display:grid;grid-template-columns:400px 1fr;gap:20px;padding:20px;max-width:1500px;margin:0 auto}
+
+/* PANEL */
+.panel{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px;position:sticky;top:16px;max-height:calc(100vh - 84px);overflow-y:auto}
+.panel::-webkit-scrollbar{width:4px}.panel::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+.panel-title{font-size:15px;font-weight:700;margin-bottom:2px}
+.panel-sub{font-size:12px;color:var(--muted);margin-bottom:0}
+.sec{border-top:1px solid var(--border);padding-top:14px;margin-top:14px}
+.sec-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.full{grid-column:1/-1}
+.f{display:flex;flex-direction:column;gap:4px;margin-bottom:8px}
+label{font-size:12px;color:var(--muted);font-weight:500}
+input,select,textarea{width:100%;border:1px solid var(--border);border-radius:9px;padding:9px 11px;font-size:13px;font-family:var(--font);color:var(--text);background:#fff;outline:none;transition:border-color .15s}
+input:focus,select:focus,textarea:focus{border-color:var(--pink)}
+textarea{min-height:68px;resize:vertical}
+
+/* DECORAÇÃO */
+.deco-level-btn{border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;font-weight:600;cursor:pointer;background:#fff;color:var(--muted);font-family:var(--font);transition:all .15s;white-space:nowrap}
+.deco-level-btn.on{border-color:var(--pink);background:var(--pink3);color:var(--pink)}
+.deco-levels{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px}
+.deco-elem-row{display:flex;align-items:center;gap:6px;margin-bottom:5px}
+.deco-elem-row input[type=text]{flex:1;padding:7px 10px;font-size:12px}
+.deco-elem-del{border:none;background:none;color:#ccc;cursor:pointer;font-size:16px;padding:0 4px;line-height:1;flex-shrink:0;transition:color .15s}
+.deco-elem-del:hover{color:#ef4444}
+.deco-add-btn{border:1px dashed var(--border);border-radius:8px;padding:6px 12px;font-size:12px;color:var(--muted);background:none;cursor:pointer;width:100%;font-family:var(--font);transition:all .15s;margin-top:2px}
+.deco-add-btn:hover{border-color:var(--pink);color:var(--pink)}
+.deco-off{background:#f9fafb;border-radius:10px;padding:10px 12px;font-size:12px;color:var(--muted);text-align:center;border:1px dashed #e5e7eb}
+
+/* DOC DECORAÇÃO */
+.deco-doc-box{background:linear-gradient(135deg,#fff5fb,#fff);border:1px solid #fce4ec;border-radius:10px;padding:12px 14px;margin-bottom:10px}
+.deco-doc-level{display:inline-block;background:linear-gradient(135deg,var(--pink),var(--pink2));color:#fff;font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px}
+.deco-doc-name{font-size:14px;font-weight:700;color:#1a0010;margin-bottom:8px}
+.deco-doc-item{font-size:12px;color:#333;padding:2px 0;display:flex;align-items:flex-start;gap:6px;line-height:1.4}
+.deco-doc-item .ck{color:var(--pink);font-weight:700;flex-shrink:0;font-size:11px;margin-top:1px}
+.deco-doc-price{margin-top:10px;padding-top:8px;border-top:1px solid #fce4ec;font-size:13px;font-weight:700;color:var(--pink);text-align:right}
+
+/* EXTRAS */
+.extra-item{border:1px solid var(--border);border-radius:10px;padding:9px 11px;display:grid;grid-template-columns:18px 1fr 68px;align-items:center;gap:8px;margin-bottom:6px;cursor:pointer;transition:all .15s}
+.extra-item.on{border-color:var(--pink);background:var(--pink3)}
+.extra-name{font-size:13px;font-weight:500}
+.extra-info{font-size:11px;color:var(--muted);margin-top:1px}
+input[type=checkbox]{width:16px;height:16px;accent-color:var(--pink);cursor:pointer}
+.cat-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin:10px 0 5px}
+
+/* IVA TOGGLE */
+.iva-row{display:flex;align-items:center;gap:8px;padding:8px 0;font-size:13px}
+.toggle{position:relative;width:38px;height:22px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0}
+.slider{position:absolute;inset:0;background:#ddd;border-radius:22px;cursor:pointer;transition:.3s}
+.slider:before{content:'';position:absolute;width:16px;height:16px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s}
+.toggle input:checked+.slider{background:var(--pink)}
+.toggle input:checked+.slider:before{transform:translateX(16px)}
+
+/* BUTTONS */
+.btn{border:none;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);display:inline-flex;align-items:center;gap:6px;transition:all .15s}
+.btn-p{background:linear-gradient(135deg,var(--pink),var(--pink2));color:#fff}.btn-p:hover{opacity:.88}
+.btn-g{background:var(--pink3);color:var(--pink);border:1px solid rgba(224,24,122,.2)}.btn-g:hover{background:#f8b4d4}
+.btn-d{background:#1a0010;color:#fff}.btn-d:hover{background:#2d0020}
+.btn-sm{padding:7px 12px;font-size:12px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.sbar{margin-top:10px;font-size:12px;color:var(--muted);min-height:18px}
+.sbar.err{color:#ef4444}.sbar.ok{color:#1a7a4a}
+
+/* PREVIEW WRAP */
+.preview-wrap{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px;overflow-x:auto}
+
+/* DOCUMENT */
+#doc{background:#fff;width:210mm;min-height:297mm;margin:0 auto;padding:14mm 16mm;font-family:'DM Sans',Arial,sans-serif;color:#1a0010;border-radius:10px;box-shadow:0 6px 24px rgba(224,24,122,.1)}
+.dh{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;border-bottom:3px solid var(--pink);padding-bottom:14px;margin-bottom:18px}
+.dh-left .brand{font-size:10px;font-weight:700;color:var(--pink);letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px}
+.dh-left h1{font-size:24px;font-weight:800;margin:0 0 4px}
+.dh-left p{font-size:12px;color:#666;max-width:300px;line-height:1.4}
+.dh-right{text-align:right;font-size:12px;color:#555;min-width:160px;flex-shrink:0}
+.dh-right p{margin:2px 0}
+.badge{display:inline-block;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;margin-bottom:8px;background:var(--pink3);color:var(--pink)}
+.badge.cnf{background:#e8f5e9;color:#1a7a4a}
+
+/* DOC SECTIONS */
+.ds{margin-top:16px}
+.ds h2{font-size:10px;font-weight:700;color:var(--pink);text-transform:uppercase;letter-spacing:.07em;margin:0 0 8px;padding-bottom:4px;border-bottom:1px solid #f0c8dc}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.ir{display:flex;gap:6px;margin-bottom:3px;font-size:13px}
+.il{color:#9ca3af;min-width:72px;flex-shrink:0;font-size:12px}
+
+/* PACK BOX */
+.pack-box{background:linear-gradient(135deg,#fdf2f8,#fff);border:1px solid #fce4ec;border-radius:10px;padding:12px 14px;margin-bottom:10px}
+.pack-box-name{font-size:14px;font-weight:700;color:var(--pink);margin-bottom:2px}
+.pack-box-desc{font-size:12px;color:#777;line-height:1.4;margin-bottom:10px}
+.pack-sec-title{font-size:10px;font-weight:700;color:var(--pink);text-transform:uppercase;letter-spacing:.6px;margin:10px 0 5px;padding-bottom:3px;border-bottom:1px solid #fce4ec}
+.pack-item{font-size:12px;color:#333;padding:2px 0;display:flex;align-items:flex-start;gap:6px;line-height:1.4}
+.pack-item .ck{color:var(--pink);font-weight:700;flex-shrink:0;font-size:11px;margin-top:1px}
+
+/* TERMOS & CONDIÇÕES */
+.tc-wrap{margin-top:6px;page-break-before:always}
+.tc-group{margin-bottom:12px}
+.tc-group-title{font-size:11px;font-weight:700;color:var(--pink);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;padding-bottom:3px;border-bottom:1px solid #fce4ec}
+.tc-item{font-size:11px;color:#555;line-height:1.55;padding:2px 0 2px 10px;position:relative}
+.tc-item::before{content:'·';position:absolute;left:0;color:var(--pink);font-weight:700}
+.tc-note{background:#fff8e1;border:1px solid #ffd54f;border-radius:7px;padding:8px 10px;font-size:11px;color:#7a5000;line-height:1.5;margin-top:8px}
+
+/* ESPACO BOX (no pack) */
+.espaco-box{background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:12px 14px;margin-bottom:10px}
+.espaco-title{font-size:12px;font-weight:700;color:#374151;margin-bottom:6px}
+.espaco-item{font-size:12px;color:#555;padding:2px 0;display:flex;gap:6px}
+.espaco-item .ck{color:var(--pink);font-weight:700;flex-shrink:0}
+.espaco-note{font-size:11px;color:#9ca3af;margin-top:6px;padding-top:6px;border-top:1px solid #f3f4f6}
+
+/* EXTRAS TABLE */
+.etbl{width:100%;border-collapse:collapse;font-size:13px}
+.etbl th{background:#fdf2f8;color:var(--pink);font-size:10px;font-weight:700;padding:7px 10px;text-align:left;border-bottom:2px solid #fce4ec;text-transform:uppercase;letter-spacing:.4px}
+.etbl th:last-child,.etbl td:last-child{text-align:right}
+.etbl td{padding:8px 10px;border-bottom:1px solid #fce4ec;font-size:12px}
+.etbl .no-extras{text-align:center;color:#9ca3af;padding:12px}
+
+/* TOTALS */
+.totals{margin-left:auto;width:260px;margin-top:14px;border-collapse:collapse}
+.totals td{padding:4px 0;font-size:13px}
+.totals td:last-child{text-align:right;font-weight:600}
+.totals .tr-total td{font-size:16px;font-weight:800;color:var(--pink);border-top:2px solid #fce4ec;padding-top:10px}
+.totals .tr-due td{font-size:14px;font-weight:700;color:#1a7a4a}
+
+.doc-footer{margin-top:24px;border-top:1px solid #fce4ec;padding-top:10px;font-size:10px;color:#9ca3af;text-align:center}
+.conditions{font-size:12px;color:#555;line-height:1.6}
+.conditions p{margin-bottom:5px}
+
+/* HISTÓRICO */
+.hw{padding:20px;max-width:1100px;margin:0 auto}
+.hh{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.hh-title{font-size:20px;font-weight:800}
+.hf{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+.hf select,.hf input{border-radius:8px;padding:7px 12px;font-size:12px;border:1px solid var(--border);font-family:var(--font);background:#fff;max-width:200px}
+.htbl-wrap{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.htbl{width:100%;border-collapse:collapse;font-size:13px}
+.htbl th{background:#fdf2f8;padding:10px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+.htbl td{padding:12px 14px;border-top:1px solid var(--border)}
+.htbl tr:hover td{background:var(--pink3);cursor:pointer}
+.bst{font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;display:inline-block;text-transform:capitalize}
+.bst.rascunho{background:#f3f4f6;color:#6b7280}.bst.enviado{background:#fff8e1;color:#c07000}
+.bst.confirmado{background:#e8f5e9;color:#1a7a4a}.bst.cancelado{background:#fce4ec;color:#c0143c}
+.empty{text-align:center;padding:48px;color:var(--muted);font-size:14px}
+
+/* MODAL */
+.mo{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;display:none;align-items:center;justify-content:center}
+.mo.on{display:flex}
+.md{background:#fff;border-radius:16px;padding:24px;max-width:520px;width:90%;max-height:90vh;overflow-y:auto}
+.md h2{font-size:18px;font-weight:700;margin-bottom:14px}
+.md-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap}
+.mg{display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:13px;margin-bottom:12px}
+.ml{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px}
+
+@media(max-width:1100px){.wrap{grid-template-columns:1fr} #doc{width:100%;min-height:auto;padding:16px}}
+@media(max-width:700px){.two{grid-template-columns:1fr} .dh{flex-direction:column} .dh-right{text-align:left}}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">
+    <div class="logo-mark">🍹</div>
+    <div><div class="logo-name">Cosmopolitan Party</div><div class="logo-sub">ORÇAMENTOS</div></div>
+  </div>
+  <button class="tab on" onclick="showTab('gen',this)">Novo Documento</button>
+  <button class="tab" onclick="showTab('hist',this)">Histórico</button>
+  <div class="nav-status"><div class="dot" id="dot"></div><span id="statusMsg">A carregar...</span></div>
+</nav>
+
+<!-- GERADOR -->
+<div class="page on" id="page-gen">
+<div class="wrap">
+  <div class="panel">
+    <div class="panel-title">Novo Documento</div>
+    <div class="panel-sub">Preview em tempo real</div>
+
+    <div class="sec">
+      <div class="sec-label">Documento</div>
+      <div class="g2">
+        <div class="f"><label>Tipo</label>
+          <select id="docType">
+            <option value="orcamento">Orçamento</option>
+            <option value="confirmacao">Confirmação de Reserva</option>
+          </select>
+        </div>
+        <div class="f"><label>Nº documento</label><input id="docNum" placeholder="ORC-2026-001"/></div>
+        <div class="f"><label>Data emissão</label><input id="issueDate" type="date"/></div>
+        <div class="f"><label>Válido até</label><input id="validUntil" type="date"/></div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-label">Cliente</div>
+      <div class="g2">
+        <div class="f full"><label>Nome completo</label><input id="cName" placeholder="Nome do cliente"/></div>
+        <div class="f"><label>Telefone / WhatsApp</label><input id="cPhone" placeholder="9XX XXX XXX"/></div>
+        <div class="f"><label>Email</label><input id="cEmail" type="email"/></div>
+        <div class="f"><label>NIF</label><input id="cNif" placeholder="123456789"/></div>
+        <div class="f full"><label>Morada</label><input id="cAddr" placeholder="Rua, nº, localidade"/></div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-label">Evento</div>
+      <div class="g2">
+        <div class="f full"><label>Tipo de evento</label>
+          <select id="eType">
+            <option value="">Selecionar...</option>
+            <option>Aniversário</option><option>Batizado</option><option>Festa temática</option>
+            <option>Baby shower</option><option>Despedida de solteiro/a</option>
+            <option>Evento corporativo</option><option>Outro</option>
+          </select>
+        </div>
+        <div class="f"><label>Data</label><input id="eDate" type="date"/></div>
+        <div class="f"><label>Nº pessoas</label><input id="ePax" type="number" min="0" placeholder="Ex: 40"/></div>
+        <div class="f"><label>Hora início</label><input id="eStart" type="time"/></div>
+        <div class="f"><label>Hora fim</label><input id="eEnd" type="time"/></div>
+        <div class="f full"><label>Observações</label><textarea id="eNotes" placeholder="Notas adicionais..."></textarea></div>
+      </div>
+      <div id="diaInteiroRow" style="display:none;margin-top:6px">
+        <div class="iva-row">
+          <label class="toggle"><input type="checkbox" id="diaInteiro" onchange="updatePreview()"><span class="slider"></span></label>
+          <span style="font-size:13px">Dia inteiro <strong style="color:var(--pink)">— 650€</strong></span>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">Substitui o cálculo por horas. Inclui todo o dia.</div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-label">Pack</div>
+      <div class="f"><label>Selecionar pack</label><select id="packSel"><option value="">Sem pack (só espaço)</option></select></div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px" id="packHint">Sem pack: aluguer do espaço — 300€ até 5h ou 650€ dia inteiro.</div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-label" style="display:flex;justify-content:space-between;align-items:center">
+        Decoração
+        <label class="toggle" style="margin-bottom:0" title="Incluir decoração neste orçamento">
+          <input type="checkbox" id="decoToggle" onchange="toggleDecoSection()">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div id="decoOff" class="deco-off">Decoração não incluída neste orçamento.</div>
+      <div id="decoOn" style="display:none">
+        <div class="f" style="margin-bottom:6px"><label>Nível de decoração</label>
+          <div class="deco-levels" id="decoLevels">
+            <button class="deco-level-btn" onclick="setDecoLevel('Ultra Basic',this)">Ultra Basic</button>
+            <button class="deco-level-btn" onclick="setDecoLevel('Basic',this)">Basic</button>
+            <button class="deco-level-btn" onclick="setDecoLevel('Gold',this)">Gold</button>
+            <button class="deco-level-btn" onclick="setDecoLevel('Premium',this)">Premium</button>
+            <button class="deco-level-btn" onclick="setDecoLevel('Mesas',this)">Mesas</button>
+          </div>
+        </div>
+        <div class="f">
+          <label>Nome do projeto <span style="color:var(--muted);font-weight:400">(opcional)</span></label>
+          <input id="decoName" placeholder="Ex: Jardim tropical, Festa rosa arcos…" oninput="updatePreview()"/>
+        </div>
+        <div class="f">
+          <label>Elementos incluídos</label>
+          <div id="decoElemList"></div>
+          <button class="deco-add-btn" onclick="addDecoElem('')">+ Adicionar elemento</button>
+        </div>
+        <div class="g2" style="margin-top:6px">
+          <div class="f"><label>Preço de venda (€)</label>
+            <input id="decoPrice" type="number" step="0.01" value="0" oninput="updatePreview()"/>
+          </div>
+          <div class="f"><label>Custo interno (€)</label>
+            <input id="decoCost" type="number" step="0.01" value="0" placeholder="Só interno"/>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px" id="decoMarginInfo"></div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-label">Extras / Adicionais</div>
+      <div id="extrasList"><div style="font-size:12px;color:var(--muted)">A carregar...</div></div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-label">Financeiro</div>
+      <div class="g2">
+        <div class="f"><label>Desconto (€)</label><input id="discount" type="number" step="0.01" value="0"/></div>
+        <div class="f"><label>Sinal pago (€)</label><input id="deposit" type="number" step="0.01" value="0"/></div>
+      </div>
+      <div class="iva-row">
+        <label class="toggle"><input type="checkbox" id="ivaToggle"><span class="slider"></span></label>
+        <span>Aplicar IVA (23%)</span>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div id="editingBanner" style="display:none;background:#fff8e1;border:1px solid #ffd54f;border-radius:8px;padding:8px 12px;font-size:12px;color:#7a5000;margin-bottom:10px">
+        ✏️ A editar: <strong id="editingNum"></strong> — clica <strong>Guardar</strong> para actualizar.
+        <button onclick="clearForm()" style="border:none;background:none;cursor:pointer;color:#7a5000;text-decoration:underline;font-size:11px;padding:0 0 0 8px">Cancelar e criar novo</button>
+      </div>
+      <div class="actions">
+        <button class="btn btn-p" onclick="exportPdf()">⬇ Gerar PDF</button>
+        <button class="btn btn-g" onclick="saveDoc()" id="saveBtnLabel">💾 Guardar</button>
+        <button class="btn btn-d btn-sm" onclick="clearForm()">✕ Limpar</button>
+      </div>
+      <div class="sbar" id="aStatus"></div>
+    </div>
+  </div>
+
+  <!-- PREVIEW -->
+  <div class="preview-wrap">
+    <div id="doc">
+      <header class="dh">
+        <div class="dh-left">
+          <div class="brand">Cosmopolitan Party</div>
+          <h1 id="pTitle">Proposta de Orçamento</h1>
+          <p id="pIntro">Apresentamos abaixo a nossa proposta com base nos serviços selecionados para o seu evento.</p>
+        </div>
+        <div class="dh-right">
+          <div class="badge" id="pBadge">Orçamento</div>
+          <p><strong>Nº:</strong> <span id="pNum">—</span></p>
+          <p><strong>Emitido:</strong> <span id="pIssue">—</span></p>
+          <p><strong>Válido até:</strong> <span id="pValid">—</span></p>
+        </div>
+      </header>
+
+      <!-- Cliente + Evento -->
+      <div class="ds two">
+        <div>
+          <h2>Cliente</h2>
+          <div class="ir"><span class="il">Nome</span><span id="pCname">—</span></div>
+          <div class="ir"><span class="il">Telefone</span><span id="pCphone">—</span></div>
+          <div class="ir"><span class="il">Email</span><span id="pCemail">—</span></div>
+          <div class="ir"><span class="il">NIF</span><span id="pCnif">—</span></div>
+          <div class="ir"><span class="il">Morada</span><span id="pCaddr">—</span></div>
+        </div>
+        <div>
+          <h2>Evento</h2>
+          <div class="ir"><span class="il">Tipo</span><span id="pEtype">—</span></div>
+          <div class="ir"><span class="il">Data</span><span id="pEdate">—</span></div>
+          <div class="ir"><span class="il">Horário</span><span id="pEtime">—</span></div>
+          <div class="ir"><span class="il">Convidados</span><span id="pEpax">—</span></div>
+        </div>
+      </div>
+
+      <!-- Pack / Espaço -->
+      <div class="ds" id="packSection">
+        <h2 id="packSectionH2">Pack incluído</h2>
+        <div id="packDetail"></div>
+      </div>
+
+      <!-- Decoração -->
+      <div class="ds" id="decoSection" style="display:none">
+        <h2>Decoração</h2>
+        <div id="decoDetail"></div>
+      </div>
+
+      <!-- Extras -->
+      <div class="ds" id="extrasSection">
+        <h2>Extras adicionais</h2>
+        <table class="etbl">
+          <thead><tr><th>Descrição</th><th>Qtd.</th><th>Unit.</th><th>Total</th></tr></thead>
+          <tbody id="extrasBody"></tbody>
+        </table>
+      </div>
+
+      <!-- Financeiro -->
+      <div class="ds">
+        <h2>Resumo financeiro</h2>
+        <table class="totals">
+          <tr><td id="packLabel">Pack base</td><td id="sumPack">0 €</td></tr>
+          <tr id="decoRow" style="display:none"><td id="decoLabel">Decoração</td><td id="sumDeco">0 €</td></tr>
+          <tr><td>Extras</td><td id="sumExtras">0 €</td></tr>
+          <tr id="ivaRow" style="display:none"><td>IVA (23%)</td><td id="sumIva">0 €</td></tr>
+          <tr><td>Desconto</td><td id="sumDiscount">—</td></tr>
+          <tr class="tr-total"><td>Total</td><td id="sumTotal">0 €</td></tr>
+          <tr><td>Sinal pago</td><td id="sumDeposit">0 €</td></tr>
+          <tr class="tr-due"><td><strong>Valor em falta</strong></td><td id="sumDue">0 €</td></tr>
+        </table>
+      </div>
+
+      <!-- Condições de reserva (dinâmicas) -->
+      <div class="ds">
+        <h2>Condições</h2>
+        <div class="conditions" id="pCond"></div>
+      </div>
+
+      <!-- Obs -->
+      <div class="ds" id="obsSection" style="display:none">
+        <h2>Observações</h2>
+        <div id="pObs" style="font-size:13px;color:#555;line-height:1.6"></div>
+      </div>
+
+      <!-- Termos & Condições -->
+      <div class="ds tc-wrap">
+        <h2>Termos &amp; Condições</h2>
+        <div class="tc-group">
+          <div class="tc-group-title">1. Sinal</div>
+          <div class="tc-item">É solicitado o pagamento de 50% do valor total no ato da reserva (aluguer + caução + limpeza).</div>
+          <div class="tc-item">A reserva só é válida após envio do comprovativo de pagamento.</div>
+          <div class="tc-item">O valor do sinal não pode ser utilizado como parte de qualquer outro serviço adicional.</div>
+          <div class="tc-item">O sinal não é devolvido em caso de cancelamento da reserva.</div>
+        </div>
+        <div class="tc-group">
+          <div class="tc-group-title">2. Reserva</div>
+          <div class="tc-item">Após pagamento do sinal e envio do comprovativo, a reserva fica confirmada.</div>
+          <div class="tc-item">Serão solicitados os dados da pessoa responsável pelo evento para emissão do contrato.</div>
+          <div class="tc-item">Os dados recolhidos são utilizados exclusivamente pelo Cosmopolitan Party.</div>
+        </div>
+        <div class="tc-group">
+          <div class="tc-group-title">3. Pagamento</div>
+          <div class="tc-item">O valor restante (50%) deverá ser liquidado até ao dia do evento, antes do início do mesmo.</div>
+          <div class="tc-item">Pagamento por MBWay (964 505 429) ou transferência bancária, com envio de comprovativo obrigatório.</div>
+        </div>
+        <div class="tc-group">
+          <div class="tc-group-title">4. Espaço</div>
+          <div class="tc-item">É proibida a utilização de equipamentos a gás, fogo ou fumo (churrasqueiras, fogareiros, etc.) dentro do espaço fechado.</div>
+          <div class="tc-item">O espaço é alugado mobilado conforme apresentado. Não é permitido remover, alterar ou deslocar mobiliário sem autorização prévia.</div>
+          <div class="tc-item">Não é permitido deixar objetos, decoração ou pertences para recolha posterior — será retirada taxa da caução.</div>
+          <div class="tc-item">Qualquer material danificado será retirado da caução.</div>
+        </div>
+        <div class="tc-group">
+          <div class="tc-group-title">5. Evento</div>
+          <div class="tc-item">A entrada no espaço é permitida apenas dentro do horário contratado.</div>
+          <div class="tc-item">Deve ser respeitado o horário de entrada e saída. Existe tolerância de 10 minutos para desocupação.</div>
+          <div class="tc-item">O não cumprimento do horário implica cobrança de hora extra (50 €/hora).</div>
+          <div class="tc-item">O som deve ser controlado, respeitando os limites legais (Dec.-Lei n.º 9/2007) — especialmente entre as 23h e as 7h.</div>
+          <div class="tc-item">A Cosmopolitan Party reserva-se o direito de cancelar ou interromper eventos que coloquem em risco o espaço, pessoas ou vizinhança.</div>
+        </div>
+        <div class="tc-group">
+          <div class="tc-group-title">6. Limpeza</div>
+          <div class="tc-item"><strong>Limpeza pelo Cliente</strong> — disponível apenas para eventos até 35 pessoas. O espaço deve ser entregue sem lixo, restos de comida, loiças lavadas e arrumadas, chão varrido e casas de banho em condições. Caso contrário, será cobrada taxa adicional.</div>
+          <div class="tc-item"><strong>Limpeza pelo Cosmopolitan Party</strong> — inclui retirada de lixo, limpeza básica de casas de banho, mesas e chão. Não inclui cenários de sujidade extrema (comida no chão, bebidas derramadas em larga escala, etc.), sendo aplicada taxa extra nesses casos.</div>
+        </div>
+        <div class="tc-note">⚠️ Ao confirmar esta proposta, o cliente aceita expressamente os presentes Termos &amp; Condições aplicáveis ao evento.</div>
+      </div>
+
+      <div class="doc-footer">Cosmopolitan Party · Rua da Ribeira 41, 2660-001 Flamenga, Loures · cosmopolitanparty.loures@gmail.com</div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- HISTÓRICO -->
+<div class="page" id="page-hist">
+  <div class="hw">
+    <div class="hh">
+      <div class="hh-title">Histórico de Documentos</div>
+      <button class="btn btn-p" onclick="loadHistory()">↻ Atualizar</button>
+    </div>
+    <div class="hf">
+      <select id="hfType" onchange="loadHistory()"><option value="">Todos os tipos</option><option value="orcamento">Orçamentos</option><option value="confirmacao">Confirmações</option></select>
+      <select id="hfStatus" onchange="loadHistory()"><option value="">Todos os estados</option><option value="rascunho">Rascunho</option><option value="enviado">Enviado</option><option value="confirmado">Confirmado</option><option value="cancelado">Cancelado</option></select>
+      <input id="hfSearch" placeholder="Pesquisar cliente..." oninput="filterHist()">
+    </div>
+    <div class="htbl-wrap">
+      <table class="htbl">
+        <thead><tr><th>Nº</th><th>Tipo</th><th>Cliente</th><th>Evento</th><th>Data</th><th>Total</th><th>Estado</th><th></th></tr></thead>
+        <tbody id="histBody"><tr><td colspan="8" class="empty">A carregar...</td></tr></tbody>
+      </table>
+    </div>
+
+    <!-- PAINEL DE DETALHE INLINE -->
+    <div id="histDetalhe" style="display:none;margin-top:18px;background:#fff;border:1.5px solid var(--pink);border-radius:14px;padding:20px 18px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <div style="font-family:var(--serif);font-size:16px;font-weight:700" id="hdTitulo">—</div>
+        <button onclick="fecharDetalhe()" style="border:none;background:none;cursor:pointer;font-size:18px;color:var(--muted)">✕</button>
+      </div>
+      <!-- Info resumo -->
+      <div id="hdInfo" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;font-size:13px"></div>
+      <!-- Estado -->
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+        <span style="font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted)">Estado</span>
+        <select id="hdStatus" style="border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-size:12px;font-family:var(--font);outline:none">
+          <option value="rascunho">Rascunho</option>
+          <option value="enviado">Enviado</option>
+          <option value="confirmado">Confirmado</option>
+          <option value="cancelado">Cancelado</option>
+        </select>
+        <button class="btn btn-g" style="font-size:12px" onclick="hdGuardarEstado()">✓ Guardar estado</button>
+        <button class="btn btn-p" style="font-size:12px" onclick="hdCarregarEditor()">✏️ Editar no formulário</button>
+        <button class="btn btn-g" style="font-size:12px" onclick="hdGerarPDF()">⬇ PDF</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL vazio mantido para compatibilidade -->
+<div class="mo" id="modal" onclick="closeModal(event)"><div class="md" onclick="event.stopPropagation()">
+  <div id="mdContent"></div><select id="mdStatus" style="display:none"></select>
+</div></div>
+
+<script>
+// ─── CONFIG ────────────────────────────────────────────────────────────────
+const SB_URL = 'https://fsbpakhrfkrmfgpaxyly.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZzYnBha2hyZmtybWZncGF4eWx5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1NzMyMjAsImV4cCI6MjA4OTE0OTIyMH0.fkF9Ch9QvX2lecY1B2FxuDWxD4DmH4T6WAg6ggYBVlY';
+
+let sb=null, packs=[], extras=[], histDocs=[], curDocId=null;
+const $=id=>document.getElementById(id);
+const eur=v=>new Intl.NumberFormat('pt-PT',{style:'currency',currency:'EUR'}).format(+v||0);
+const fmtD=v=>{if(!v)return '—';return new Intl.DateTimeFormat('pt-PT').format(new Date(v+'T00:00:00'));};
+const today=()=>new Date().toISOString().slice(0,10);
+const valid15=()=>{const d=new Date();d.setDate(d.getDate()+15);return d.toISOString().slice(0,10);};
+const docNum=()=>{const y=new Date().getFullYear();const p=$('docType').value==='confirmacao'?'CNF':'ORC';return p+'-'+y+'-'+String(Date.now()).slice(-4);};
+
+// ─── DECORAÇÃO CONFIG ──────────────────────────────────────────────────────
+const DECO_LEVELS = {
+  'Ultra Basic': {price:100, cost:60,  items:['Painel de balões compacto','Elementos decorativos simples']},
+  'Basic':       {price:125, cost:75,  items:['Arco de balões','Painel backdrop','Elementos decorativos coordenados']},
+  'Gold':        {price:200, cost:120, items:['Arco de balões premium','Painel com elementos dourados','Mesa de apoio decorada','Coordenação cromática completa']},
+  'Premium':     {price:300, cost:180, items:['Decoração topo de gama personalizada','Arco de balões premium','Painéis e backdrops','Mesa de cake decorada','Elementos florais e de luxo','Coordenação total do espaço']},
+  'Mesas':       {price:175, cost:105, items:['Colocação e montagem completa das mesas','Toalhas, pratos, copos e talheres','Centro de mesa decorado','Coordenação com o estilo do evento','Desmontagem incluída']},
+};
+let decoLevel = null; // nível selecionado
+let decoElems = [];   // elementos editáveis
+
+function toggleDecoSection(){
+  const on = $('decoToggle').checked;
+  $('decoOff').style.display = on ? 'none' : 'block';
+  $('decoOn').style.display  = on ? 'block' : 'none';
+  if(on && !decoLevel) setDecoLevel('Basic', $('decoLevels').children[1]);
+  updatePreview();
+}
+
+function setDecoLevel(level, btn){
+  decoLevel = level;
+  document.querySelectorAll('.deco-level-btn').forEach(b=>b.classList.remove('on'));
+  if(btn) btn.classList.add('on');
+  const cfg = DECO_LEVELS[level];
+  if(cfg){
+    $('decoPrice').value = cfg.price;
+    $('decoCost').value  = cfg.cost;
+    decoElems = [...cfg.items];
+  } else {
+    decoElems = [];
+  }
+  renderDecoElems();
+  updateDecoMargin();
+  updatePreview();
+}
+
+function renderDecoElems(){
+  const host = $('decoElemList');
+  host.innerHTML = decoElems.map((el,i)=>
+    '<div class="deco-elem-row">'+
+      '<input type="text" value="'+el.replace(/"/g,'&quot;')+'" oninput="decoElems['+i+']=this.value;updatePreview()" placeholder="Elemento de decoração"/>'+
+      '<button class="deco-elem-del" onclick="removeDecoElem('+i+')" title="Remover">×</button>'+
+    '</div>'
+  ).join('');
+}
+
+function addDecoElem(val){
+  decoElems.push(val||'');
+  renderDecoElems();
+  const inputs = $('decoElemList').querySelectorAll('input');
+  if(inputs.length) inputs[inputs.length-1].focus();
+  updatePreview();
+}
+
+function removeDecoElem(i){
+  decoElems.splice(i,1);
+  renderDecoElems();
+  updatePreview();
+}
+
+function updateDecoMargin(){
+  const sale = +$('decoPrice').value||0;
+  const cost = +$('decoCost').value||0;
+  if(!sale&&!cost){$('decoMarginInfo').textContent='';return;}
+  const margin = sale - cost;
+  const pct = sale>0 ? Math.round(margin/sale*100) : 0;
+  $('decoMarginInfo').textContent = 'Margem interna: '+eur(margin)+' ('+pct+'%)';
+}
+
+// ─── PACKS DATA ────────────────────────────────────────────────────────────
+// includesSpace: true = pack already includes space rental (don't add hour calc)
+// horasBase = horas incluídas no pack antes de cobrar extra
+const PACKS = [
+  {id:'cosmo-classic',name:'Cosmo Classic',price:920,includesSpace:true,horasBase:5,
+   description:'Festa bonita, simples e memorável — ~23,50€/pessoa.',
+   sections:[
+     {t:'Espaço',items:['Aluguer do espaço (5 horas)','Limpeza do espaço']},
+     {t:'Decoração',items:['Decoração Ultra Basic']},
+     {t:'Catering Finger Food (~40 pessoas)',items:['50 mini hot dogs','50 mini pizzas','25 mini hambúrgueres','130 mini salgados fritos','1 tábua de queijos','1 tábua de frutas','3 L de sopa']},
+   ]},
+  {id:'set-table',name:'Set the Table',price:600,includesSpace:true,horasBase:5,
+   description:'Mesa posta, ambiente preparado. Chegas e está tudo pronto.',
+   sections:[
+     {t:'Espaço',items:['Aluguer do espaço (5 horas)','Limpeza do espaço']},
+     {t:'Decoração de Mesas (até 55 lugares)',items:['Colocação e montagem completa','Toalhas, pratos, copos e talheres','Decoração alinhada com o estilo do evento']},
+   ]},
+  {id:'easy-celebration',name:'Easy Celebration',price:1050,includesSpace:true,horasBase:5,
+   description:'Sabores caseiros, zero stress. Limpeza incluída (oferta) — 440€ + 25€/p.',
+   sections:[
+     {t:'Espaço',items:['Aluguer do espaço (5 horas)','Limpeza incluída — oferta (val. 125€)']},
+     {t:'Decoração',items:['Decoração Basic']},
+     {t:'Catering Completo (25 pessoas × 25€/p)',items:[
+       'Entradas: Paté de Atum, Paté Delícias do Mar, 100 Miniaturas, Tostas',
+       'Prato Principal (escolher 2): Bacalhau com Natas / Arroz de Pato',
+       'Sobremesas (escolher 3): Arroz Doce, Cheesecake Morangos, Tarte Lemon Curd, Crumble de Maçã, Bolo de Mousse de Chocolate',
+       'Bebidas (escolher 3): Água, Icea, Coca-Cola, Sumos Laranja/Ananás',
+     ]},
+   ]},
+  {id:'cosmo-deluxe',name:'Cosmo Deluxe',price:1130,includesSpace:true,horasBase:5,
+   description:'Decoração gold e finger food farto — ~22,50€/pessoa.',
+   sections:[
+     {t:'Espaço',items:['Aluguer do espaço (5 horas)','Limpeza do espaço']},
+     {t:'Decoração',items:['Decoração Gold']},
+     {t:'Catering Finger Food (~50 pessoas)',items:['50 mini hot dogs','50 mini pizzas','50 mini hambúrgueres','130 mini salgados fritos','1 tábua de queijos','1 tábua de frutas','1 tábua mexicana','5 L de sopa']},
+   ]},
+  {id:'cosmo-experience',name:'Cosmo Experience',price:1280,includesSpace:true,horasBase:6,
+   description:'6 horas sem pensar em nada — ~18€/pessoa.',
+   sections:[
+     {t:'Espaço',items:['Aluguer do espaço (5h + 1h grátis = 6 horas)','Limpeza: 125€']},
+     {t:'Decoração',items:['Decoração Gold']},
+     {t:'Catering Finger Food (~70 pessoas)',items:['75 mini hot dogs','75 mini pizzas','50 mini hambúrgueres','260 mini salgados fritos','1 tábua de queijos','1 tábua de frutas','1 tábua mexicana','10 L de sopa']},
+   ]},
+  {id:'the-cosmopolitan',name:'The Cosmopolitan',price:1850,includesSpace:true,horasBase:5,
+   description:'O pacote 5 estrelas. Decoração premium + catering deluxe — ~18,50€/p.',
+   sections:[
+     {t:'Espaço',items:['Aluguer do espaço (5 horas)','Limpeza do espaço']},
+     {t:'Decoração',items:['Decoração Premium']},
+     {t:'Catering Completo Deluxe (~100 pessoas)',items:['100 mini hot dogs','100 mini pizzas','75 mini hambúrgueres','260 mini salgados fritos','1 tábua de queijos','1 tábua de frutas','1 tábua mexicana','10 L de sopa']},
+   ]},
+];
+
+const EXTRAS = [
+  {id:'kit-30',name:'Kit Catering 30/40 pessoas',price:395,cat:'Catering',desc:'50 hot dogs, 50 pizzas, 25 hambúrgueres, 130 salgados, tábuas, 3L sopa'},
+  {id:'kit-50',name:'Kit Catering 50 pessoas',price:515,cat:'Catering',desc:'50 hot dogs, 50 pizzas, 50 hambúrgueres, 130 salgados, 2 tábuas, 5L sopa'},
+  {id:'kit-70',name:'Kit Catering 70 pessoas',price:655,cat:'Catering',desc:'75 hot dogs, 75 pizzas, 50 hambúrgueres, 260 salgados, 3 tábuas, 10L sopa'},
+  {id:'kit-100',name:'Kit Catering 100 pessoas',price:770,cat:'Catering',desc:'100 hot dogs, 100 pizzas, 75 hambúrgueres, 260 salgados, 3 tábuas, 10L sopa'},
+  {id:'menu-pp',name:'Menu Completo por pessoa',price:25,cat:'Catering',desc:'Entradas + Prato + Sobremesa + Bebidas (mín. 15p)'},
+  {id:'arroz-pato',name:'Tabuleiro Arroz de Pato 4kg',price:165,cat:'Catering',desc:'Serve ~20 pessoas'},
+  {id:'bacalhau',name:'Tabuleiro Bacalhau com Natas 4kg',price:195,cat:'Catering',desc:'Serve ~20 pessoas'},
+  {id:'mini-burg',name:'Pack 25 Mini Hambúrgueres',price:30,cat:'Catering',desc:'Pack de encomenda'},
+  {id:'mini-hot',name:'Pack 25 Mini Hot Dogs',price:32,cat:'Catering',desc:'Pack de encomenda'},
+  {id:'mini-piz',name:'Pack 25 Mini Pizzas',price:22,cat:'Catering',desc:'Pack de encomenda'},
+  {id:'salgados',name:'Mini Salgados Fritos 130un',price:75,cat:'Catering',desc:'Pack de encomenda'},
+  {id:'hora-extra',name:'Hora Extra de Espaço',price:50,cat:'Espaço',desc:'Por cada hora além do contratado'},
+  {id:'limpeza',name:'Serviço de Limpeza',price:125,cat:'Espaço',desc:'Limpeza após o evento'},
+  {id:'caucao',name:'Caução',price:100,cat:'Espaço',desc:'Depósito reembolsável'},
+  {id:'barril-cerveja-30',name:'🍺 Barril de Cerveja 30L',price:105,cat:'Bebidas',desc:'30 litros — serve ~60 copos'},
+  {id:'barril-cerveja-50',name:'🍻 Barril de Cerveja 50L',price:135,cat:'Bebidas',desc:'50 litros — serve ~100 copos'},
+  {id:'barril-sangria-20',name:'🍷 Barril de Sangria Tinta 20L',price:110,cat:'Bebidas',desc:'20 litros de sangria tinta'},
+  {id:'barril-somersby-30',name:'🍏 Barril de Somersby 30L',price:150,cat:'Bebidas',desc:'30 litros de Somersby'},
+  {id:'barril-somersby-15',name:'🍏 Barril de Somersby 15L',price:75,cat:'Bebidas',desc:'15 litros de Somersby'},
+];
+
+// ─── INIT ──────────────────────────────────────────────────────────────────
+function init(){
+  packs = PACKS;
+  extras = EXTRAS;
+  $('issueDate').value = today();
+  $('validUntil').value = valid15();
+  $('docNum').value = docNum();
+  renderPackSel();
+  renderExtras();
+  updatePreview();
+  try{
+    sb = window.supabase.createClient(SB_URL, SB_KEY);
+    $('statusMsg').textContent = 'Ligado';
+    $('dot').className = 'dot ok';
+    // Verificar se veio do cockpit com ?edit=ID
+    const params = new URLSearchParams(window.location.search);
+    const editId = params.get('edit');
+    if(editId) setTimeout(()=>autoCarregarDocumento(editId), 800);
+  }catch(e){
+    $('statusMsg').textContent = 'Offline';
+  }
+}
+
+async function autoCarregarDocumento(id){
+  if(!sb) return;
+  const {data, error} = await sb.from('cp_documents').select('*').eq('id', id).single();
+  if(error || !data){ setAS('Documento não encontrado.','err'); return; }
+  // Adicionar ao histDocs e abrir modal
+  histDocs = [data];
+  curDocId = null; // vai ser preenchido pelo editarDoc
+  editarDoc(data);
+  setAS('✏️ A editar '+( data.document_number||'documento do cockpit'),'ok');
+}
+
+function editarDoc(doc){
+  if(!doc) return;
+  curDocId = doc.id;
+  showTab('gen'); // sem btn — showTab resolve sozinho
+  $('docNum').value = doc.document_number||'';
+  $('docType').value = doc.document_type||'orcamento';
+  $('issueDate').value = doc.issue_date||today();
+  $('validUntil').value = doc.valid_until||'';
+  $('cName').value = doc.client_name||'';
+  $('cPhone').value = doc.client_phone||'';
+  $('cEmail').value = doc.client_email||'';
+  $('cNif').value = doc.client_nif||'';
+  $('cAddr').value = doc.client_address||'';
+  $('eType').value = doc.event_type||'';
+  $('eDate').value = doc.event_date||'';
+  $('eStart').value = doc.start_time||'';
+  $('eEnd').value = doc.end_time||'';
+  $('ePax').value = doc.guest_count||'';
+  $('eNotes').value = doc.notes||'';
+  $('discount').value = doc.discount_value||0;
+  $('deposit').value = doc.deposit_paid||0;
+  $('ivaToggle').checked = false;
+  $('packSel').value = doc.pack_id||'';
+  $('editingBanner').style.display = 'block';
+  $('editingNum').textContent = doc.document_number||'—';
+  $('saveBtnLabel').innerHTML = '💾 Actualizar orçamento';
+  setAS('✏️ A editar '+( doc.document_number||'—')+' — faz as alterações e clica Actualizar.','ok');
+  updatePreview();
+  window.scrollTo(0,0);
+}
+
+function showTab(name, btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('on'));
+  $('page-'+name).classList.add('on');
+  if(btn) btn.classList.add('on');
+  else { // activar o tab correcto por nome
+    document.querySelectorAll('.tab').forEach(b=>{
+      if((b.getAttribute('onclick')||'').includes("'"+name+"'")) b.classList.add('on');
+    });
+  }
+  if(name==='hist') loadHistory();
+}
+
+function setAS(msg, type=''){
+  $('aStatus').textContent = msg;
+  $('aStatus').className = 'sbar'+(type?' '+type:'');
+}
+
+// ─── RENDER CONTROLS ───────────────────────────────────────────────────────
+function renderPackSel(){
+  const sel = $('packSel');
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">Sem pack (só espaço)</option>';
+  packs.forEach(p=>{
+    const o = document.createElement('option');
+    o.value = p.id;
+    o.textContent = p.name+' — '+eur(p.price);
+    sel.appendChild(o);
+  });
+  if(prev) sel.value = prev;
+}
+
+function renderExtras(){
+  const host = $('extrasList');
+  const bycat = {};
+  extras.forEach(e=>{ if(!bycat[e.cat]) bycat[e.cat]=[]; bycat[e.cat].push(e); });
+  host.innerHTML = Object.entries(bycat).map(([cat,items])=>
+    '<div class="cat-label">'+cat+'</div>'+
+    items.map(ex=>
+      '<div class="extra-item" id="wrap-'+ex.id+'" onclick="toggleExtra(\''+ex.id+'\')">'+
+        '<input type="checkbox" id="cb-'+ex.id+'" onclick="event.stopPropagation();toggleExtra(\''+ex.id+'\')">'+
+        '<div><div class="extra-name">'+ex.name+'</div><div class="extra-info">'+ex.desc+' · <strong>'+eur(ex.price)+'</strong></div></div>'+
+        '<input type="number" min="1" value="1" id="qty-'+ex.id+'" onclick="event.stopPropagation()" oninput="updatePreview()" style="width:68px;text-align:center;border-radius:8px;border:1px solid var(--border);padding:6px;font-family:var(--font)">'+
+      '</div>'
+    ).join('')
+  ).join('');
+}
+
+function toggleExtra(id){
+  const cb = $('cb-'+id);
+  cb.checked = !cb.checked;
+  $('wrap-'+id).classList.toggle('on', cb.checked);
+  updatePreview();
+}
+
+// ─── CALCULATIONS ──────────────────────────────────────────────────────────
+function getPack(){ return packs.find(p=>p.id===$('packSel').value)||null; }
+
+function getExtras(){
+  return extras.filter(e=>{ const cb=$('cb-'+e.id); return cb&&cb.checked; })
+    .map(e=>{ const q=Math.max(1,+($('qty-'+e.id)?.value||1)); return {...e,qty:q,total:e.price*q}; });
+}
+
+function calcHours(){
+  const s=$('eStart').value, e=$('eEnd').value;
+  if(!s||!e) return 0;
+  const parse=t=>{const[h,m]=t.split(':').map(Number);return h*60+m;};
+  let ini=parse(s), fim=parse(e);
+  if(fim<=ini) fim+=24*60;
+  return (fim-ini)/60;
+}
+
+function calcSpacePrice(){
+  if($('diaInteiro').checked) return 650;
+  return 300;
+}
+
+function calcTotals(){
+  const pack = getPack();
+  const selExtras = getExtras();
+  let packPrice, horasExtra=0;
+  if(pack){
+    const h = calcHours();
+    const hBase = pack.horasBase||5;
+    horasExtra = h>hBase ? Math.ceil(h-hBase) : 0;
+    packPrice = pack.price + horasExtra*50;
+  } else {
+    packPrice = calcSpacePrice();
+  }
+  const decoActive = $('decoToggle').checked;
+  const decoPrice  = decoActive ? (+$('decoPrice').value||0) : 0;
+  const extrasTotal = selExtras.reduce((s,e)=>s+e.total,0);
+  const sub = packPrice + decoPrice + extrasTotal;
+  const iva = $('ivaToggle').checked ? sub*0.23 : 0;
+  const disc = +$('discount').value||0;
+  const dep = +$('deposit').value||0;
+  const total = sub + iva - disc;
+  const due = Math.max(0, total-dep);
+  return {pack,selExtras,packPrice,decoActive,decoPrice,extrasTotal,sub,iva,disc,dep,total,due};
+}
+
+// ─── UPDATE PREVIEW ────────────────────────────────────────────────────────
+function updatePreview(){
+  if(!$('docNum').value) $('docNum').value = docNum();
+  if(!$('issueDate').value) $('issueDate').value = today();
+  if(!$('validUntil').value) $('validUntil').value = valid15();
+
+  const isCnf = $('docType').value==='confirmacao';
+  $('pTitle').textContent = isCnf?'Confirmação de Reserva':'Proposta de Orçamento';
+  $('pIntro').textContent = isCnf
+    ?'Confirmamos abaixo os serviços adjudicados para o seu evento.'
+    :'Apresentamos abaixo a nossa proposta com base nos serviços selecionados para o seu evento.';
+  $('pBadge').textContent = isCnf?'Confirmação':'Orçamento';
+  $('pBadge').className = 'badge'+(isCnf?' cnf':'');
+  $('pNum').textContent = $('docNum').value||'—';
+  $('pIssue').textContent = fmtD($('issueDate').value);
+  $('pValid').textContent = isCnf?'—':fmtD($('validUntil').value);
+
+  $('pCname').textContent=$('cName').value||'—';
+  $('pCphone').textContent=$('cPhone').value||'—';
+  $('pCemail').textContent=$('cEmail').value||'—';
+  $('pCnif').textContent=$('cNif').value||'—';
+  $('pCaddr').textContent=$('cAddr').value||'—';
+  $('pEtype').textContent=$('eType').value||'—';
+  $('pEdate').textContent=fmtD($('eDate').value);
+  $('pEtime').textContent=($('eStart').value||'—')+' – '+($('eEnd').value||'—');
+  $('pEpax').textContent=$('ePax').value?$('ePax').value+' pessoas':'—';
+
+  const obs=$('eNotes').value;
+  $('obsSection').style.display=obs?'block':'none';
+  $('pObs').textContent=obs||'';
+
+  const {pack,selExtras,packPrice,decoActive,decoPrice,extrasTotal,iva,disc,dep,total,due}=calcTotals();
+
+  // ── Pack / Espaço section ──────────────────────────────────────────
+  if(pack){
+    $('diaInteiroRow').style.display = 'none';
+    $('diaInteiro').checked = false;
+    const h=calcHours();
+    const hBase=pack.horasBase||5;
+    const hExtra=(h>hBase)?Math.ceil(h-hBase):0;
+    const extraCharge=hExtra*50;
+    $('packSectionH2').textContent='Pack incluído — '+pack.name;
+    $('packHint').textContent=pack.description+(hExtra>0?' · +'+hExtra+'h extra ('+hExtra+'×50€ = '+extraCharge+'€)':'');
+    let html='<div class="pack-box">';
+    html+='<div class="pack-box-name">'+pack.name+'</div>';
+    html+='<div class="pack-box-desc">'+pack.description+'</div>';
+    pack.sections.forEach(function(sec){
+      html+='<div class="pack-sec-title">'+sec.t+'</div>';
+      sec.items.forEach(function(item){
+        html+='<div class="pack-item"><span class="ck">✓</span><span>'+item+'</span></div>';
+      });
+    });
+    if(hExtra>0){
+      html+='<div style="margin-top:10px;padding:8px 10px;background:#fff8e1;border:1px solid #ffd54f;border-radius:7px;font-size:12px;color:#c07000">';
+      html+='⏰ <strong>'+hExtra+'h extra</strong> além do pack ('+hBase+'h incluídas) — ';
+      html+='<strong>+'+extraCharge+'€</strong> adicionados ao total.</div>';
+    }
+    html+='</div>';
+    $('packDetail').innerHTML=html;
+  } else {
+    const diaInteiro = $('diaInteiro').checked;
+    $('diaInteiroRow').style.display = 'block';
+    $('packSectionH2').textContent='Espaço — sem pack';
+    $('packHint').textContent = diaInteiro ? 'Dia inteiro: 650€.' : 'Aluguer do espaço: 300€.';
+    const spaceLabel = diaInteiro ? 'Dia inteiro (650€)' : 'Até 5 horas (300€)';
+    $('packDetail').innerHTML=
+      '<div class="espaco-box">'+
+        '<div class="espaco-title">Aluguer de Espaço</div>'+
+        '<div class="espaco-item"><span class="ck">✓</span><span>'+spaceLabel+'</span></div>'+
+        '<div class="espaco-item"><span class="ck">✓</span><span>Capacidade até 100 pessoas</span></div>'+
+        '<div class="espaco-note">Catering · Decoração · Limpeza — orçamento à parte</div>'+
+      '</div>';
+  }
+
+  // ── Decoração section ─────────────────────────────────────────────
+  if(decoActive){
+    $('decoSection').style.display='block';
+    const lvl = decoLevel||'Personalizada';
+    const name = $('decoName').value;
+    const elems = decoElems.filter(e=>e.trim());
+    let html='<div class="deco-doc-box">';
+    html+='<span class="deco-doc-level">'+lvl+'</span>';
+    html+='<div class="deco-doc-name">'+(name?name:'Decoração '+lvl)+'</div>';
+    if(elems.length){
+      elems.forEach(e=>{ html+='<div class="deco-doc-item"><span class="ck">✓</span><span>'+e+'</span></div>'; });
+    }
+    html+='<div class="deco-doc-price">'+eur(decoPrice)+'</div>';
+    html+='</div>';
+    $('decoDetail').innerHTML=html;
+    // Margem interna (só visível no painel, não no doc)
+    updateDecoMargin();
+  } else {
+    $('decoSection').style.display='none';
+  }
+
+  // ── Extras section ────────────────────────────────────────────────
+  if(selExtras.length){
+    $('extrasSection').style.display='block';
+    $('extrasBody').innerHTML=selExtras.map(e=>
+      '<tr><td>'+e.name+'</td><td>'+e.qty+'</td><td>'+eur(e.price)+'</td><td>'+eur(e.total)+'</td></tr>'
+    ).join('');
+  } else {
+    $('extrasSection').style.display='none';
+  }
+
+  // ── Totals ────────────────────────────────────────────────────────
+  const hh=calcHours(), hb=pack?(pack.horasBase||5):5, he=pack&&hh>hb?Math.ceil(hh-hb):0;
+  $('packLabel').textContent = pack?'Pack — '+pack.name+(he>0?' (+'+he+'h extra)':''):'Espaço (sem pack)';
+  $('sumPack').textContent=eur(packPrice);
+  if(decoActive){
+    $('decoRow').style.display='';
+    $('decoLabel').textContent='Decoração'+(decoLevel?' — '+decoLevel:'');
+    $('sumDeco').textContent=eur(decoPrice);
+  } else {
+    $('decoRow').style.display='none';
+  }
+  $('sumExtras').textContent=eur(extrasTotal);
+  $('ivaRow').style.display=$('ivaToggle').checked?'':'none';
+  $('sumIva').textContent=eur(iva);
+  $('sumDiscount').textContent=disc>0?'− '+eur(disc):'—';
+  $('sumTotal').textContent=eur(total);
+  $('sumDeposit').textContent=eur(dep);
+  $('sumDue').textContent=eur(due);
+
+  // ── Conditions ────────────────────────────────────────────────────
+  $('pCond').innerHTML=isCnf
+    ?'<p>Confirmamos a adjudicação dos serviços indicados para a data do evento.</p>'+
+      '<p>O valor em falta de <strong>'+eur(due)+'</strong> deverá ser liquidado conforme acordado.</p>'+
+      '<p>A caução (se aplicável) será devolvida até 5 dias úteis após o evento.</p>'
+    :'<p>Esta proposta é válida até '+fmtD($('validUntil').value)+', sujeita à disponibilidade da data.</p>'+
+      '<p>A reserva confirma-se após adjudicação e pagamento do sinal acordado.</p>'+
+      '<p>Condições de pagamento: 50% na adjudicação, 50% até 7 dias antes do evento.</p>';
+}
+
+// ─── PDF ───────────────────────────────────────────────────────────────────
+async function exportPdf(){
+  updatePreview();
+  setAS('A gerar PDF...');
+  try{
+    const orig=$('doc');
+    const clone=orig.cloneNode(true);
+    clone.style.cssText='width:210mm;min-height:297mm;margin:0;border-radius:0;box-shadow:none;background:#fff;padding:14mm 16mm';
+    const wrap=document.createElement('div');
+    wrap.style.cssText='position:fixed;left:-99999px;top:0;width:210mm;background:#fff';
+    wrap.appendChild(clone);
+    document.body.appendChild(wrap);
+    await html2pdf().set({
+      margin:[0,0,0,0],filename:($('docNum').value||'documento')+'.pdf',
+      image:{type:'jpeg',quality:.98},
+      html2canvas:{scale:2,useCORS:true,backgroundColor:'#fff',scrollY:0},
+      jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
+      pagebreak:{mode:['css','legacy']}
+    }).from(clone).save();
+    document.body.removeChild(wrap);
+    setAS('PDF gerado!','ok');
+  }catch(err){setAS('Erro: '+err.message,'err');}
+}
+
+// ─── SAVE ──────────────────────────────────────────────────────────────────
+async function saveDoc(){
+  if(!sb){setAS('Sem ligação ao Supabase.','err');return;}
+  updatePreview();
+  const {pack,selExtras,packPrice,extrasTotal,sub,iva,disc,dep,total,due}=calcTotals();
+
+  // Ao editar, preservar o status existente
+  const docExistente=curDocId?histDocs.find(d=>d.id==curDocId):null;
+  const statusActual=docExistente?.status||'rascunho';
+
+  const payload={
+    document_number:$('docNum').value, document_type:$('docType').value, status:statusActual,
+    client_name:$('cName').value, client_phone:$('cPhone').value, client_email:$('cEmail').value,
+    client_nif:$('cNif').value, client_address:$('cAddr').value,
+    event_type:$('eType').value, event_date:$('eDate').value||null,
+    start_time:$('eStart').value||null, end_time:$('eEnd').value||null,
+    guest_count:$('ePax').value?+$('ePax').value:null, notes:$('eNotes').value,
+    pack_id:pack?.id||null, pack_name_snapshot:pack?.name||null, pack_price_snapshot:packPrice,
+    extras_total:extrasTotal, subtotal:sub, discount_value:disc, total,
+    deposit_paid:dep, amount_due:due,
+    issue_date:$('issueDate').value||today(), valid_until:$('validUntil').value||null,
+    conditions_text:$('pCond').innerText, html_snapshot:$('doc').innerHTML,
+    updated_at:new Date().toISOString(),
+  };
+
+  // Loop: remove colunas que a tabela não aceita e tenta de novo
+  let ins, error, attempts=0;
+  do {
+    if(curDocId){
+      ({data:ins,error}=await sb.from('cp_documents').update(payload).eq('id',curDocId).select().single());
+    } else {
+      ({data:ins,error}=await sb.from('cp_documents').insert([payload]).select().single());
+    }
+    if(error){
+      const m=error.message.match(/find the '([^']+)' column/);
+      if(m && attempts<25){ delete payload[m[1]]; attempts++; }
+      else break;
+    }
+  } while(error);
+
+  if(error){setAS('Erro: '+error.message,'err');return;}
+
+  if(ins && !curDocId) curDocId=ins.id;
+
+  // Extras: só actualiza se há extras seleccionados no formulário
+  // Se não há nenhum seleccionado, preserva os extras existentes
+  if(selExtras.length && ins){
+    // Apagar extras antigos e inserir novos
+    await sb.from('cp_document_extras').delete().eq('document_id',ins.id).catch(()=>{});
+    await sb.from('cp_document_extras').insert(selExtras.map(e=>({
+      document_id:ins.id, extra_id:e.id, extra_name_snapshot:e.name,
+      quantity:e.qty, unit_price_snapshot:e.price, total_price:e.total
+    }))).catch(()=>{});
+  }
+  // Actualizar histDocs em memória para reflectir o novo estado
+  if(ins && docExistente) Object.assign(docExistente, ins);
+  setAS((attempts>0?'⚠️ Guardado parcialmente':'✓ Guardado')+' — Nº '+(ins?.document_number||''),'ok');
+}
+
+// ─── CLEAR ─────────────────────────────────────────────────────────────────
+function clearForm(){
+  curDocId=null;
+  $('editingBanner').style.display='none';
+  $('saveBtnLabel').innerHTML='💾 Guardar';
+  ['cName','cPhone','cEmail','cNif','cAddr','eNotes','ePax','eDate','eStart','eEnd'].forEach(id=>{$(id).value='';});
+  $('eType').value=''; $('discount').value=0; $('deposit').value=0;
+  $('ivaToggle').checked=false; $('packSel').value='';
+  $('diaInteiro').checked=false; $('diaInteiroRow').style.display='none';
+  // Deco reset
+  $('decoToggle').checked=false; toggleDecoSection();
+  decoLevel=null; decoElems=[];
+  $('docType').value='orcamento'; $('issueDate').value=today();
+  $('validUntil').value=valid15(); $('docNum').value=docNum();
+  document.querySelectorAll('[id^=cb-]').forEach(cb=>{cb.checked=false;});
+  document.querySelectorAll('[id^=wrap-]').forEach(el=>el.classList.remove('on'));
+  document.querySelectorAll('[id^=qty-]').forEach(el=>{el.value=1;});
+  updatePreview();
+  setAS('Formulário limpo.','ok');
+}
+
+// ─── HISTORY ───────────────────────────────────────────────────────────────
+async function loadHistory(){
+  if(!sb){$('histBody').innerHTML='<tr><td colspan="8" class="empty">Sem ligação ao Supabase.</td></tr>';return;}
+  let q=sb.from('cp_documents').select('*').order('created_at',{ascending:false}).limit(100);
+  const t=$('hfType').value, s=$('hfStatus').value;
+  if(t) q=q.eq('document_type',t);
+  if(s) q=q.eq('status',s);
+  const{data,error}=await q;
+  if(error){$('histBody').innerHTML='<tr><td colspan="8" class="empty">Erro: '+error.message+'</td></tr>';return;}
+  histDocs=data||[];
+  renderHist(histDocs);
+}
+function filterHist(){
+  const s=$('hfSearch').value.toLowerCase();
+  renderHist(s?histDocs.filter(d=>(d.client_name||'').toLowerCase().includes(s)||(d.document_number||'').toLowerCase().includes(s)):histDocs);
+}
+function renderHist(docs){
+  if(!docs.length){$('histBody').innerHTML='<tr><td colspan="8" class="empty">Sem documentos.</td></tr>';fecharDetalhe();return;}
+  $('histBody').innerHTML=docs.map(d=>
+    '<tr onclick="abrirDetalhe(\''+d.id+'\')">'+
+    '<td><strong>'+(d.document_number||'—')+'</strong></td>'+
+    '<td>'+(d.document_type==='confirmacao'?'Confirmação':'Orçamento')+'</td>'+
+    '<td>'+(d.client_name||'—')+'</td>'+
+    '<td>'+(d.event_type||'—')+'</td>'+
+    '<td>'+fmtD(d.event_date)+'</td>'+
+    '<td><strong>'+eur(d.total)+'</strong></td>'+
+    '<td><span class="bst '+(d.status||'rascunho')+'">'+(d.status||'rascunho')+'</span></td>'+
+    '<td style="color:var(--pink)">→</td></tr>'
+  ).join('');
+}
+function abrirDetalhe(id){
+  const doc=histDocs.find(d=>d.id==id);if(!doc)return;
+  curDocId=doc.id;
+  document.querySelectorAll('#histBody tr').forEach(r=>r.style.background='');
+  const row=document.querySelector('#histBody tr[onclick*="'+id+'"]');
+  if(row)row.style.background='var(--pink3)';
+  $('hdTitulo').textContent=(doc.document_number||'—')+' — '+(doc.client_name||'—');
+  $('hdStatus').value=doc.status||'rascunho';
+  $('hdInfo').innerHTML=
+    '<div><div class="ml">Cliente</div><div><strong>'+(doc.client_name||'—')+'</strong></div></div>'+
+    '<div><div class="ml">Telefone</div><div>'+(doc.client_phone||'—')+'</div></div>'+
+    '<div><div class="ml">Email</div><div>'+(doc.client_email||'—')+'</div></div>'+
+    '<div><div class="ml">Evento</div><div>'+(doc.event_type||'—')+'</div></div>'+
+    '<div><div class="ml">Data</div><div>'+fmtD(doc.event_date)+'</div></div>'+
+    '<div><div class="ml">Horário</div><div>'+(doc.start_time||'—')+' – '+(doc.end_time||'—')+'</div></div>'+
+    '<div><div class="ml">Pack</div><div>'+(doc.pack_name_snapshot||'—')+'</div></div>'+
+    '<div><div class="ml">Convidados</div><div>'+(doc.guest_count||'—')+'</div></div>'+
+    '<div><div class="ml">Total</div><div><strong style="color:var(--pink);font-size:15px">'+eur(doc.total)+'</strong></div></div>'+
+    '<div><div class="ml">Em falta</div><div><strong style="color:'+((doc.amount_due||0)>0?'#c07000':'#1a7a4a')+'">'+eur(doc.amount_due||0)+'</strong></div></div>'+
+    (doc.notes?'<div style="grid-column:span 2"><div class="ml">Notas</div><div>'+esc(doc.notes)+'</div></div>':'');
+  $('histDetalhe').style.display='block';
+  $('histDetalhe').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function fecharDetalhe(){
+  $('histDetalhe').style.display='none';
+  curDocId=null;
+  document.querySelectorAll('#histBody tr').forEach(r=>r.style.background='');
+}
+async function hdGuardarEstado(){
+  if(!sb||!curDocId){alert('Selecciona um documento primeiro.');return;}
+  const s=$('hdStatus').value;
+  const{error}=await sb.from('cp_documents').update({status:s}).eq('id',curDocId);
+  if(error){alert('Erro: '+error.message);return;}
+  const doc=histDocs.find(d=>d.id==curDocId);if(doc)doc.status=s;
+  renderHist(histDocs);
+  abrirDetalhe(curDocId);
+  setAS('✓ Estado: '+s,'ok');
+}
+async function hdCarregarEditor(){
+  const doc=histDocs.find(d=>d.id==curDocId);if(!doc){alert('Selecciona um documento primeiro.');return;}
+  fecharDetalhe();
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('on'));
+  const pageGen=$('page-gen');if(pageGen)pageGen.classList.add('on');
+  document.querySelectorAll('.tab').forEach(b=>{if((b.getAttribute('onclick')||'').includes("'gen'"))b.classList.add('on');});
+  curDocId=doc.id;
+  $('docNum').value=doc.document_number||'';
+  $('docType').value=doc.document_type||'orcamento';
+  $('issueDate').value=doc.issue_date||today();
+  $('validUntil').value=doc.valid_until||'';
+  $('cName').value=doc.client_name||'';
+  $('cPhone').value=doc.client_phone||'';
+  $('cEmail').value=doc.client_email||'';
+  $('cNif').value=doc.client_nif||'';
+  $('cAddr').value=doc.client_address||'';
+  $('eType').value=doc.event_type||'';
+  $('eDate').value=doc.event_date||'';
+  $('eStart').value=doc.start_time||'';
+  $('eEnd').value=doc.end_time||'';
+  $('ePax').value=doc.guest_count||'';
+  $('eNotes').value=doc.notes||'';
+  $('discount').value=doc.discount_value||0;
+  $('deposit').value=doc.deposit_paid||0;
+  $('ivaToggle').checked=false;
+  $('packSel').value=doc.pack_id||'';
+  // Limpar todos os extras do formulário
+  document.querySelectorAll('[id^=cb-]').forEach(cb=>cb.checked=false);
+  document.querySelectorAll('[id^=wrap-]').forEach(el=>el.classList.remove('on'));
+  document.querySelectorAll('[id^=qty-]').forEach(el=>{el.value=1;});
+  // Carregar extras existentes do Supabase e marcar no formulário
+  if(sb){
+    const{data:extrasData}=await sb.from('cp_document_extras').select('*').eq('document_id',doc.id);
+    if(extrasData&&extrasData.length){
+      extrasData.forEach(ex=>{
+        const cb=$('cb-'+ex.extra_id);
+        const qty=$('qty-'+ex.extra_id);
+        const wrap=$('wrap-'+ex.extra_id);
+        if(cb){cb.checked=true;if(wrap)wrap.classList.add('on');if(qty)qty.value=ex.quantity||1;}
+      });
+    }
+  }
+  $('editingBanner').style.display='block';
+  $('editingNum').textContent=doc.document_number||'—';
+  $('saveBtnLabel').innerHTML='💾 Actualizar orçamento';
+  setAS('✏️ A editar '+(doc.document_number||'—')+' (estado: '+(doc.status||'rascunho')+') — faz alterações e clica Actualizar.','ok');
+  updatePreview();
+  window.scrollTo(0,0);
+}
+function hdGerarPDF(){const doc=histDocs.find(d=>d.id==curDocId);if(!doc)return;hdCarregarEditor();setTimeout(()=>exportPdf(),600);}
+function openModal(id){abrirDetalhe(id);}
+function closeModal(e){fecharDetalhe();}
+function loadToEditor(){hdCarregarEditor();}
+function updateStatus(){hdGuardarEstado();}
+
+// ─── BIND ──────────────────────────────────────────────────────────────────
+document.querySelectorAll('input:not([type=checkbox]):not([id^=cb-]):not([id^=qty-]),select,textarea').forEach(el=>{
+  el.addEventListener('input',updatePreview);
+  el.addEventListener('change',updatePreview);
+});
+$('docType').addEventListener('change',()=>{ $('docNum').value=docNum(); updatePreview(); });
+$('ivaToggle').addEventListener('change',updatePreview);
+$('decoCost').addEventListener('input', updateDecoMargin);
+
+init();
+</script>
+</body>
+</html>
