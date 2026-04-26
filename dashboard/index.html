@@ -1410,7 +1410,7 @@ function renderOrcRec(docs){
     </div>`).join(''):'<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">Sem orçamentos recentes.</div>';
 }
 function openOrcModal(id){
-  const d=orcFull.find(x=>x.id===id);if(!d)return;curOrcId=id;
+  const d=orcFull.find(x=>x.id==id);if(!d)return;curOrcId=d.id;
   $('orcModalTitle').textContent=(d.document_number||'—')+' — '+(d.client_name||'—');
   $('orcStatus').value=d.status||'rascunho';
   $('orcContent').innerHTML=`
@@ -1433,11 +1433,11 @@ async function saveOrcStatus(){
   if(!sb||!curOrcId)return;const s=$('orcStatus').value;
   const{error}=await sb.from('cp_documents').update({status:s}).eq('id',curOrcId);
   if(error){showToast('Erro: '+error.message);return;}
-  const d=orcFull.find(x=>x.id===curOrcId);if(d)d.status=s;
+  const d=orcFull.find(x=>x.id==curOrcId);if(d)d.status=s;
   filterOrcamentos();renderOrcRec(orcFull.slice(0,5));closeModal('orcModal');showToast('✓ Estado: '+s);
 }
 function abrirOrcParaEditar(){
-  const d=orcFull.find(x=>x.id===curOrcId);if(!d)return;
+  const d=orcFull.find(x=>x.id==curOrcId);if(!d)return;
   // Guarda o ID no localStorage para a ferramenta de orçamentos detectar
   localStorage.setItem('cp_edit_orc_id', curOrcId);
   localStorage.setItem('cp_edit_orc_num', d.document_number||'');
