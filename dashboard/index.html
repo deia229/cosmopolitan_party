@@ -525,6 +525,58 @@ header{background:linear-gradient(135deg,var(--dark),var(--dark2));padding:0 20p
 
 <!-- FERRAMENTAS -->
 <div class="page" id="tab-ferramentas">
+  <!-- HORAS ERICA -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-hdr">
+      <span class="card-title">⏱️ Horas — Erica</span>
+      <span id="ehStatusChip" style="font-size:10px;font-family:var(--mono);letter-spacing:1px;padding:4px 8px;border-radius:999px;background:var(--pink3);color:var(--pink)">—</span>
+    </div>
+
+    <!-- Estado: SEM turno aberto -->
+    <div id="ehEstadoFechado" style="display:none">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Nenhum turno aberto. Toca em <strong>Entrada</strong> quando começares.</div>
+      <button class="btn btn-p" onclick="ericaEntrada()" style="width:100%;min-height:54px;font-size:15px">▶ Entrada</button>
+    </div>
+
+    <!-- Estado: COM turno aberto -->
+    <div id="ehEstadoAberto" style="display:none">
+      <div style="background:var(--pink3);border-radius:10px;padding:14px;margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
+          <span style="font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--pink)">Em curso desde</span>
+          <span id="ehInicio" style="font-family:var(--mono);font-size:11px;color:var(--muted)">—</span>
+        </div>
+        <div id="ehCronometro" style="font-family:var(--mono);font-size:32px;font-weight:600;color:var(--pink);text-align:center;margin:6px 0">00:00:00</div>
+      </div>
+      <div style="font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--pink);margin-bottom:6px">O que estás a fazer?</div>
+      <textarea id="ehObs" rows="3" placeholder="Ex: orçamentos, fui verificar espaço, reunião com cliente…" style="width:100%;border:1px solid var(--border);border-radius:9px;padding:10px 12px;font-size:13px;font-family:var(--font);outline:none;resize:vertical;box-sizing:border-box;margin-bottom:6px"></textarea>
+      <div id="ehObsSt" style="font-size:11px;color:var(--muted);margin-bottom:10px;min-height:14px">&nbsp;</div>
+      <button class="btn btn-p" onclick="ericaSaida()" style="width:100%;min-height:54px;font-size:15px">■ Saída</button>
+    </div>
+
+    <!-- Totais + Histórico -->
+    <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:9px;padding:8px;text-align:center">
+          <div style="font-family:var(--mono);font-size:9px;letter-spacing:1px;color:var(--muted);text-transform:uppercase">Hoje</div>
+          <div id="ehTotHoje" style="font-family:var(--mono);font-size:16px;font-weight:600;color:var(--pink)">0h00</div>
+        </div>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:9px;padding:8px;text-align:center">
+          <div style="font-family:var(--mono);font-size:9px;letter-spacing:1px;color:var(--muted);text-transform:uppercase">Semana</div>
+          <div id="ehTotSemana" style="font-family:var(--mono);font-size:16px;font-weight:600;color:var(--pink)">0h00</div>
+        </div>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:9px;padding:8px;text-align:center">
+          <div style="font-family:var(--mono);font-size:9px;letter-spacing:1px;color:var(--muted);text-transform:uppercase">Mês</div>
+          <div id="ehTotMes" style="font-family:var(--mono);font-size:16px;font-weight:600;color:var(--pink)">0h00</div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <span style="font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted)">Histórico</span>
+        <select id="ehMesSel" onchange="renderEricaHistorico()" style="border:1px solid var(--border);border-radius:9px;padding:6px 8px;font-size:11px;font-family:var(--mono);outline:none;background:var(--card)"></select>
+      </div>
+      <div id="ehHist"></div>
+    </div>
+  </div>
+
   <div class="card" style="margin-bottom:16px">
     <div class="card-hdr"><span class="card-title">Ferramentas Operacionais</span></div>
     <div class="tools-grid">
@@ -853,6 +905,8 @@ function renderContratosWidget(error){
 }
 
 function showTab(name,btn){
+  // Parar cronómetro da Erica se sair de Ferramentas
+  if(name!=='ferramentas'&&typeof ehStopCrono==='function')ehStopCrono();
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('on'));
   $('tab-'+name).classList.add('on');
@@ -865,7 +919,7 @@ function showTab(name,btn){
   if(name==='orcamentos')loadOrcamentos();
   if(name==='financeiro')renderFin();
   if(name==='checklist')renderCkSel();
-  if(name==='ferramentas')initDriveInput();
+  if(name==='ferramentas'){initDriveInput();loadEricaHoras();}
 }
 
 // DRIVE
@@ -892,6 +946,181 @@ function updateDriveCard(url){
   const d=$('driveLinkDesc');
   if(d) d.textContent=url?'📂 Link configurado — clica para abrir':'Contratos, PDFs e ficheiros do espaço.';
 }
+
+// ─── HORAS ERICA ───
+let ehTurnos=[];          // todos os turnos carregados
+let ehAberto=null;        // turno em curso (fim is null) ou null
+let ehCronoTimer=null;    // setInterval id
+let ehObsTimer=null;      // debounce de obs
+async function loadEricaHoras(){
+  if(!sb)return;
+  try{
+    const{data,error}=await sb.from('cp_erica_horas').select('*').order('inicio',{ascending:false}).limit(500);
+    if(error)throw error;
+    ehTurnos=data||[];
+    ehAberto=ehTurnos.find(t=>!t.fim)||null;
+  }catch(e){ehTurnos=[];ehAberto=null;}
+  renderEricaCard();
+}
+function ehFmtHrs(ms){
+  if(!ms||ms<0)ms=0;
+  const h=Math.floor(ms/3600000),m=Math.floor((ms%3600000)/60000);
+  return h+'h'+String(m).padStart(2,'0');
+}
+function ehFmtCrono(ms){
+  if(!ms||ms<0)ms=0;
+  const h=Math.floor(ms/3600000),m=Math.floor((ms%3600000)/60000),s=Math.floor((ms%60000)/1000);
+  return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+}
+function ehDuracaoMs(t){
+  const ini=new Date(t.inicio).getTime();
+  const fim=t.fim?new Date(t.fim).getTime():Date.now();
+  return Math.max(0,fim-ini);
+}
+function ehStartCrono(){
+  if(ehCronoTimer)clearInterval(ehCronoTimer);
+  const tick=()=>{
+    if(!ehAberto){ehStopCrono();return;}
+    const el=$('ehCronometro');if(el)el.textContent=ehFmtCrono(ehDuracaoMs(ehAberto));
+  };
+  tick();ehCronoTimer=setInterval(tick,1000);
+}
+function ehStopCrono(){if(ehCronoTimer){clearInterval(ehCronoTimer);ehCronoTimer=null;}}
+function renderEricaCard(){
+  const chip=$('ehStatusChip'),fechado=$('ehEstadoFechado'),aberto=$('ehEstadoAberto');
+  if(!chip||!fechado||!aberto)return;
+  if(ehAberto){
+    fechado.style.display='none';aberto.style.display='block';
+    chip.textContent='● EM CURSO';chip.style.background='#dcf5dc';chip.style.color='#1a7c1a';
+    const ini=new Date(ehAberto.inicio);
+    $('ehInicio').textContent=ini.toLocaleString('pt-PT',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'});
+    const obsEl=$('ehObs');if(obsEl&&obsEl.value!==(ehAberto.obs||''))obsEl.value=ehAberto.obs||'';
+    ehStartCrono();
+  }else{
+    fechado.style.display='block';aberto.style.display='none';
+    chip.textContent='○ PARADO';chip.style.background='var(--pink3)';chip.style.color='var(--pink)';
+    ehStopCrono();
+  }
+  renderEricaTotais();
+  renderEricaMesSel();
+  renderEricaHistorico();
+}
+function renderEricaTotais(){
+  const now=new Date();
+  const inicioHoje=new Date(now.getFullYear(),now.getMonth(),now.getDate()).getTime();
+  // semana começa segunda
+  const dow=(now.getDay()+6)%7;
+  const inicioSemana=inicioHoje-dow*86400000;
+  const inicioMes=new Date(now.getFullYear(),now.getMonth(),1).getTime();
+  let hoje=0,sem=0,mes=0;
+  ehTurnos.forEach(t=>{
+    const ini=new Date(t.inicio).getTime();
+    const fim=t.fim?new Date(t.fim).getTime():Date.now();
+    const dur=Math.max(0,fim-ini);
+    if(ini>=inicioHoje)hoje+=dur;
+    if(ini>=inicioSemana)sem+=dur;
+    if(ini>=inicioMes)mes+=dur;
+  });
+  $('ehTotHoje').textContent=ehFmtHrs(hoje);
+  $('ehTotSemana').textContent=ehFmtHrs(sem);
+  $('ehTotMes').textContent=ehFmtHrs(mes);
+}
+function renderEricaMesSel(){
+  const sel=$('ehMesSel');if(!sel)return;
+  const set=new Set();
+  ehTurnos.forEach(t=>{const d=new Date(t.inicio);set.add(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'));});
+  const now=new Date();set.add(now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0'));
+  const arr=[...set].sort().reverse();
+  const cur=sel.value||arr[0];
+  sel.innerHTML=arr.map(k=>{
+    const[y,m]=k.split('-');
+    const lbl=MESES_PT[+m-1]+' '+y;
+    return`<option value="${k}"${k===cur?' selected':''}>${lbl}</option>`;
+  }).join('');
+}
+function renderEricaHistorico(){
+  const box=$('ehHist');if(!box)return;
+  const sel=$('ehMesSel');const k=sel?.value;
+  if(!k){box.innerHTML='<div style="text-align:center;padding:14px;color:var(--muted);font-size:12px">Sem registos.</div>';return;}
+  const[y,m]=k.split('-').map(n=>+n);
+  const turnos=ehTurnos.filter(t=>{const d=new Date(t.inicio);return d.getFullYear()===y&&d.getMonth()===m-1;});
+  if(!turnos.length){box.innerHTML='<div style="text-align:center;padding:14px;color:var(--muted);font-size:12px">Sem turnos neste mês.</div>';return;}
+  // agrupar por dia
+  const porDia={};
+  turnos.forEach(t=>{const d=new Date(t.inicio);const k=d.toISOString().slice(0,10);(porDia[k]=porDia[k]||[]).push(t);});
+  const dias=Object.keys(porDia).sort().reverse();
+  const html=dias.map(diaIso=>{
+    const ts=porDia[diaIso];
+    const totDia=ts.reduce((s,t)=>s+ehDuracaoMs(t),0);
+    const dataD=new Date(diaIso+'T00:00:00');
+    const lblDia=dataD.toLocaleDateString('pt-PT',{weekday:'short',day:'2-digit',month:'2-digit'});
+    const linhas=ts.map(t=>{
+      const ini=new Date(t.inicio);
+      const fimTxt=t.fim?new Date(t.fim).toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'}):'<span style="color:#1a7c1a">em curso</span>';
+      const iniTxt=ini.toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'});
+      const dur=ehFmtHrs(ehDuracaoMs(t));
+      const obsHtml=t.obs?`<div style="font-size:11px;color:var(--muted);margin-top:2px">${esc(t.obs)}</div>`:'';
+      return`<div style="padding:8px 10px;border-top:1px solid var(--border)">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
+          <span style="font-family:var(--mono);font-size:11px">${iniTxt} → ${fimTxt}</span>
+          <span style="font-family:var(--mono);font-size:12px;font-weight:600;color:var(--pink)">${dur}</span>
+        </div>${obsHtml}
+        ${t.fim?`<button onclick="ericaApagar('${t.id}')" style="margin-top:6px;background:none;border:none;font-size:10px;color:var(--muted);cursor:pointer;padding:0">Apagar</button>`:''}
+      </div>`;
+    }).join('');
+    return`<div style="background:var(--card);border:1px solid var(--border);border-radius:9px;margin-bottom:8px;overflow:hidden">
+      <div style="padding:8px 10px;background:var(--pink3);display:flex;justify-content:space-between;align-items:baseline">
+        <span style="font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--pink);font-weight:600">${lblDia}</span>
+        <span style="font-family:var(--mono);font-size:12px;font-weight:600;color:var(--pink)">${ehFmtHrs(totDia)}</span>
+      </div>${linhas}
+    </div>`;
+  }).join('');
+  box.innerHTML=html;
+}
+async function ericaEntrada(){
+  if(!sb){showToast('Sem ligação ao Supabase.');return;}
+  if(ehAberto){showToast('Já tens um turno aberto.');return;}
+  const{data,error}=await sb.from('cp_erica_horas').insert({inicio:new Date().toISOString(),obs:''}).select().single();
+  if(error){showToast('Erro: '+error.message);return;}
+  ehTurnos.unshift(data);ehAberto=data;
+  showToast('▶ Entrada registada');
+  renderEricaCard();
+}
+async function ericaSaida(){
+  if(!sb||!ehAberto)return;
+  // Garante que a obs mais recente foi guardada
+  const obsAtual=$('ehObs')?.value||'';
+  const{data,error}=await sb.from('cp_erica_horas').update({fim:new Date().toISOString(),obs:obsAtual}).eq('id',ehAberto.id).select().single();
+  if(error){showToast('Erro: '+error.message);return;}
+  const idx=ehTurnos.findIndex(t=>t.id===ehAberto.id);if(idx>=0)ehTurnos[idx]=data;
+  const dur=ehFmtHrs(ehDuracaoMs(data));
+  ehAberto=null;
+  showToast('■ Turno fechado — '+dur);
+  renderEricaCard();
+}
+function ericaObsChange(){
+  if(!ehAberto)return;
+  const txt=$('ehObs').value;
+  $('ehObsSt').textContent='A guardar…';
+  if(ehObsTimer)clearTimeout(ehObsTimer);
+  ehObsTimer=setTimeout(async()=>{
+    if(!ehAberto)return;
+    const{error}=await sb.from('cp_erica_horas').update({obs:txt}).eq('id',ehAberto.id);
+    if(error){$('ehObsSt').textContent='Erro a guardar.';return;}
+    ehAberto.obs=txt;
+    $('ehObsSt').textContent='✓ Guardado';
+    setTimeout(()=>{const el=$('ehObsSt');if(el)el.textContent=' ';},1500);
+  },800);
+}
+async function ericaApagar(id){
+  if(!confirm('Apagar este turno?'))return;
+  const{error}=await sb.from('cp_erica_horas').delete().eq('id',id);
+  if(error){showToast('Erro: '+error.message);return;}
+  ehTurnos=ehTurnos.filter(t=>t.id!==id);
+  showToast('Turno apagado');
+  renderEricaCard();
+}
+document.addEventListener('input',e=>{if(e.target&&e.target.id==='ehObs')ericaObsChange();});
 function swET(panel,btn){
   document.querySelectorAll('.et-panel').forEach(p=>p.classList.remove('on'));
   document.querySelectorAll('.et-btn').forEach(b=>b.classList.remove('on'));
