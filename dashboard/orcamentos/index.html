@@ -69,6 +69,19 @@ textarea{min-height:68px;resize:vertical}
 input[type=checkbox]{width:16px;height:16px;accent-color:var(--pink);cursor:pointer}
 .cat-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin:10px 0 5px}
 
+/* Categorias colapsáveis dos Extras */
+.cat-group{margin-bottom:8px}
+.cat-toggle{display:flex;justify-content:space-between;align-items:center;width:100%;border:1px solid var(--border);background:#fafafa;border-radius:9px;padding:9px 12px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;cursor:pointer;font-family:var(--font);transition:all .15s}
+.cat-toggle:hover{border-color:var(--pink);color:var(--pink);background:var(--pink3)}
+.cat-toggle .caret{transition:transform .2s;display:inline-block;color:var(--pink);font-size:14px;font-weight:700}
+.cat-toggle .cat-count{font-weight:500;color:var(--muted);font-size:10px;margin-left:6px}
+.cat-toggle .cat-on-badge{background:var(--pink);color:#fff;font-size:9px;padding:2px 7px;border-radius:10px;margin-left:6px;display:none}
+.cat-group.on .cat-toggle{border-color:var(--pink);color:var(--pink);background:var(--pink3)}
+.cat-group.on .cat-toggle .caret{transform:rotate(90deg)}
+.cat-group.on .cat-toggle .cat-on-badge.has{display:inline-block}
+.cat-items{display:none;padding:8px 0 4px}
+.cat-group.on .cat-items{display:block}
+
 /* IVA TOGGLE */
 .iva-row{display:flex;align-items:center;gap:8px;padding:8px 0;font-size:13px}
 .toggle{position:relative;width:38px;height:22px;flex-shrink:0}
@@ -879,22 +892,54 @@ function renderExtras(){
   const host = $('extrasList');
   const bycat = {};
   extras.forEach(e=>{ if(!bycat[e.cat]) bycat[e.cat]=[]; bycat[e.cat].push(e); });
-  host.innerHTML = Object.entries(bycat).map(([cat,items])=>
-    '<div class="cat-label">'+cat+'</div>'+
-    items.map(ex=>
-      '<div class="extra-item" id="wrap-'+ex.id+'" onclick="toggleExtra(\''+ex.id+'\')">'+
-        '<input type="checkbox" id="cb-'+ex.id+'" onclick="event.stopPropagation();toggleExtra(\''+ex.id+'\')">'+
-        '<div><div class="extra-name">'+ex.name+'</div><div class="extra-info">'+ex.desc+' · <strong>'+eur(ex.price)+'</strong></div></div>'+
-        '<input type="number" min="1" value="1" id="qty-'+ex.id+'" onclick="event.stopPropagation()" oninput="updatePreview()" style="width:68px;text-align:center;border-radius:8px;border:1px solid var(--border);padding:6px;font-family:var(--font)">'+
+  host.innerHTML = Object.entries(bycat).map(([cat,items])=>{
+    const sl = catSlug(cat);
+    return (
+      '<div class="cat-group" id="cg-'+sl+'">'+
+        '<button type="button" class="cat-toggle" onclick="toggleCat(\''+sl+'\')">'+
+          '<span>'+cat+' <span class="cat-count">('+items.length+')</span><span class="cat-on-badge" id="badge-'+sl+'">0</span></span>'+
+          '<span class="caret">▸</span>'+
+        '</button>'+
+        '<div class="cat-items">'+
+          items.map(ex=>
+            '<div class="extra-item" id="wrap-'+ex.id+'" onclick="toggleExtra(\''+ex.id+'\')">'+
+              '<input type="checkbox" id="cb-'+ex.id+'" onclick="event.stopPropagation();toggleExtra(\''+ex.id+'\')">'+
+              '<div><div class="extra-name">'+ex.name+'</div><div class="extra-info">'+ex.desc+' · <strong>'+eur(ex.price)+'</strong></div></div>'+
+              '<input type="number" min="1" value="1" id="qty-'+ex.id+'" onclick="event.stopPropagation()" oninput="updatePreview()" style="width:68px;text-align:center;border-radius:8px;border:1px solid var(--border);padding:6px;font-family:var(--font)">'+
+            '</div>'
+          ).join('')+
+        '</div>'+
       '</div>'
-    ).join('')
-  ).join('');
+    );
+  }).join('');
+}
+
+function catSlug(cat){ return String(cat).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''); }
+
+function toggleCat(slug){
+  const grp = document.getElementById('cg-'+slug);
+  if(grp) grp.classList.toggle('on');
+}
+
+// Expande automaticamente categorias com itens seleccionados e actualiza badge com contagem
+function refreshCatStates(){
+  document.querySelectorAll('.cat-group').forEach(grp=>{
+    const checks = grp.querySelectorAll('input[type=checkbox]:checked');
+    const badge = grp.querySelector('.cat-on-badge');
+    if(checks.length){
+      grp.classList.add('on');
+      if(badge){ badge.textContent = checks.length; badge.classList.add('has'); }
+    } else {
+      if(badge){ badge.classList.remove('has'); }
+    }
+  });
 }
 
 function toggleExtra(id){
   const cb = $('cb-'+id);
   cb.checked = !cb.checked;
   $('wrap-'+id).classList.toggle('on', cb.checked);
+  refreshCatStates();
   updatePreview();
 }
 
@@ -1219,6 +1264,8 @@ function clearForm(){
   document.querySelectorAll('[id^=cb-]').forEach(cb=>{cb.checked=false;});
   document.querySelectorAll('[id^=wrap-]').forEach(el=>el.classList.remove('on'));
   document.querySelectorAll('[id^=qty-]').forEach(el=>{el.value=1;});
+  document.querySelectorAll('.cat-group').forEach(g=>g.classList.remove('on'));
+  refreshCatStates();
   updatePreview();
   setAS('Formulário limpo.','ok');
 }
@@ -1334,6 +1381,7 @@ async function hdCarregarEditor(){
         const wrap=$('wrap-'+ex.extra_id);
         if(cb){cb.checked=true;if(wrap)wrap.classList.add('on');if(qty)qty.value=ex.quantity||1;}
       });
+      refreshCatStates();
     }
   }
   $('editingBanner').style.display='block';
