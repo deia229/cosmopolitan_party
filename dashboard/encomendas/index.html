@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Cosmopolitan Party — Encomendas</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--pink:#e0187a;--pink2:#ff4da6;--pink3:#fce4ec;--dark:#1a0010;--text:#2d0020;--muted:#8a5a70;--border:#f0c8dc;--bg:#f8f0f5;--card:#fff;--font:'DM Sans',Arial,sans-serif}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh}
+
+nav{background:linear-gradient(135deg,#1a0010,#3d0030);height:52px;display:flex;align-items:center;padding:0 24px;gap:0;box-shadow:0 2px 12px rgba(0,0,0,.2)}
+.logo{display:flex;align-items:center;gap:10px;margin-right:28px}
+.logo-mark{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--pink),var(--pink2));display:flex;align-items:center;justify-content:center;font-size:15px}
+.logo-name{font-size:13px;font-weight:700;color:#fff}.logo-sub{font-size:10px;color:rgba(255,180,220,.5);letter-spacing:.5px}
+.nav-status{margin-left:auto;font-size:11px;color:rgba(255,180,220,.6);display:flex;align-items:center;gap:6px}
+.dot{width:7px;height:7px;border-radius:50%;background:#ef4444;flex-shrink:0}.dot.ok{background:#34d399}
+.logout-btn{background:none;border:1px solid rgba(255,255,255,.3);border-radius:8px;padding:6px 10px;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.7);cursor:pointer;margin-left:14px;font-family:var(--font)}
+.logout-btn:hover{color:#fff;border-color:#fff}
+
+.wrap{display:grid;grid-template-columns:420px 1fr;gap:20px;padding:20px;max-width:1300px;margin:0 auto}
+@media(max-width:1100px){.wrap{grid-template-columns:1fr}}
+
+.panel{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px}
+.panel-title{font-size:15px;font-weight:700;margin-bottom:2px}
+.panel-sub{font-size:12px;color:var(--muted);margin-bottom:0}
+.sec{border-top:1px solid var(--border);padding-top:14px;margin-top:14px}
+.sec:first-of-type{border-top:none;padding-top:0;margin-top:14px}
+.sec-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.f{display:flex;flex-direction:column;gap:4px;margin-bottom:8px}
+label{font-size:12px;color:var(--muted);font-weight:500}
+input,select,textarea{width:100%;border:1px solid var(--border);border-radius:9px;padding:9px 11px;font-size:13px;font-family:var(--font);color:var(--text);background:#fff;outline:none;transition:border-color .15s}
+input:focus,select:focus,textarea:focus{border-color:var(--pink)}
+
+.choice{border:1px solid var(--border);border-radius:10px;padding:9px 11px;display:flex;align-items:center;gap:10px;margin-bottom:6px;cursor:pointer;transition:all .15s}
+.choice.on{border-color:var(--pink);background:var(--pink3)}
+.choice input[type=checkbox]{width:16px;height:16px;accent-color:var(--pink);cursor:pointer;flex-shrink:0}
+.choice-name{font-size:13px;font-weight:500;flex:1}
+.choice-rate{font-size:11px;color:var(--muted);font-family:var(--font)}
+
+.output{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px}
+.out-hdr{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid var(--pink);padding-bottom:14px;margin-bottom:18px;gap:14px;flex-wrap:wrap}
+.out-hdr-l h1{font-size:22px;font-weight:800;margin:0 0 4px}
+.out-hdr-l .brand{font-size:10px;font-weight:700;color:var(--pink);letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px}
+.out-hdr-l p{font-size:12px;color:#666;line-height:1.4}
+.out-hdr-r{text-align:right;font-size:12px;color:#555;min-width:160px}
+.out-hdr-r .pax{font-size:32px;font-weight:800;color:var(--pink);line-height:1}
+.out-hdr-r .pax-l{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.6px;text-transform:uppercase}
+
+.out-pack{background:linear-gradient(135deg,#fdf2f8,#fff);border:1px solid #fce4ec;border-radius:10px;padding:12px 14px;margin-bottom:14px}
+.out-pack-name{font-size:14px;font-weight:700;color:var(--pink);margin-bottom:2px}
+.out-pack-desc{font-size:12px;color:#777;line-height:1.4}
+
+.tbl-grp{margin-top:14px}
+.tbl-grp-h{font-size:11px;font-weight:700;color:var(--pink);text-transform:uppercase;letter-spacing:.07em;margin:0 0 6px;padding-bottom:4px;border-bottom:1px solid #f0c8dc}
+.tbl{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:10px}
+.tbl th{background:#fdf2f8;color:var(--pink);font-size:10px;font-weight:700;padding:7px 10px;text-align:left;border-bottom:2px solid #fce4ec;text-transform:uppercase;letter-spacing:.4px}
+.tbl th:nth-child(2),.tbl td:nth-child(2){text-align:right;width:90px}
+.tbl th:nth-child(3),.tbl td:nth-child(3){width:70px;color:var(--muted);font-size:11px}
+.tbl th:nth-child(4),.tbl td:nth-child(4){text-align:right;width:100px;color:var(--muted);font-size:11px}
+.tbl td{padding:8px 10px;border-bottom:1px solid #fce4ec;font-size:12px}
+.tbl td input{border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:12px;font-family:var(--mono);text-align:right;width:80px}
+
+.btn{border:none;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);display:inline-flex;align-items:center;gap:6px;transition:all .15s}
+.btn-p{background:linear-gradient(135deg,var(--pink),var(--pink2));color:#fff}.btn-p:hover{opacity:.88}
+.btn-g{background:var(--pink3);color:var(--pink);border:1px solid rgba(224,24,122,.2)}.btn-g:hover{background:#f8b4d4}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+
+.note{font-size:11px;color:var(--muted);font-style:italic;margin-top:6px;line-height:1.4}
+.warn{background:#fff8e1;border:1px solid #ffd54f;border-radius:8px;padding:8px 10px;font-size:12px;color:#7a5000;margin-top:10px}
+
+.lo-ov{display:none;position:fixed;inset:0;background:linear-gradient(135deg,#fdf2f8,#fce7f3);z-index:9999;align-items:center;justify-content:center;padding:20px}
+.lo-ov.on{display:flex}
+.lo-card{background:#fff;border-radius:18px;padding:32px 28px;box-shadow:0 20px 60px rgba(224,24,122,.18);max-width:380px;width:100%;font-family:var(--font)}
+.lo-card h2{font-size:22px;margin:0 0 4px;color:var(--pink);font-weight:700}
+.lo-card .lo-sub{font-size:11px;color:var(--muted);margin-bottom:22px;letter-spacing:1.5px;text-transform:uppercase}
+.lo-card label{display:block;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin:14px 0 4px;font-weight:700}
+.lo-card input{width:100%;border:1px solid var(--border);border-radius:9px;padding:11px 12px;font-size:14px;font-family:var(--font);outline:none;box-sizing:border-box}
+.lo-card input:focus{border-color:var(--pink)}
+.lo-card button{width:100%;margin-top:18px;background:var(--pink);color:#fff;border:none;border-radius:10px;padding:13px;font-size:14px;font-weight:600;font-family:var(--font);cursor:pointer}
+.lo-card button:hover{opacity:.9}
+.lo-card .lo-err{margin-top:12px;font-size:12px;color:#c53030;min-height:14px}
+
+.toast{position:fixed;bottom:20px;right:20px;background:#1a0010;color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;font-family:var(--font);z-index:200;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.on{opacity:1}
+</style>
+</head>
+<body>
+<div class="lo-ov" id="loginOv">
+  <form class="lo-card" onsubmit="doLogin(event)">
+    <h2>Cosmopolitan Party</h2>
+    <div class="lo-sub">Encomendas · Acesso</div>
+    <label>Email</label><input type="email" id="loginEmail" required autocomplete="email" autofocus/>
+    <label>Password</label><input type="password" id="loginPwd" required autocomplete="current-password"/>
+    <button type="submit" id="loginBtn">Entrar</button>
+    <div class="lo-err" id="loginErr"></div>
+  </form>
+</div>
+
+<nav>
+  <div class="logo">
+    <div class="logo-mark">🛒</div>
+    <div><div class="logo-name">Cosmopolitan Party</div><div class="logo-sub">ENCOMENDAS</div></div>
+  </div>
+  <div class="nav-status"><div class="dot" id="dot"></div><span id="statusMsg">A carregar...</span></div>
+  <button class="logout-btn" onclick="doLogout()">Sair</button>
+</nav>
+
+<div class="wrap">
+  <div class="panel">
+    <div class="panel-title">Calculadora de Encomenda</div>
+    <div class="panel-sub">Calcula automaticamente as quantidades a encomendar</div>
+
+    <div class="sec">
+      <div class="sec-label">Evento</div>
+      <div class="g2">
+        <div class="f"><label>Data</label><input id="eDate" type="date"/></div>
+        <div class="f"><label>Nº pessoas</label><input id="ePax" type="number" min="1" placeholder="50" oninput="render()"/></div>
+      </div>
+      <div class="f"><label>Cliente / Referência</label><input id="eRef" placeholder="Nome do cliente ou referência"/></div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-label">Pack de catering</div>
+      <div class="f"><select id="packSel" onchange="render()">
+        <option value="menu">Menu Completo por Pessoa (25€/p)</option>
+        <option value="kit-30">Kit 30/40 pessoas — 395€</option>
+        <option value="kit-50">Kit 50 pessoas — 515€</option>
+        <option value="kit-70">Kit 70 pessoas — 655€</option>
+        <option value="kit-100">Kit 100 pessoas — 770€</option>
+        <option value="tabuleiros">Tabuleiros quentes (4kg ≈ 20p)</option>
+      </select></div>
+    </div>
+
+    <div id="menuChoices"></div>
+    <div id="tabuleirosChoices" style="display:none"></div>
+
+    <div class="actions">
+      <button class="btn btn-p" onclick="copiarTexto()">📋 Copiar para WhatsApp</button>
+      <button class="btn btn-g" onclick="window.print()">🖨️ Imprimir</button>
+    </div>
+  </div>
+
+  <div class="output" id="output"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SB_URL='https://fsbpakhrfkrmfgpaxyly.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZzYnBha2hyZmtybWZncGF4eWx5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1NzMyMjAsImV4cCI6MjA4OTE0OTIyMH0.fkF9Ch9QvX2lecY1B2FxuDWxD4DmH4T6WAg6ggYBVlY';
+
+const $=id=>document.getElementById(id);
+const fmtKg=v=>v<1?(v*1000).toFixed(0)+' g':v.toFixed(2).replace(/\.?0+$/,'')+' kg';
+const fmtLt=v=>v.toFixed(2).replace(/\.?0+$/,'')+' L';
+const fmtUn=v=>Math.ceil(v)+' un';
+
+// Menu Completo - opções por categoria com taxa por pessoa
+const MENU = {
+  entradas: {
+    label: 'Entradas',
+    rule: 'Cada item soma — escolhe o que vais servir',
+    items: [
+      {id:'pate-atum', name:'Paté de Atum', perPax:0.05, unit:'kg', defaultOn:true},
+      {id:'pate-mar',  name:'Paté de Delícias do Mar', perPax:0.05, unit:'kg', defaultOn:true},
+      {id:'miniaturas',name:'100 Miniaturas (mini bites)', perPax:12, unit:'un', defaultOn:true},
+      {id:'tostas',    name:'Tostas', perPax:0.035, unit:'kg', defaultOn:true},
+    ]
+  },
+  principais: {
+    label: 'Pratos Principais — escolher 2',
+    rule: '0,25 kg/pessoa total dividido pelas opções escolhidas',
+    items: [
+      {id:'bacalhau', name:'Bacalhau com natas', defaultOn:true, unit:'kg'},
+      {id:'arroz-pato', name:'Arroz de pato', defaultOn:true, unit:'kg'},
+      {id:'pratos-sem', name:'Prato semanal (alternativa)', defaultOn:false, unit:'kg'},
+    ],
+    perPaxTotal: 0.25 // kg total per person across all chosen mains
+  },
+  sobremesas: {
+    label: 'Sobremesas — escolher 3',
+    rule: '0,05 kg/pessoa por opção escolhida',
+    items: [
+      {id:'arroz-doce', name:'Arroz Doce', perPax:0.05, unit:'kg', defaultOn:false},
+      {id:'cheesecake', name:'Cheesecake Morangos', perPax:0.05, unit:'kg', defaultOn:true},
+      {id:'lemon',      name:'Tarte Lemon Curd c/ Morangos', perPax:0.05, unit:'kg', defaultOn:true},
+      {id:'crumble',    name:'Crumble de Maçã', perPax:0.05, unit:'kg', defaultOn:false},
+      {id:'mousse',     name:'Bolo de Mousse de Chocolate', perPax:0.05, unit:'kg', defaultOn:true},
+    ]
+  },
+  bebidas: {
+    label: 'Bebidas — escolher 3',
+    rule: '0,25 L/pessoa por opção escolhida',
+    items: [
+      {id:'agua',     name:'Água', perPax:0.25, unit:'L', defaultOn:true},
+      {id:'icea',     name:'Icea (vários sabores)', perPax:0.25, unit:'L', defaultOn:false},
+      {id:'coca',     name:'Coca-Cola', perPax:0.25, unit:'L', defaultOn:true},
+      {id:'sumos',    name:'Sumos — Laranja e Ananás', perPax:0.25, unit:'L', defaultOn:true},
+    ]
+  }
+};
+
+// Kits com quantidades fixas
+const KITS = {
+  'kit-30': {name:'Kit 30/40 pessoas', price:395, items:[
+    {name:'Mini hot dogs', qty:50, unit:'un'},
+    {name:'Mini pizzas', qty:50, unit:'un'},
+    {name:'Mini hambúrgueres', qty:25, unit:'un'},
+    {name:'Mini salgados fritos', qty:130, unit:'un'},
+    {name:'Tábua de queijos', qty:1, unit:'un'},
+    {name:'Tábua de frutas', qty:1, unit:'un'},
+    {name:'Sopa', qty:3, unit:'L'},
+  ]},
+  'kit-50': {name:'Kit 50 pessoas', price:515, items:[
+    {name:'Mini hot dogs', qty:50, unit:'un'},
+    {name:'Mini pizzas', qty:50, unit:'un'},
+    {name:'Mini hambúrgueres', qty:50, unit:'un'},
+    {name:'Mini salgados fritos', qty:130, unit:'un'},
+    {name:'Tábua de queijos', qty:1, unit:'un'},
+    {name:'Tábua de frutas', qty:1, unit:'un'},
+    {name:'Tábua mexicana', qty:1, unit:'un'},
+    {name:'Sopa', qty:5, unit:'L'},
+  ]},
+  'kit-70': {name:'Kit 70 pessoas', price:655, items:[
+    {name:'Mini hot dogs', qty:75, unit:'un'},
+    {name:'Mini pizzas', qty:75, unit:'un'},
+    {name:'Mini hambúrgueres', qty:50, unit:'un'},
+    {name:'Mini salgados fritos', qty:260, unit:'un'},
+    {name:'Tábua de queijos', qty:1, unit:'un'},
+    {name:'Tábua de frutas', qty:1, unit:'un'},
+    {name:'Tábua mexicana', qty:1, unit:'un'},
+    {name:'Sopa', qty:10, unit:'L'},
+  ]},
+  'kit-100': {name:'Kit 100 pessoas', price:770, items:[
+    {name:'Mini hot dogs', qty:100, unit:'un'},
+    {name:'Mini pizzas', qty:100, unit:'un'},
+    {name:'Mini hambúrgueres', qty:75, unit:'un'},
+    {name:'Mini salgados fritos', qty:260, unit:'un'},
+    {name:'Tábua de queijos', qty:1, unit:'un'},
+    {name:'Tábua de frutas', qty:1, unit:'un'},
+    {name:'Tábua mexicana', qty:1, unit:'un'},
+    {name:'Sopa', qty:10, unit:'L'},
+  ]},
+};
+
+// Tabuleiros
+const TABULEIROS = [
+  {id:'tab-pato',  name:'Arroz de Pato (4 kg)',  price:165, paxPerTab:20, defaultOn:true},
+  {id:'tab-bacalhau', name:'Bacalhau com Natas (4 kg)', price:195, paxPerTab:20, defaultOn:true},
+];
+
+let sb=null;
+
+async function init(){
+  $('eDate').value = new Date().toISOString().slice(0,10);
+  $('ePax').value = 50;
+  buildMenuChoices();
+  buildTabuleirosChoices();
+  render();
+  try{ sb = window.supabase.createClient(SB_URL, SB_KEY); }catch(e){ $('statusMsg').textContent='Offline'; return; }
+  const {data:{session}} = await sb.auth.getSession();
+  if(!session){ $('loginOv').classList.add('on'); $('statusMsg').textContent='Sessão necessária'; return; }
+  $('statusMsg').textContent='Ligado'; $('dot').className='dot ok';
+}
+
+async function doLogin(e){
+  e.preventDefault();
+  const email=$('loginEmail').value.trim(), password=$('loginPwd').value;
+  const btn=$('loginBtn'); btn.textContent='A entrar…'; btn.disabled=true;
+  $('loginErr').textContent='';
+  const {error}=await sb.auth.signInWithPassword({email,password});
+  if(error){ $('loginErr').textContent='Credenciais inválidas.'; btn.textContent='Entrar'; btn.disabled=false; return; }
+  location.reload();
+}
+async function doLogout(){ await sb.auth.signOut(); location.reload(); }
+
+function buildMenuChoices(){
+  let html = '';
+  Object.entries(MENU).forEach(([key, group])=>{
+    html += '<div class="sec"><div class="sec-label">'+group.label+'</div>';
+    html += '<div class="note" style="margin-bottom:8px">'+group.rule+'</div>';
+    group.items.forEach(it=>{
+      const checked = it.defaultOn ? 'checked' : '';
+      const onCls = it.defaultOn ? ' on' : '';
+      let rate = '';
+      if(it.perPax !== undefined){
+        rate = it.perPax + ' ' + it.unit + '/p';
+      } else if(group.perPaxTotal){
+        rate = '— ratio dinâmico —';
+      }
+      html += '<label class="choice'+onCls+'" data-group="'+key+'">';
+      html += '<input type="checkbox" id="ch-'+it.id+'" data-id="'+it.id+'" data-group="'+key+'" '+checked+' onchange="onChoiceChange(this)"/>';
+      html += '<span class="choice-name">'+it.name+'</span>';
+      html += '<span class="choice-rate">'+rate+'</span>';
+      html += '</label>';
+    });
+    html += '</div>';
+  });
+  $('menuChoices').innerHTML = html;
+}
+
+function buildTabuleirosChoices(){
+  let html = '<div class="sec"><div class="sec-label">Tabuleiros — escolher</div>';
+  html += '<div class="note" style="margin-bottom:8px">Cada tabuleiro 4kg serve ≈ 20 pessoas. O número de tabuleiros é arredondado para cima.</div>';
+  TABULEIROS.forEach(it=>{
+    const checked = it.defaultOn ? 'checked' : '';
+    const onCls = it.defaultOn ? ' on' : '';
+    html += '<label class="choice'+onCls+'" data-group="tabuleiros">';
+    html += '<input type="checkbox" id="ch-'+it.id+'" data-id="'+it.id+'" data-group="tabuleiros" '+checked+' onchange="onChoiceChange(this)"/>';
+    html += '<span class="choice-name">'+it.name+'</span>';
+    html += '<span class="choice-rate">'+it.price+' € · ≈'+it.paxPerTab+'p</span>';
+    html += '</label>';
+  });
+  html += '</div>';
+  $('tabuleirosChoices').innerHTML = html;
+}
+
+function onChoiceChange(cb){
+  cb.closest('.choice').classList.toggle('on', cb.checked);
+  render();
+}
+
+function getPax(){ return Math.max(0, +$('ePax').value || 0); }
+function getPack(){ return $('packSel').value; }
+
+function render(){
+  const pack = getPack();
+  // toggle conditional sections
+  $('menuChoices').style.display       = (pack==='menu')        ? 'block':'none';
+  $('tabuleirosChoices').style.display = (pack==='tabuleiros')  ? 'block':'none';
+
+  let html = '';
+  // header
+  const pax = getPax();
+  const date = $('eDate').value;
+  const ref  = $('eRef').value;
+  const dStr = date ? new Intl.DateTimeFormat('pt-PT').format(new Date(date+'T00:00:00')) : '—';
+  html += '<header class="out-hdr">';
+  html += '<div class="out-hdr-l"><div class="brand">Cosmopolitan Party</div>';
+  html += '<h1>Lista a encomendar</h1>';
+  html += '<p>'+(ref?esc(ref)+' · ':'')+'Evento '+esc(dStr)+'</p></div>';
+  html += '<div class="out-hdr-r"><div class="pax-l">Pessoas</div><div class="pax">'+pax+'</div></div>';
+  html += '</header>';
+
+  // Pack box
+  html += '<div class="out-pack">';
+  if(pack==='menu'){
+    html += '<div class="out-pack-name">Menu Completo por Pessoa</div>';
+    html += '<div class="out-pack-desc">25 €/pessoa · entradas + 2 principais + 3 sobremesas + 3 bebidas</div>';
+  } else if(pack==='tabuleiros'){
+    html += '<div class="out-pack-name">Tabuleiros Quentes</div>';
+    html += '<div class="out-pack-desc">Tabuleiros de 4 kg que servem aproximadamente 20 pessoas cada.</div>';
+  } else {
+    const k = KITS[pack];
+    html += '<div class="out-pack-name">'+k.name+'</div>';
+    html += '<div class="out-pack-desc">'+k.price+' € · pack com quantidades fixas (não escala com nº pessoas)</div>';
+  }
+  html += '</div>';
+
+  // Items
+  if(pack==='menu'){
+    Object.entries(MENU).forEach(([key, group])=>{
+      const chosen = group.items.filter(it=>$('ch-'+it.id) && $('ch-'+it.id).checked);
+      if(!chosen.length) return;
+      html += '<div class="tbl-grp"><div class="tbl-grp-h">'+group.label+'</div>';
+      html += '<table class="tbl"><thead><tr><th>Item</th><th>Qtd</th><th>Un.</th><th>Por pessoa</th></tr></thead><tbody>';
+      if(group.perPaxTotal){
+        const perItem = group.perPaxTotal / chosen.length;
+        chosen.forEach(it=>{
+          const total = perItem * pax;
+          html += '<tr><td>'+esc(it.name)+'</td><td>'+formatQty(total, it.unit)+'</td><td>'+esc(it.unit)+'</td><td>'+(perItem*1000).toFixed(0)+' g/p</td></tr>';
+        });
+      } else {
+        chosen.forEach(it=>{
+          const total = it.perPax * pax;
+          html += '<tr><td>'+esc(it.name)+'</td><td>'+formatQty(total, it.unit)+'</td><td>'+esc(it.unit)+'</td><td>'+rateLabel(it.perPax, it.unit)+'</td></tr>';
+        });
+      }
+      html += '</tbody></table></div>';
+    });
+  } else if(pack==='tabuleiros'){
+    const chosen = TABULEIROS.filter(it=>$('ch-'+it.id) && $('ch-'+it.id).checked);
+    if(chosen.length){
+      html += '<div class="tbl-grp"><div class="tbl-grp-h">Tabuleiros a encomendar</div>';
+      html += '<table class="tbl"><thead><tr><th>Item</th><th>Qtd</th><th>Un.</th><th>Custo</th></tr></thead><tbody>';
+      let totalCusto = 0;
+      chosen.forEach(it=>{
+        const tabs = pax > 0 ? Math.ceil(pax / it.paxPerTab) : 0;
+        const custo = tabs * it.price;
+        totalCusto += custo;
+        html += '<tr><td>'+esc(it.name)+'</td><td>'+tabs+'</td><td>tabuleiros</td><td>'+(custo)+' €</td></tr>';
+      });
+      html += '<tr><td colspan="3" style="text-align:right;font-weight:700">Custo total tabuleiros</td><td style="font-weight:700;color:var(--pink)">'+totalCusto+' €</td></tr>';
+      html += '</tbody></table></div>';
+      html += '<div class="warn">Os tabuleiros podem ser adicionados ao Menu Completo ou às encomendas avulsas.</div>';
+    }
+  } else {
+    const k = KITS[pack];
+    html += '<div class="tbl-grp"><div class="tbl-grp-h">Conteúdo do '+esc(k.name)+'</div>';
+    html += '<table class="tbl"><thead><tr><th>Item</th><th>Qtd</th><th>Un.</th><th></th></tr></thead><tbody>';
+    k.items.forEach(it=>{
+      html += '<tr><td>'+esc(it.name)+'</td><td>'+it.qty+'</td><td>'+esc(it.unit)+'</td><td></td></tr>';
+    });
+    html += '</tbody></table></div>';
+    html += '<div class="warn">Pack com quantidades fixas. Independente do nº de pessoas inserido.</div>';
+  }
+
+  $('output').innerHTML = html;
+}
+
+function formatQty(v, unit){
+  if(unit==='kg') return fmtKg(v);
+  if(unit==='L') return fmtLt(v);
+  return Math.ceil(v) + ' un';
+}
+function rateLabel(perPax, unit){
+  if(unit==='kg') return (perPax*1000).toFixed(0)+' g/p';
+  if(unit==='L') return (perPax*1000).toFixed(0)+' ml/p';
+  return perPax + ' un/p';
+}
+
+function copiarTexto(){
+  const pack = getPack();
+  const pax = getPax();
+  const date = $('eDate').value;
+  const ref  = $('eRef').value;
+  const dStr = date ? new Intl.DateTimeFormat('pt-PT').format(new Date(date+'T00:00:00')) : '—';
+  let lines = [];
+  lines.push('🛒 *Encomenda Cosmopolitan Party*');
+  if(ref) lines.push('Cliente: '+ref);
+  lines.push('Evento: '+dStr+' — '+pax+' pessoas');
+  lines.push('');
+  if(pack==='menu'){
+    lines.push('*Menu Completo por Pessoa*');
+    lines.push('');
+    Object.entries(MENU).forEach(([key, group])=>{
+      const chosen = group.items.filter(it=>$('ch-'+it.id) && $('ch-'+it.id).checked);
+      if(!chosen.length) return;
+      lines.push('▸ '+group.label);
+      if(group.perPaxTotal){
+        const perItem = group.perPaxTotal / chosen.length;
+        chosen.forEach(it=>{ lines.push('  • '+it.name+': '+formatQty(perItem*pax, it.unit)); });
+      } else {
+        chosen.forEach(it=>{ lines.push('  • '+it.name+': '+formatQty(it.perPax*pax, it.unit)); });
+      }
+      lines.push('');
+    });
+  } else if(pack==='tabuleiros'){
+    lines.push('*Tabuleiros Quentes*');
+    lines.push('');
+    let totalCusto = 0;
+    TABULEIROS.filter(it=>$('ch-'+it.id) && $('ch-'+it.id).checked).forEach(it=>{
+      const tabs = pax > 0 ? Math.ceil(pax / it.paxPerTab) : 0;
+      const custo = tabs * it.price;
+      totalCusto += custo;
+      lines.push('• '+it.name+' — '+tabs+' tabuleiro'+(tabs!==1?'s':'')+' ('+custo+'€)');
+    });
+    lines.push('');
+    lines.push('Custo total: '+totalCusto+' €');
+  } else {
+    const k = KITS[pack];
+    lines.push('*'+k.name+' — '+k.price+'€*');
+    lines.push('');
+    k.items.forEach(it=>{ lines.push('• '+it.name+': '+it.qty+' '+it.unit); });
+  }
+  const txt = lines.join('\n');
+  navigator.clipboard.writeText(txt).then(()=>toast('✓ Copiado para clipboard')).catch(()=>{
+    // Fallback: select temp textarea
+    const ta = document.createElement('textarea'); ta.value=txt; document.body.appendChild(ta);
+    ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+    toast('✓ Copiado');
+  });
+}
+
+function esc(s){ return String(s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+let toastTimer;
+function toast(msg){
+  const t=$('toast'); t.textContent=msg; t.classList.add('on');
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('on'), 2200);
+}
+
+// Bind eRef and eDate to render
+$('eRef').addEventListener('input', render);
+$('eDate').addEventListener('change', render);
+
+init();
+</script>
+</body>
+</html>
