@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Cosmopolitan Party — Inventário</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--pink:#e0187a;--pink2:#ff4da6;--pink3:#fce4ec;--dark:#1a0010;--text:#2d0020;--muted:#8a5a70;--border:#f0c8dc;--bg:#f8f0f5;--card:#fff;--font:'DM Sans',Arial,sans-serif;
+ --ok:#1a7a4a;--ok-bg:#e8f5e9;--low:#c07000;--low-bg:#fff8e1;--missing:#c0143c;--missing-bg:#fce4ec;--broken:#5a3a78;--broken-bg:#ede7f6}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh}
+
+nav{background:linear-gradient(135deg,#1a0010,#3d0030);height:52px;display:flex;align-items:center;padding:0 24px;gap:0;box-shadow:0 2px 12px rgba(0,0,0,.2)}
+.logo{display:flex;align-items:center;gap:10px;margin-right:28px}
+.logo-mark{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--pink),var(--pink2));display:flex;align-items:center;justify-content:center;font-size:15px}
+.logo-name{font-size:13px;font-weight:700;color:#fff}.logo-sub{font-size:10px;color:rgba(255,180,220,.5);letter-spacing:.5px}
+.nav-status{margin-left:auto;font-size:11px;color:rgba(255,180,220,.6);display:flex;align-items:center;gap:6px}
+.dot{width:7px;height:7px;border-radius:50%;background:#ef4444;flex-shrink:0}.dot.ok{background:#34d399}
+.logout-btn{background:none;border:1px solid rgba(255,255,255,.3);border-radius:8px;padding:6px 10px;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.7);cursor:pointer;margin-left:14px;font-family:var(--font)}
+.logout-btn:hover{color:#fff;border-color:#fff}
+
+.wrap{max-width:1100px;margin:0 auto;padding:20px}
+
+/* STATS */
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 14px}
+.stat-l{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.6px;text-transform:uppercase;margin-bottom:4px}
+.stat-v{font-size:22px;font-weight:800;color:var(--text)}
+.stat.ok .stat-v{color:var(--ok)}.stat.low .stat-v{color:var(--low)}
+.stat.missing .stat-v{color:var(--missing)}.stat.broken .stat-v{color:var(--broken)}
+
+/* FILTERS */
+.filters{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 14px;margin-bottom:16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.search{flex:1;min-width:220px;border:1px solid var(--border);border-radius:9px;padding:9px 12px;font-size:13px;font-family:var(--font);outline:none}
+.search:focus{border-color:var(--pink)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--border);border-radius:20px;padding:6px 12px;font-size:12px;font-weight:600;color:var(--muted);background:#fff;cursor:pointer;font-family:var(--font);transition:all .15s}
+.chip.on{border-color:var(--pink);background:var(--pink3);color:var(--pink)}
+.chip:hover{border-color:var(--pink)}
+
+/* CATEGORY */
+.cat{background:var(--card);border:1px solid var(--border);border-radius:14px;margin-bottom:14px;overflow:hidden}
+.cat-hdr{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.cat-name{font-size:14px;font-weight:700}
+.cat-meta{font-size:11px;color:var(--muted)}
+.cat-actions{display:flex;gap:6px}
+.btn-add{border:1px dashed var(--border);background:none;border-radius:8px;padding:6px 12px;font-size:12px;color:var(--muted);cursor:pointer;font-family:var(--font);transition:all .15s}
+.btn-add:hover{border-color:var(--pink);color:var(--pink);border-style:solid}
+
+/* ROW */
+.row{display:grid;grid-template-columns:90px 1fr auto;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid #f7e0ec;transition:background .15s}
+.row:last-child{border-bottom:none}
+.row:hover{background:#fdf6fa}
+.row-desc{font-size:13px;line-height:1.4}
+.row-desc input{width:100%;border:none;background:none;font-size:13px;font-family:var(--font);color:var(--text);padding:4px 6px;border-radius:6px;outline:none}
+.row-desc input:focus{background:#fff;box-shadow:inset 0 0 0 1px var(--border)}
+.row-notes{font-size:11px;color:var(--muted);margin-top:2px;font-style:italic}
+.row-notes input{width:100%;border:none;background:none;font-size:11px;font-family:var(--font);color:var(--muted);font-style:italic;padding:2px 6px;border-radius:6px;outline:none}
+.row-notes input:focus{background:#fff;box-shadow:inset 0 0 0 1px var(--border);font-style:normal}
+.row-actions{display:flex;gap:6px;align-items:center}
+.btn-del{border:none;background:none;color:#ccc;cursor:pointer;font-size:18px;line-height:1;padding:4px 8px;transition:color .15s}
+.btn-del:hover{color:var(--missing)}
+
+/* STATUS PILL */
+.pill{border:none;border-radius:20px;padding:5px 10px;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;font-family:var(--font);transition:all .15s;width:88px;text-align:center}
+.pill.ok{background:var(--ok-bg);color:var(--ok)}
+.pill.low{background:var(--low-bg);color:var(--low)}
+.pill.missing{background:var(--missing-bg);color:var(--missing)}
+.pill.broken{background:var(--broken-bg);color:var(--broken)}
+.pill:hover{transform:scale(1.05)}
+
+/* NEW ITEM FORM */
+.new-row{display:grid;grid-template-columns:1fr auto;gap:8px;padding:12px 16px;background:#fdf6fa;border-bottom:1px solid #f7e0ec}
+.new-row input{border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;font-family:var(--font);outline:none}
+.new-row input:focus{border-color:var(--pink)}
+.new-row-actions{display:flex;gap:6px}
+.btn{border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);transition:all .15s}
+.btn-p{background:linear-gradient(135deg,var(--pink),var(--pink2));color:#fff}.btn-p:hover{opacity:.88}
+.btn-g{background:var(--pink3);color:var(--pink);border:1px solid rgba(224,24,122,.2)}.btn-g:hover{background:#f8b4d4}
+
+.empty{text-align:center;padding:36px;color:var(--muted);font-size:13px}
+.toast{position:fixed;bottom:20px;right:20px;background:#1a0010;color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;font-family:var(--font);z-index:200;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.on{opacity:1}
+
+/* LOGIN */
+.lo-ov{display:none;position:fixed;inset:0;background:linear-gradient(135deg,#fdf2f8,#fce7f3);z-index:9999;align-items:center;justify-content:center;padding:20px}
+.lo-ov.on{display:flex}
+.lo-card{background:#fff;border-radius:18px;padding:32px 28px;box-shadow:0 20px 60px rgba(224,24,122,.18);max-width:380px;width:100%;font-family:var(--font)}
+.lo-card h2{font-size:22px;margin:0 0 4px;color:var(--pink);font-weight:700}
+.lo-card .lo-sub{font-size:11px;color:var(--muted);margin-bottom:22px;letter-spacing:1.5px;text-transform:uppercase}
+.lo-card label{display:block;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin:14px 0 4px;font-weight:700}
+.lo-card input{width:100%;border:1px solid var(--border);border-radius:9px;padding:11px 12px;font-size:14px;font-family:var(--font);outline:none;box-sizing:border-box}
+.lo-card input:focus{border-color:var(--pink)}
+.lo-card button{width:100%;margin-top:18px;background:var(--pink);color:#fff;border:none;border-radius:10px;padding:13px;font-size:14px;font-weight:600;font-family:var(--font);cursor:pointer}
+.lo-card button:hover{opacity:.9}
+.lo-card .lo-err{margin-top:12px;font-size:12px;color:#c53030;min-height:14px}
+
+@media(max-width:700px){
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .row{grid-template-columns:80px 1fr auto;gap:8px;padding:10px 12px}
+  .pill{width:78px;padding:4px 8px}
+}
+</style>
+</head>
+<body>
+<div class="lo-ov" id="loginOv">
+  <form class="lo-card" onsubmit="doLogin(event)">
+    <h2>Cosmopolitan Party</h2>
+    <div class="lo-sub">Inventário · Acesso</div>
+    <label>Email</label>
+    <input type="email" id="loginEmail" required autocomplete="email" autofocus/>
+    <label>Password</label>
+    <input type="password" id="loginPwd" required autocomplete="current-password"/>
+    <button type="submit" id="loginBtn">Entrar</button>
+    <div class="lo-err" id="loginErr"></div>
+  </form>
+</div>
+
+<nav>
+  <div class="logo">
+    <div class="logo-mark">📦</div>
+    <div><div class="logo-name">Cosmopolitan Party</div><div class="logo-sub">INVENTÁRIO</div></div>
+  </div>
+  <div class="nav-status"><div class="dot" id="dot"></div><span id="statusMsg">A carregar...</span></div>
+  <button class="logout-btn" onclick="doLogout()">Sair</button>
+</nav>
+
+<div class="wrap">
+  <div class="stats">
+    <div class="stat"><div class="stat-l">Total</div><div class="stat-v" id="sTotal">—</div></div>
+    <div class="stat ok"><div class="stat-l">✓ Em stock</div><div class="stat-v" id="sOk">—</div></div>
+    <div class="stat low"><div class="stat-l">⚠ Atenção</div><div class="stat-v" id="sLow">—</div></div>
+    <div class="stat missing"><div class="stat-l">✕ Em falta</div><div class="stat-v" id="sMissing">—</div></div>
+    <div class="stat broken"><div class="stat-l">⚡ Partido</div><div class="stat-v" id="sBroken">—</div></div>
+  </div>
+
+  <div class="filters">
+    <input class="search" id="search" placeholder="Pesquisar item..." oninput="render()"/>
+    <div class="chips">
+      <button class="chip on" data-type="all" onclick="setType('all',this)">Tudo</button>
+      <button class="chip" data-type="decoracao_catering" onclick="setType('decoracao_catering',this)">Decoração &amp; Catering</button>
+      <button class="chip" data-type="geral" onclick="setType('geral',this)">Geral</button>
+    </div>
+    <div class="chips">
+      <button class="chip on" data-status="all" onclick="setStatus('all',this)">Todos os estados</button>
+      <button class="chip" data-status="ok" onclick="setStatus('ok',this)">✓ Em stock</button>
+      <button class="chip" data-status="low" onclick="setStatus('low',this)">⚠ Atenção</button>
+      <button class="chip" data-status="missing" onclick="setStatus('missing',this)">✕ Em falta</button>
+      <button class="chip" data-status="broken" onclick="setStatus('broken',this)">⚡ Partido</button>
+    </div>
+  </div>
+
+  <div id="content"><div class="empty">A carregar...</div></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SB_URL = 'https://fsbpakhrfkrmfgpaxyly.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZzYnBha2hyZmtybWZncGF4eWx5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1NzMyMjAsImV4cCI6MjA4OTE0OTIyMH0.fkF9Ch9QvX2lecY1B2FxuDWxD4DmH4T6WAg6ggYBVlY';
+
+const STATUS_LABELS = {ok:'Em stock', low:'Atenção', missing:'Em falta', broken:'Partido'};
+const STATUS_NEXT  = {ok:'low', low:'missing', missing:'broken', broken:'ok'};
+const TYPE_LABELS  = {decoracao_catering:'Decoração & Catering', geral:'Geral'};
+
+let sb = null;
+let items = [];
+let filterType = 'all';
+let filterStatus = 'all';
+const $ = id => document.getElementById(id);
+
+async function init(){
+  try{
+    sb = window.supabase.createClient(SB_URL, SB_KEY);
+  }catch(e){
+    $('statusMsg').textContent = 'Offline';
+    return;
+  }
+  const {data:{session}} = await sb.auth.getSession();
+  if(!session){ $('loginOv').classList.add('on'); $('statusMsg').textContent='Sessão necessária'; return; }
+  $('statusMsg').textContent = 'Ligado';
+  $('dot').className = 'dot ok';
+  await loadItems();
+}
+
+async function doLogin(e){
+  e.preventDefault();
+  const email = $('loginEmail').value.trim();
+  const password = $('loginPwd').value;
+  const btn = $('loginBtn'); btn.textContent='A entrar…'; btn.disabled=true;
+  $('loginErr').textContent = '';
+  const {error} = await sb.auth.signInWithPassword({email, password});
+  if(error){ $('loginErr').textContent='Credenciais inválidas.'; btn.textContent='Entrar'; btn.disabled=false; return; }
+  location.reload();
+}
+async function doLogout(){ await sb.auth.signOut(); location.reload(); }
+
+async function loadItems(){
+  const {data, error} = await sb.from('cp_inventory').select('*').order('inventory_type').order('category').order('sort_order');
+  if(error){ toast('Erro: '+error.message); return; }
+  items = data || [];
+  render();
+}
+
+function setType(t, btn){
+  filterType = t;
+  document.querySelectorAll('[data-type]').forEach(c=>c.classList.remove('on'));
+  btn.classList.add('on');
+  render();
+}
+function setStatus(s, btn){
+  filterStatus = s;
+  document.querySelectorAll('[data-status]').forEach(c=>c.classList.remove('on'));
+  btn.classList.add('on');
+  render();
+}
+
+function filtered(){
+  const q = $('search').value.toLowerCase().trim();
+  return items.filter(it=>{
+    if(filterType!=='all' && it.inventory_type!==filterType) return false;
+    if(filterStatus!=='all' && it.status!==filterStatus) return false;
+    if(q && !((it.description||'').toLowerCase().includes(q) || (it.notes||'').toLowerCase().includes(q) || (it.category||'').toLowerCase().includes(q))) return false;
+    return true;
+  });
+}
+
+function render(){
+  const data = filtered();
+  // Stats: count from full items list (unfiltered) for the active type
+  const scope = items.filter(it=>filterType==='all' || it.inventory_type===filterType);
+  $('sTotal').textContent = scope.length;
+  $('sOk').textContent = scope.filter(i=>i.status==='ok').length;
+  $('sLow').textContent = scope.filter(i=>i.status==='low').length;
+  $('sMissing').textContent = scope.filter(i=>i.status==='missing').length;
+  $('sBroken').textContent = scope.filter(i=>i.status==='broken').length;
+
+  if(!data.length){ $('content').innerHTML = '<div class="empty">Sem itens com estes filtros.</div>'; return; }
+
+  // Group by inventory_type → category
+  const byTypeCat = {};
+  data.forEach(it=>{
+    const t = it.inventory_type;
+    if(!byTypeCat[t]) byTypeCat[t] = {};
+    if(!byTypeCat[t][it.category]) byTypeCat[t][it.category] = [];
+    byTypeCat[t][it.category].push(it);
+  });
+
+  let html = '';
+  Object.keys(byTypeCat).sort().forEach(type=>{
+    const typeLabel = TYPE_LABELS[type] || type;
+    Object.keys(byTypeCat[type]).forEach(cat=>{
+      const list = byTypeCat[type][cat];
+      const okCount = list.filter(i=>i.status==='ok').length;
+      html += '<div class="cat">';
+      html += '<div class="cat-hdr">';
+      html += '<div><div class="cat-name">'+esc(cat)+'</div><div class="cat-meta">'+esc(typeLabel)+' · '+okCount+'/'+list.length+' em stock</div></div>';
+      html += '<div class="cat-actions"><button class="btn-add" onclick="abrirNovo(\''+esc(type)+'\',\''+esc(cat)+'\')">+ Novo item</button></div>';
+      html += '</div>';
+      html += '<div id="new-form-'+slug(type+cat)+'"></div>';
+      list.forEach(it=>{
+        html += '<div class="row">';
+        html += '<button class="pill '+it.status+'" onclick="cycleStatus(\''+it.id+'\')" title="Clica para mudar estado">'+(STATUS_LABELS[it.status]||it.status)+'</button>';
+        html += '<div>';
+        html += '<div class="row-desc"><input type="text" value="'+escAttr(it.description||'')+'" data-id="'+it.id+'" data-field="description" onblur="saveField(this)"/></div>';
+        html += '<div class="row-notes"><input type="text" value="'+escAttr(it.notes||'')+'" data-id="'+it.id+'" data-field="notes" placeholder="+ adicionar nota (opcional)" onblur="saveField(this)"/></div>';
+        html += '</div>';
+        html += '<div class="row-actions"><button class="btn-del" onclick="apagar(\''+it.id+'\')" title="Apagar">×</button></div>';
+        html += '</div>';
+      });
+      html += '</div>';
+    });
+  });
+  $('content').innerHTML = html;
+}
+
+async function cycleStatus(id){
+  const it = items.find(x=>x.id===id);
+  if(!it) return;
+  const next = STATUS_NEXT[it.status] || 'ok';
+  it.status = next;
+  render();
+  const {error} = await sb.from('cp_inventory').update({status:next, updated_at:new Date().toISOString()}).eq('id',id);
+  if(error){ toast('Erro a guardar: '+error.message); await loadItems(); return; }
+  toast('Estado: '+STATUS_LABELS[next]);
+}
+
+async function saveField(input){
+  const id = input.dataset.id, field = input.dataset.field;
+  const val = input.value.trim() || null;
+  const it = items.find(x=>x.id===id);
+  if(!it || it[field]===val) return;
+  it[field] = val;
+  const payload = {[field]:val, updated_at:new Date().toISOString()};
+  const {error} = await sb.from('cp_inventory').update(payload).eq('id',id);
+  if(error){ toast('Erro a guardar: '+error.message); await loadItems(); return; }
+  toast('✓ Guardado');
+}
+
+async function apagar(id){
+  const it = items.find(x=>x.id===id);
+  if(!it) return;
+  if(!confirm('Apagar "'+it.description+'"?')) return;
+  const {error} = await sb.from('cp_inventory').delete().eq('id',id);
+  if(error){ toast('Erro: '+error.message); return; }
+  items = items.filter(x=>x.id!==id);
+  render();
+  toast('✓ Apagado');
+}
+
+function abrirNovo(type, category){
+  const slugId = slug(type+category);
+  const host = $('new-form-'+slugId);
+  if(!host) return;
+  if(host.innerHTML){ host.innerHTML=''; return; }
+  host.innerHTML =
+    '<div class="new-row">'+
+      '<input type="text" id="ni-desc-'+slugId+'" placeholder="Descrição do novo item" autofocus/>'+
+      '<div class="new-row-actions">'+
+        '<button class="btn btn-p" onclick="confirmarNovo(\''+escAttr(type)+'\',\''+escAttr(category)+'\',\''+slugId+'\')">Adicionar</button>'+
+        '<button class="btn btn-g" onclick="document.getElementById(\'new-form-'+slugId+'\').innerHTML=\'\'">Cancelar</button>'+
+      '</div>'+
+    '</div>';
+  $('ni-desc-'+slugId).focus();
+  $('ni-desc-'+slugId).addEventListener('keydown', e=>{ if(e.key==='Enter') confirmarNovo(type, category, slugId); });
+}
+
+async function confirmarNovo(type, category, slugId){
+  const desc = $('ni-desc-'+slugId).value.trim();
+  if(!desc){ toast('Descrição obrigatória'); return; }
+  const sortMax = Math.max(0, ...items.filter(i=>i.inventory_type===type && i.category===category).map(i=>i.sort_order||0));
+  const payload = {inventory_type:type, category:category, description:desc, status:'ok', sort_order:sortMax+1};
+  const {data, error} = await sb.from('cp_inventory').insert([payload]).select().single();
+  if(error){ toast('Erro: '+error.message); return; }
+  items.push(data);
+  render();
+  toast('✓ Item adicionado');
+}
+
+function esc(s){ return String(s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function escAttr(s){ return String(s||'').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+function slug(s){ return String(s).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''); }
+
+let toastTimer;
+function toast(msg){
+  const t = $('toast'); t.textContent = msg; t.classList.add('on');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('on'), 2200);
+}
+
+init();
+</script>
+</body>
+</html>
