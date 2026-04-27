@@ -422,12 +422,12 @@ input[type=checkbox]{width:16px;height:16px;accent-color:var(--pink);cursor:poin
         <table class="totals">
           <tr id="packTotalRow"><td id="packLabel">Pack base</td><td id="sumPack">0 €</td></tr>
           <tr id="decoRow" style="display:none"><td id="decoLabel">Decoração</td><td id="sumDeco">0 €</td></tr>
-          <tr><td>Extras</td><td id="sumExtras">0 €</td></tr>
+          <tr id="extrasRow"><td>Extras</td><td id="sumExtras">0 €</td></tr>
           <tr id="ivaRow" style="display:none"><td>IVA (23%)</td><td id="sumIva">0 €</td></tr>
-          <tr><td>Desconto</td><td id="sumDiscount">—</td></tr>
+          <tr id="discountRow"><td>Desconto</td><td id="sumDiscount">—</td></tr>
           <tr class="tr-total"><td>Total</td><td id="sumTotal">0 €</td></tr>
-          <tr><td>Sinal pago</td><td id="sumDeposit">0 €</td></tr>
-          <tr class="tr-due"><td><strong>Valor em falta</strong></td><td id="sumDue">0 €</td></tr>
+          <tr id="depositRow"><td>Sinal pago</td><td id="sumDeposit">0 €</td></tr>
+          <tr class="tr-due" id="dueRow"><td><strong>Valor em falta</strong></td><td id="sumDue">0 €</td></tr>
         </table>
       </div>
 
@@ -1088,12 +1088,16 @@ function updatePreview(){
   } else {
     $('decoRow').style.display='none';
   }
+  $('extrasRow').style.display = extrasTotal>0 ? '' : 'none';
   $('sumExtras').textContent=eur(extrasTotal);
   $('ivaRow').style.display=$('ivaToggle').checked?'':'none';
   $('sumIva').textContent=eur(iva);
+  $('discountRow').style.display = disc>0 ? '' : 'none';
   $('sumDiscount').textContent=disc>0?'− '+eur(disc):'—';
   $('sumTotal').textContent=eur(total);
+  $('depositRow').style.display = dep>0 ? '' : 'none';
   $('sumDeposit').textContent=eur(dep);
+  $('dueRow').style.display = dep>0 ? '' : 'none';
   $('sumDue').textContent=eur(due);
 
   // ── Conditions ────────────────────────────────────────────────────
