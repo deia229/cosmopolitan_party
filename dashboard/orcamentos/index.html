@@ -278,7 +278,7 @@ input[type=checkbox]{width:16px;height:16px;accent-color:var(--pink);cursor:poin
 
     <div class="sec">
       <div class="sec-label">Pack</div>
-      <div class="f"><label>Selecionar pack</label><select id="packSel"><option value="">Sem pack (só espaço)</option></select></div>
+      <div class="f"><label>Selecionar pack</label><select id="packSel"><option value="">Sem pack (só espaço)</option><option value="no-space">Sem espaço (cliente já alugou)</option></select></div>
       <div style="font-size:12px;color:var(--muted);margin-top:4px" id="packHint">Sem pack: aluguer do espaço — 300€ até 5h ou 650€ dia inteiro.</div>
     </div>
 
@@ -319,6 +319,11 @@ input[type=checkbox]{width:16px;height:16px;accent-color:var(--pink);cursor:poin
           </div>
         </div>
         <div style="font-size:11px;color:var(--muted);margin-top:2px" id="decoMarginInfo"></div>
+        <div class="f" style="margin-top:8px">
+          <label>Fotos de inspiração <span style="color:var(--muted);font-weight:400">(2ª página do PDF)</span></label>
+          <input type="file" id="decoPhotosInput" multiple accept="image/*" onchange="addDecoPhotos(event)" style="font-size:11px;padding:6px"/>
+          <div id="decoPhotosPreview" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px"></div>
+        </div>
       </div>
     </div>
 
@@ -414,7 +419,7 @@ input[type=checkbox]{width:16px;height:16px;accent-color:var(--pink);cursor:poin
       <div class="ds">
         <h2>Resumo financeiro</h2>
         <table class="totals">
-          <tr><td id="packLabel">Pack base</td><td id="sumPack">0 €</td></tr>
+          <tr id="packTotalRow"><td id="packLabel">Pack base</td><td id="sumPack">0 €</td></tr>
           <tr id="decoRow" style="display:none"><td id="decoLabel">Decoração</td><td id="sumDeco">0 €</td></tr>
           <tr><td>Extras</td><td id="sumExtras">0 €</td></tr>
           <tr id="ivaRow" style="display:none"><td>IVA (23%)</td><td id="sumIva">0 €</td></tr>
@@ -435,6 +440,13 @@ input[type=checkbox]{width:16px;height:16px;accent-color:var(--pink);cursor:poin
       <div class="ds" id="obsSection" style="display:none">
         <h2>Observações</h2>
         <div id="pObs" style="font-size:13px;color:#555;line-height:1.6"></div>
+      </div>
+
+      <!-- Fotos de inspiração (2ª página) -->
+      <div class="ds" id="decoPhotosSection" style="display:none;page-break-before:always;padding-top:8px">
+        <h2 id="decoPhotosTitle">Inspiração de Decoração</h2>
+        <div id="decoPhotosIntro" style="font-size:12px;color:#666;margin-bottom:12px;line-height:1.5"></div>
+        <div id="decoPhotosGrid" style="display:grid;gap:10px"></div>
       </div>
 
       <!-- Termos & Condições -->
@@ -559,6 +571,38 @@ const DECO_LEVELS = {
 };
 let decoLevel = null; // nível selecionado
 let decoElems = [];   // elementos editáveis
+let decoPhotos = [];  // data URLs (apenas em sessão, não persiste)
+
+function isNoSpace(){ return $('packSel').value === 'no-space'; }
+
+function addDecoPhotos(e){
+  const files = [...e.target.files];
+  files.forEach(f=>{
+    const reader = new FileReader();
+    reader.onload = ev => {
+      decoPhotos.push(ev.target.result);
+      renderDecoPhotos();
+      updatePreview();
+    };
+    reader.readAsDataURL(f);
+  });
+  e.target.value = '';
+}
+
+function renderDecoPhotos(){
+  $('decoPhotosPreview').innerHTML = decoPhotos.map((src,i)=>
+    '<div style="position:relative;width:60px;height:60px;border-radius:6px;overflow:hidden;border:1px solid var(--border)">'+
+      '<img src="'+src+'" style="width:100%;height:100%;object-fit:cover"/>'+
+      '<button onclick="removeDecoPhoto('+i+')" style="position:absolute;top:1px;right:1px;width:18px;height:18px;border-radius:50%;border:none;background:rgba(0,0,0,.7);color:#fff;font-size:12px;cursor:pointer;line-height:1;padding:0;font-family:var(--font)">×</button>'+
+    '</div>'
+  ).join('');
+}
+
+function removeDecoPhoto(i){
+  decoPhotos.splice(i,1);
+  renderDecoPhotos();
+  updatePreview();
+}
 
 function toggleDecoSection(){
   const on = $('decoToggle').checked;
@@ -791,7 +835,7 @@ function setAS(msg, type=''){
 function renderPackSel(){
   const sel = $('packSel');
   const prev = sel.value;
-  sel.innerHTML = '<option value="">Sem pack (só espaço)</option>';
+  sel.innerHTML = '<option value="">Sem pack (só espaço)</option><option value="no-space">Sem espaço (cliente já alugou)</option>';
   packs.forEach(p=>{
     const o = document.createElement('option');
     o.value = p.id;
@@ -855,6 +899,8 @@ function calcTotals(){
     const hBase = pack.horasBase||5;
     horasExtra = h>hBase ? Math.ceil(h-hBase) : 0;
     packPrice = pack.price + horasExtra*50;
+  } else if(isNoSpace()){
+    packPrice = 0;
   } else {
     packPrice = calcSpacePrice();
   }
@@ -905,6 +951,7 @@ function updatePreview(){
 
   // ── Pack / Espaço section ──────────────────────────────────────────
   if(pack){
+    $('packSection').style.display = 'block';
     $('diaInteiroRow').style.display = 'none';
     $('diaInteiro').checked = false;
     const h=calcHours();
@@ -929,8 +976,14 @@ function updatePreview(){
     }
     html+='</div>';
     $('packDetail').innerHTML=html;
+  } else if(isNoSpace()){
+    $('packSection').style.display = 'none';
+    $('diaInteiroRow').style.display = 'none';
+    $('diaInteiro').checked = false;
+    $('packHint').textContent = 'Cliente já tem o espaço — orçamento cobre só decoração e extras.';
   } else {
     const diaInteiro = $('diaInteiro').checked;
+    $('packSection').style.display = 'block';
     $('diaInteiroRow').style.display = 'block';
     $('packSectionH2').textContent='Espaço — sem pack';
     $('packHint').textContent = diaInteiro ? 'Dia inteiro: 650€.' : 'Aluguer do espaço: 300€.';
@@ -965,6 +1018,24 @@ function updatePreview(){
     $('decoSection').style.display='none';
   }
 
+  // ── Fotos de inspiração (2ª página) ───────────────────────────────
+  if(decoActive && decoPhotos.length){
+    $('decoPhotosSection').style.display='block';
+    const lvl = decoLevel||'Personalizada';
+    const name = $('decoName').value;
+    $('decoPhotosTitle').textContent = 'Inspiração de Decoração'+(lvl?' — '+lvl:'');
+    $('decoPhotosIntro').textContent = name
+      ? 'Referências visuais para o projeto "'+name+'". A decoração final será adaptada ao espaço e ao estilo do evento.'
+      : 'Referências visuais para a decoração proposta. O resultado final será adaptado ao espaço e ao estilo do evento.';
+    const cols = decoPhotos.length===1 ? '1fr' : '1fr 1fr';
+    $('decoPhotosGrid').style.gridTemplateColumns = cols;
+    $('decoPhotosGrid').innerHTML = decoPhotos.map(src=>
+      '<div style="border-radius:10px;overflow:hidden;border:1px solid #fce4ec;aspect-ratio:1;background:#fff5fb"><img src="'+src+'" style="width:100%;height:100%;object-fit:cover;display:block"/></div>'
+    ).join('');
+  } else {
+    $('decoPhotosSection').style.display='none';
+  }
+
   // ── Extras section ────────────────────────────────────────────────
   if(selExtras.length){
     $('extrasSection').style.display='block';
@@ -977,6 +1048,7 @@ function updatePreview(){
 
   // ── Totals ────────────────────────────────────────────────────────
   const hh=calcHours(), hb=pack?(pack.horasBase||5):5, he=pack&&hh>hb?Math.ceil(hh-hb):0;
+  $('packTotalRow').style.display = isNoSpace() ? 'none' : '';
   $('packLabel').textContent = pack?'Pack — '+pack.name+(he>0?' (+'+he+'h extra)':''):'Espaço (sem pack)';
   $('sumPack').textContent=eur(packPrice);
   if(decoActive){
@@ -1029,6 +1101,14 @@ async function exportPdf(){
 }
 
 // ─── SAVE ──────────────────────────────────────────────────────────────────
+// Snapshot do doc sem as fotos base64 (evita inchar o Supabase).
+function htmlSnapshotSemFotos(){
+  const clone = $('doc').cloneNode(true);
+  const photos = clone.querySelector('#decoPhotosSection');
+  if(photos) photos.remove();
+  return clone.innerHTML;
+}
+
 async function saveDoc(){
   if(!sb){setAS('Sem ligação ao Supabase.','err');return;}
   updatePreview();
@@ -1045,11 +1125,11 @@ async function saveDoc(){
     event_type:$('eType').value, event_date:$('eDate').value||null,
     start_time:$('eStart').value||null, end_time:$('eEnd').value||null,
     guest_count:$('ePax').value?+$('ePax').value:null, notes:$('eNotes').value,
-    pack_id:pack?.id||null, pack_name_snapshot:pack?.name||null, pack_price_snapshot:packPrice,
+    pack_id:pack?.id||(isNoSpace()?'no-space':null), pack_name_snapshot:pack?.name||(isNoSpace()?'Cliente tem espaço próprio':null), pack_price_snapshot:packPrice,
     extras_total:extrasTotal, subtotal:sub, discount_value:disc, total,
     deposit_paid:dep, amount_due:due,
     issue_date:$('issueDate').value||today(), valid_until:$('validUntil').value||null,
-    conditions_text:$('pCond').innerText, html_snapshot:$('doc').innerHTML,
+    conditions_text:$('pCond').innerText, html_snapshot:htmlSnapshotSemFotos(),
     updated_at:new Date().toISOString(),
   };
 
@@ -1098,7 +1178,7 @@ function clearForm(){
   $('diaInteiro').checked=false; $('diaInteiroRow').style.display='none';
   // Deco reset
   $('decoToggle').checked=false; toggleDecoSection();
-  decoLevel=null; decoElems=[];
+  decoLevel=null; decoElems=[]; decoPhotos=[]; renderDecoPhotos();
   $('docType').value='orcamento'; $('issueDate').value=today();
   $('validUntil').value=valid15(); $('docNum').value=docNum();
   document.querySelectorAll('[id^=cb-]').forEach(cb=>{cb.checked=false;});
