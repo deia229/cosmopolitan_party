@@ -851,12 +851,90 @@ function editarDoc(doc){
   $('deposit').value = doc.deposit_paid||0;
   $('ivaToggle').checked = false;
   $('packSel').value = doc.pack_id||'';
+  // Limpar extras e carregar do Supabase (com fallback para html_snapshot)
+  document.querySelectorAll('[id^=cb-]').forEach(cb=>cb.checked=false);
+  document.querySelectorAll('[id^=wrap-]').forEach(el=>el.classList.remove('on'));
+  document.querySelectorAll('[id^=qty-]').forEach(el=>{el.value=1;});
+  loadExtrasIntoForm(doc);
   $('editingBanner').style.display = 'block';
   $('editingNum').textContent = doc.document_number||'—';
   $('saveBtnLabel').innerHTML = '💾 Actualizar orçamento';
   setAS('✏️ A editar '+( doc.document_number||'—')+' — faz as alterações e clica Actualizar.','ok');
   updatePreview();
   window.scrollTo(0,0);
+}
+
+// Recuperar extras do html_snapshot quando cp_document_extras está vazia
+// (para orçamentos guardados antes do fix do .catch)
+function recoverExtrasFromHtmlSnapshot(html){
+  if(!html) return [];
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  const rows = tmp.querySelectorAll('#extrasBody tr');
+  const recovered = [];
+  rows.forEach(tr => {
+    const tds = tr.querySelectorAll('td');
+    if(tds.length < 2) return;
+    const nameCell = tds[0].cloneNode(true);
+    nameCell.querySelectorAll('div').forEach(d => d.remove());
+    const name = nameCell.textContent.trim();
+    const qty = parseInt(tds[1].textContent.trim()) || 1;
+    if(name) recovered.push({name, qty});
+  });
+  return recovered;
+}
+
+function _normName(s){
+  return String(s||'').trim().toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g,'')
+    .replace(/[^a-z0-9]+/g,' ').trim();
+}
+
+function matchExtraByName(name){
+  const target = _normName(name);
+  return EXTRAS.find(e => _normName(e.name) === target);
+}
+
+async function loadExtrasIntoForm(doc){
+  if(!sb || !doc) return;
+  const {data:extrasData} = await sb.from('cp_document_extras').select('*').eq('document_id',doc.id);
+  if(extrasData && extrasData.length){
+    extrasData.forEach(ex=>{
+      const cb=$('cb-'+ex.extra_id);
+      const qty=$('qty-'+ex.extra_id);
+      const wrap=$('wrap-'+ex.extra_id);
+      if(cb){cb.checked=true; if(wrap)wrap.classList.add('on'); if(qty)qty.value=ex.quantity||1;}
+    });
+    refreshCatStates();
+    updatePreview();
+    return;
+  }
+  // Sem extras na BD: tentar recuperar do html_snapshot
+  if(doc.html_snapshot && (doc.extras_total||0) > 0){
+    const recovered = recoverExtrasFromHtmlSnapshot(doc.html_snapshot);
+    let okCount = 0; const missed = [];
+    recovered.forEach(r => {
+      const ex = matchExtraByName(r.name);
+      if(ex){
+        const cb=$('cb-'+ex.id);
+        const qty=$('qty-'+ex.id);
+        const wrap=$('wrap-'+ex.id);
+        if(cb){cb.checked=true; if(wrap)wrap.classList.add('on'); if(qty)qty.value=r.qty||1; okCount++;}
+      } else {
+        missed.push(r.name);
+      }
+    });
+    refreshCatStates();
+    updatePreview();
+    if(okCount>0){
+      const msg = '⚠️ Extras recuperados do snapshot ('+okCount+'/'+recovered.length+'). '+
+        (missed.length?'Não reconhecidos: '+missed.join(', ')+'. ':'')+
+        'Confirma e clica Actualizar para gravar na BD.';
+      setAS(msg,'ok');
+    } else if(recovered.length){
+      setAS('⚠️ Não foi possível reconhecer os extras do snapshot. Re-adiciona manualmente.','err');
+    }
+  }
 }
 
 function showTab(name, btn){
@@ -1385,19 +1463,8 @@ async function hdCarregarEditor(){
   document.querySelectorAll('[id^=cb-]').forEach(cb=>cb.checked=false);
   document.querySelectorAll('[id^=wrap-]').forEach(el=>el.classList.remove('on'));
   document.querySelectorAll('[id^=qty-]').forEach(el=>{el.value=1;});
-  // Carregar extras existentes do Supabase e marcar no formulário
-  if(sb){
-    const{data:extrasData}=await sb.from('cp_document_extras').select('*').eq('document_id',doc.id);
-    if(extrasData&&extrasData.length){
-      extrasData.forEach(ex=>{
-        const cb=$('cb-'+ex.extra_id);
-        const qty=$('qty-'+ex.extra_id);
-        const wrap=$('wrap-'+ex.extra_id);
-        if(cb){cb.checked=true;if(wrap)wrap.classList.add('on');if(qty)qty.value=ex.quantity||1;}
-      });
-      refreshCatStates();
-    }
-  }
+  // Carregar extras (BD + fallback para html_snapshot)
+  await loadExtrasIntoForm(doc);
   $('editingBanner').style.display='block';
   $('editingNum').textContent=doc.document_number||'—';
   $('saveBtnLabel').innerHTML='💾 Actualizar orçamento';
