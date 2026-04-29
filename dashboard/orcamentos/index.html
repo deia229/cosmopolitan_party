@@ -762,7 +762,7 @@ const EXTRAS = [
   {id:'kit-50',name:'Kit Catering 50 pessoas',price:515,cat:'Catering',desc:'50 hot dogs, 50 pizzas, 50 hambúrgueres, 130 salgados, 2 tábuas, 5L sopa'},
   {id:'kit-70',name:'Kit Catering 70 pessoas',price:655,cat:'Catering',desc:'75 hot dogs, 75 pizzas, 50 hambúrgueres, 260 salgados, 3 tábuas, 10L sopa'},
   {id:'kit-100',name:'Kit Catering 100 pessoas',price:770,cat:'Catering',desc:'100 hot dogs, 100 pizzas, 75 hambúrgueres, 260 salgados, 3 tábuas, 10L sopa'},
-  {id:'menu-pp',name:'Menu Completo por pessoa',price:25,cat:'Catering',desc:'Entradas + Prato + Sobremesa + Bebidas (mín. 15p)'},
+  {id:'menu-pp',name:'Menu Completo por pessoa',price:25,cat:'Catering',desc:'Entradas + Prato + Sobremesa + Bebidas (mín. 15p)',included:'Entradas: Paté de Atum, Paté de Delícias do Mar, 100 Miniaturas, Tostas\nPrato Principal (escolher 2): Bacalhau com Natas, Arroz de Pato (ou pratos variados todas as semanas)\nSobremesas (escolher 3): Arroz Doce, Cheesecake Morangos, Tarte Lemon Curd c/ Morangos, Crumble de Maçã, Bolo de Mousse de Chocolate\nBebidas (escolher 3): Água, Icea (vários sabores), Coca-Cola, Sumos (Laranja, Ananás)\nMínimo 15 pessoas'},
   {id:'arroz-pato',name:'Tabuleiro Arroz de Pato 4kg',price:165,cat:'Catering',desc:'Serve ~20 pessoas'},
   {id:'bacalhau',name:'Tabuleiro Bacalhau com Natas 4kg',price:195,cat:'Catering',desc:'Serve ~20 pessoas'},
   {id:'mini-burg',name:'Pack 25 Mini Hambúrgueres',price:30,cat:'Catering',desc:'Pack de encomenda'},
@@ -1115,9 +1115,13 @@ function updatePreview(){
   // ── Extras section ────────────────────────────────────────────────
   if(selExtras.length){
     $('extrasSection').style.display='block';
-    $('extrasBody').innerHTML=selExtras.map(e=>
-      '<tr><td>'+e.name+(e.desc?'<div style="font-size:11px;color:#9ca3af;font-style:italic;margin-top:2px">Inclui: '+e.desc+'</div>':'')+'</td><td>'+e.qty+'</td><td>'+eur(e.price)+'</td><td>'+eur(e.total)+'</td></tr>'
-    ).join('');
+    $('extrasBody').innerHTML=selExtras.map(e=>{
+      const detail = e.included || e.desc;
+      const detailHtml = detail
+        ? '<div style="font-size:11px;color:#9ca3af;font-style:italic;margin-top:2px;line-height:1.5">Inclui: '+detail.replace(/\n/g,'<br>')+'</div>'
+        : '';
+      return '<tr><td>'+e.name+detailHtml+'</td><td>'+e.qty+'</td><td>'+eur(e.price)+'</td><td>'+eur(e.total)+'</td></tr>';
+    }).join('');
   } else {
     $('extrasSection').style.display='none';
   }
