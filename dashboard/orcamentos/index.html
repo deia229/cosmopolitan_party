@@ -1196,7 +1196,9 @@ function htmlSnapshotSemFotos(){
 }
 
 async function saveDoc(){
-  if(!sb){setAS('Sem ligação ao Supabase.','err');return;}
+  console.log('[saveDoc] click — curDocId=', curDocId, 'sb=', !!sb);
+  if(!sb){setAS('Sem ligação ao Supabase.','err');alert('Sem ligação ao Supabase.');return;}
+  try {
   updatePreview();
   const {pack,selExtras,packPrice,extrasTotal,sub,iva,disc,dep,total,due}=calcTotals();
 
@@ -1235,7 +1237,7 @@ async function saveDoc(){
     }
   } while(error);
 
-  if(error){setAS('Erro: '+error.message,'err');return;}
+  if(error){console.error('[saveDoc] erro Supabase', error);setAS('Erro: '+error.message,'err');alert('Erro ao guardar: '+error.message);return;}
 
   if(ins && !curDocId) curDocId=ins.id;
 
@@ -1251,7 +1253,13 @@ async function saveDoc(){
   }
   // Actualizar histDocs em memória para reflectir o novo estado
   if(ins && docExistente) Object.assign(docExistente, ins);
+  console.log('[saveDoc] gravado', ins);
   setAS((attempts>0?'⚠️ Guardado parcialmente':'✓ Guardado')+' — Nº '+(ins?.document_number||''),'ok');
+  alert((attempts>0?'⚠️ Guardado parcialmente':'✓ Guardado')+' — Nº '+(ins?.document_number||''));
+  } catch(err) {
+    console.error('[saveDoc] excepção', err);
+    alert('Erro inesperado: '+(err?.message||err));
+  }
 }
 
 // ─── CLEAR ─────────────────────────────────────────────────────────────────
