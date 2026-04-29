@@ -1196,8 +1196,7 @@ function htmlSnapshotSemFotos(){
 }
 
 async function saveDoc(){
-  console.log('[saveDoc] click — curDocId=', curDocId, 'sb=', !!sb);
-  if(!sb){setAS('Sem ligação ao Supabase.','err');alert('Sem ligação ao Supabase.');return;}
+  if(!sb){setAS('Sem ligação ao Supabase.','err');return;}
   try {
   updatePreview();
   const {pack,selExtras,packPrice,extrasTotal,sub,iva,disc,dep,total,due}=calcTotals();
@@ -1237,7 +1236,7 @@ async function saveDoc(){
     }
   } while(error);
 
-  if(error){console.error('[saveDoc] erro Supabase', error);setAS('Erro: '+error.message,'err');alert('Erro ao guardar: '+error.message);return;}
+  if(error){console.error('[saveDoc] erro Supabase', error);setAS('Erro: '+error.message,'err');return;}
 
   if(ins && !curDocId) curDocId=ins.id;
 
@@ -1245,20 +1244,20 @@ async function saveDoc(){
   // Se não há nenhum seleccionado, preserva os extras existentes
   if(selExtras.length && ins){
     // Apagar extras antigos e inserir novos
-    await sb.from('cp_document_extras').delete().eq('document_id',ins.id).catch(()=>{});
-    await sb.from('cp_document_extras').insert(selExtras.map(e=>({
+    const delRes = await sb.from('cp_document_extras').delete().eq('document_id',ins.id);
+    if(delRes.error) console.warn('[saveDoc] delete extras falhou', delRes.error);
+    const insRes = await sb.from('cp_document_extras').insert(selExtras.map(e=>({
       document_id:ins.id, extra_id:e.id, extra_name_snapshot:e.name,
       quantity:e.qty, unit_price_snapshot:e.price, total_price:e.total
-    }))).catch(()=>{});
+    })));
+    if(insRes.error) console.warn('[saveDoc] insert extras falhou', insRes.error);
   }
   // Actualizar histDocs em memória para reflectir o novo estado
   if(ins && docExistente) Object.assign(docExistente, ins);
-  console.log('[saveDoc] gravado', ins);
   setAS((attempts>0?'⚠️ Guardado parcialmente':'✓ Guardado')+' — Nº '+(ins?.document_number||''),'ok');
-  alert((attempts>0?'⚠️ Guardado parcialmente':'✓ Guardado')+' — Nº '+(ins?.document_number||''));
   } catch(err) {
     console.error('[saveDoc] excepção', err);
-    alert('Erro inesperado: '+(err?.message||err));
+    setAS('Erro inesperado: '+(err?.message||err),'err');
   }
 }
 
