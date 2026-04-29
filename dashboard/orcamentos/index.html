@@ -1115,7 +1115,7 @@ function updatePreview(){
   if(selExtras.length){
     $('extrasSection').style.display='block';
     $('extrasBody').innerHTML=selExtras.map(e=>
-      '<tr><td>'+e.name+'</td><td>'+e.qty+'</td><td>'+eur(e.price)+'</td><td>'+eur(e.total)+'</td></tr>'
+      '<tr><td>'+e.name+(e.desc?'<div style="font-size:11px;color:#9ca3af;font-style:italic;margin-top:2px">Inclui: '+e.desc+'</div>':'')+'</td><td>'+e.qty+'</td><td>'+eur(e.price)+'</td><td>'+eur(e.total)+'</td></tr>'
     ).join('');
   } else {
     $('extrasSection').style.display='none';
