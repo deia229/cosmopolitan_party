@@ -787,8 +787,13 @@ function extrasOf(ev){
 }
 // Aluguer base do evento (sheet) — sem limpeza nem extras
 function aluguerOf(ev){return(ev.valorTotal||0)+(ev.caucao||0);}
-// Limpeza facturada ao cliente (sheet) — quando a Cosmopolitan faz
-function limpezaOf(ev){return ev.limpeza||0;}
+// Limpeza facturada ao cliente (sheet) — só conta como proveito quando "Quem faz limpeza?" = Cosmopolitan
+// Vazio (eventos antigos pré-Março/2026) = assume Cliente → 125€ devolvidos → não é proveito
+function limpezaOf(ev){
+  if(!ev.limpeza)return 0;
+  const q=String(ev.quemLimpa||'').trim().toLowerCase();
+  return q==='cosmopolitan'?ev.limpeza:0;
+}
 // Acordado total = aluguer + limpeza + extras
 function acordadoOf(ev){return aluguerOf(ev)+limpezaOf(ev)+extrasOf(ev).total;}
 let archivedSet=loadArchivedSet();
@@ -796,7 +801,7 @@ let curFinMes=getMes();
 let mesCustosCache={};
 
 // Total de um evento = sheet + extras registados no Supabase (curEvExtras quando disponível)
-function totalBaseEv(ev){return(ev.valorTotal||0)+(ev.caucao||0)+(ev.limpeza||0);}
+function totalBaseEv(ev){return aluguerOf(ev)+limpezaOf(ev);}
 function extrasSum(extras){return Object.values(extras||{}).flat().reduce((s,i)=>s+(+i.valor||0),0);}
 function totalEvento(ev){
   // Se for o evento actualmente aberto, usa os extras já carregados
@@ -1254,7 +1259,7 @@ async function loadEvServicosIndicadores(evs){
       if(srvEl) srvEl.textContent=(tags.join(' ')||'—')+(extrasTotal>0?' +'+eur(extrasTotal):'');
       // Atualizar total na célula se há extras
       if(extrasTotal>0){
-        const baseTotal=(ev.valorTotal||0)+(ev.caucao||0)+(ev.limpeza||0);
+        const baseTotal=totalBaseEv(ev);
         const totalComExtras=baseTotal+extrasTotal;
         // Encontrar célula de total desta linha
         const row_el=srvEl?.closest('tr');
@@ -1272,7 +1277,7 @@ async function loadEvServicosIndicadores(evs){
       const pagosSupabase=pags.reduce((s,p)=>s+(+p.valor||0),0);
       const pagosSheet=(ev.valorPago||0)+(ev.pagoExtra||0);
       const totalPago=pagosSheet+pagosSupabase;
-      const totalReal=(ev.valorTotal||0)+(ev.caucao||0)+(ev.limpeza||0)+extrasT;
+      const totalReal=totalBaseEv(ev)+extrasT;
       const faltaReal=Math.max(0,totalReal-totalPago);
       const row_el=$(`ev-srv-${ev.rowIndex}`)?.closest('tr');
       if(row_el){
@@ -1289,7 +1294,7 @@ function filterEventos(){renderEventos(eventos);}
 async function openEvModal(idx){
   const ev=eventos.find(e=>e.rowIndex===idx);if(!ev)return;
   curEvIdx=idx;
-  const total=(ev.valorTotal||0)+(ev.caucao||0)+(ev.limpeza||0);
+  const total=totalBaseEv(ev);
   const pago=paidTotal(ev);const falta=Math.max(0,total-pago);
   $('evModalTitle').textContent=ev.cliente||'Evento';
   $('evInfoEdit').style.display='none'; // fechar painel de edição
@@ -1308,7 +1313,7 @@ async function openEvModal(idx){
     <div><div class="det-lbl">Em falta</div><div class="det-val" style="color:${falta<=0?'var(--green)':'var(--red)'};font-weight:700;font-size:16px">${eur(falta)}</div></div>
     <div><div class="det-lbl">Pago</div><div class="det-val" style="color:var(--green);font-weight:700">${eur(pago)}</div></div>
     <div><div class="det-lbl">Caução</div><div class="det-val">${eur(ev.caucao)}</div></div>
-    <div><div class="det-lbl">Limpeza</div><div class="det-val">${eur(ev.limpeza)}</div></div>`;
+    <div><div class="det-lbl">Limpeza</div><div class="det-val">${eur(ev.limpeza)}${ev.limpeza&&!limpezaOf(ev)?` <span style="font-size:10px;color:var(--muted);font-weight:400">(devolvido)</span>`:''}</div></div>`;
   curEvExtras={espaco:[],decoracao:[],catering:[],outros:[]};
   curPagamentos=[];
   if(sb){const key=evKey(ev);const{data}=await sb.from('cp_event_costs').select('extras,pagamentos').eq('event_key',key).maybeSingle();
@@ -1487,7 +1492,7 @@ async function loadCkEvento(){
   if(!key){$('ckNoEvt').style.display='block';$('ckContent').style.display='none';return;}
   $('ckNoEvt').style.display='none';$('ckContent').style.display='block';
   const ev=eventos.find(e=>evKey(e)===key);
-  ckData={tarefas:[],custos:[],notas:'',receita:ev?(ev.valorTotal||0)+(ev.caucao||0)+(ev.limpeza||0):0,extras:{}};
+  ckData={tarefas:[],custos:[],notas:'',receita:ev?totalBaseEv(ev):0,extras:{}};
   if(sb){
     const{data}=await sb.from('cp_event_costs').select('*').eq('event_key',key).maybeSingle();
     if(data){
