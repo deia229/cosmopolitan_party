@@ -465,9 +465,9 @@ header{background:linear-gradient(135deg,var(--dark),var(--dark2));padding:0 20p
       <span class="mes-disp" id="mesDisp">–</span>
     </div>
     <div class="kpi-grid k5">
-      <div class="kpi acordado"><div class="kpi-lbl">Acordado</div><div class="kpi-val" id="finKpiAcord">–</div><div class="kpi-sub">total contratado</div></div>
-      <div class="kpi recebido"><div class="kpi-lbl">Recebido</div><div class="kpi-val" id="finKpiRec">–</div><div class="kpi-sub" id="finKpiRecSub">eventos + manual</div></div>
-      <div class="kpi falta"><div class="kpi-lbl">Em Falta</div><div class="kpi-val" id="finKpiFalta">–</div><div class="kpi-sub">a cobrar</div></div>
+      <div class="kpi acordado"><div class="kpi-lbl">Acordado</div><div class="kpi-val" id="finKpiAcord">–</div><div class="kpi-sub">eventos do mês</div></div>
+      <div class="kpi recebido"><div class="kpi-lbl">Recebido</div><div class="kpi-val" id="finKpiRec">–</div><div class="kpi-sub" id="finKpiRecSub">entradas no mês</div></div>
+      <div class="kpi falta"><div class="kpi-lbl">Em Falta</div><div class="kpi-val" id="finKpiFalta">–</div><div class="kpi-sub">eventos do mês</div></div>
       <div class="kpi custos"><div class="kpi-lbl">Custos</div><div class="kpi-val" id="finKpiCus">–</div><div class="kpi-sub" id="finKpiCusSub">eventos + manual</div></div>
       <div class="kpi margem"><div class="kpi-lbl">Margem</div><div class="kpi-val" id="finKpiMar">–</div><div class="kpi-sub">recebido − custos</div></div>
     </div>
@@ -476,10 +476,10 @@ header{background:linear-gradient(135deg,var(--dark),var(--dark2));padding:0 20p
 
   <!-- 2. PROVEITOS POR TIPO -->
   <div class="card" style="margin-bottom:16px">
-    <div class="card-hdr"><span class="card-title">Proveitos por Tipo</span><span class="card-mono">FATURADO</span></div>
-    <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Composição do <strong>Acordado</strong> do mês — separa as 3 fontes de proveito.</div>
+    <div class="card-hdr"><span class="card-title">Proveitos por Tipo</span><span class="card-mono">RECEBIDO</span></div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Composição do <strong>Recebido</strong> do mês, pela <strong>categoria</strong> escolhida em cada pagamento.</div>
     <div id="proveitosList"></div>
-    <div class="fin-total"><span style="font-size:12px">Total acordado</span><span class="fin-total-val" id="proveitosTot">–</span></div>
+    <div class="fin-total"><span style="font-size:12px">Total recebido</span><span class="fin-total-val" id="proveitosTot">–</span></div>
   </div>
 
   <!-- 3. CUSTOS POR CATEGORIA -->
@@ -761,18 +761,19 @@ let tasks=[],ckData=null;
 let curEvExtras={espaco:[],decoracao:[],catering:[],outros:[]};
 let curPagamentos=[];
 let pagSupabaseByKey={};
+let pagamentosByKey={}; // {event_key: [{categoria,valor,...}]}
 let extrasByKey={}; // {event_key: {espaco:[],decoracao:[],catering:[],outros:[]}}
 async function loadPagSupabase(){
-  if(!sb||!eventos.length){pagSupabaseByKey={};extrasByKey={};return;}
+  if(!sb||!eventos.length){pagSupabaseByKey={};pagamentosByKey={};extrasByKey={};return;}
   try{
     const keys=eventos.map(evKey);
     const{data}=await sb.from('cp_event_costs').select('event_key,pagamentos,extras').in('event_key',keys);
-    pagSupabaseByKey={};extrasByKey={};
+    pagSupabaseByKey={};pagamentosByKey={};extrasByKey={};
     (data||[]).forEach(r=>{
-      try{const ps=JSON.parse(r.pagamentos||'[]');const sum=ps.reduce((s,p)=>s+(+p.valor||0),0);if(sum)pagSupabaseByKey[r.event_key]=sum;}catch(e){}
+      try{const ps=JSON.parse(r.pagamentos||'[]');if(Array.isArray(ps)&&ps.length){pagamentosByKey[r.event_key]=ps;const sum=ps.reduce((s,p)=>s+(+p.valor||0),0);if(sum)pagSupabaseByKey[r.event_key]=sum;}}catch(e){}
       try{const ex=JSON.parse(r.extras||'{}');if(ex&&typeof ex==='object')extrasByKey[r.event_key]={espaco:[],decoracao:[],catering:[],outros:[],...ex};}catch(e){}
     });
-  }catch(e){pagSupabaseByKey={};extrasByKey={};}
+  }catch(e){pagSupabaseByKey={};pagamentosByKey={};extrasByKey={};}
 }
 function paidTotal(ev){return(ev.valorPago||0)+(ev.pagoExtra||0)+(pagSupabaseByKey[evKey(ev)]||0);}
 function evHasCateringOuDecoracao(ev){const ex=extrasByKey[evKey(ev)];if(!ex)return false;return(ex.decoracao||[]).length>0||(ex.catering||[]).length>0;}
@@ -812,6 +813,8 @@ function syncSt(s,l){$('syncDot').className='sdot '+(s==='ok'?'ok':s==='loading'
 const MESES_PT=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 function parseMes(str){if(!str)return null;const p=str.split(' ');const idx=MESES_PT.indexOf(p[0]);if(idx<0)return null;const y=parseInt(p[1]);if(isNaN(y))return null;return{month:idx,year:y};}
 function mesFromISODate(iso){if(!iso)return'';try{const d=new Date(iso+'T00:00:00');if(isNaN(d))return'';return MESES_PT[d.getMonth()]+' '+d.getFullYear();}catch(e){return'';}}
+// Aceita ISO (yyyy-MM-dd), PT (dd/MM/yyyy) ou com hora — devolve "Mês Ano" ou ''
+function mesFromAnyDate(s){if(!s)return'';return mesFromISODate(normEvDate(String(s)));}
 function eventoInMes(ev,mesStr){if(!ev?.dataFesta||!mesStr)return false;return mesFromISODate(ev.dataFesta)===mesStr;}
 function getAllMeses(){const set=new Set();(eventos||[]).forEach(e=>{if(e.dataFesta){const m=mesFromISODate(e.dataFesta);if(m)set.add(m);}});(fin.meses||[]).forEach(m=>{if(m)set.add(m);});set.add(getMes());return[...set].sort((a,b)=>{const pa=parseMes(a),pb=parseMes(b);if(!pa||!pb)return 0;return(pa.year-pb.year)||(pa.month-pb.month);});}
 function loadArchivedSet(){try{const r=localStorage.getItem(LS_ARCH);if(r)return new Set(JSON.parse(r));}catch(e){}return new Set();}
@@ -1782,18 +1785,34 @@ function custosDeRow(row){
 }
 async function aggregateMes(mes){
   const evMes=(eventos||[]).filter(e=>eventoInMes(e,mes));
-  // Proveitos por tipo: aluguer + limpeza (sheet) + 3 categorias de extras
+  // Acordado / Em Falta: base do contrato dos eventos QUE ACONTECEM no mês
+  const acordado=evMes.reduce((s,e)=>s+acordadoOf(e),0);
+  // Proveitos + Recebido: por mês de RECEBIMENTO (carimbo da reserva para sheet, p.data para Supabase)
   const proveitos={aluguer:0,limpeza:0,decoracao:0,catering:0,outros:0};
-  evMes.forEach(e=>{
-    proveitos.aluguer+=aluguerOf(e);
-    proveitos.limpeza+=limpezaOf(e);
-    const ex=extrasOf(e);
-    proveitos.decoracao+=ex.decoracao;
-    proveitos.catering+=ex.catering;
-    proveitos.outros+=ex.espaco+ex.outros;
+  let recSheet=0;
+  (eventos||[]).forEach(e=>{
+    const k=evKey(e);
+    // Sheet pago/pagoExtra → atribuído ao mês do "Carimbo de data/hora" (reserva pelo Ivo)
+    const sheetPag=(e.valorPago||0)+(e.pagoExtra||0);
+    if(sheetPag>0&&mesFromAnyDate(e.carimbo)===mes){
+      proveitos.aluguer+=sheetPag;
+      recSheet+=sheetPag;
+    }
+    // Pagamentos Supabase → cada um pelo mês da sua `data`
+    (pagamentosByKey[k]||[]).forEach(p=>{
+      if(mesFromAnyDate(p.data)!==mes)return;
+      const cat=(p.categoria||'').toString();
+      const v=+p.valor||0;
+      recSheet+=v;
+      if(cat==='Aluguer'||cat==='Caução'||cat==='Caucao')proveitos.aluguer+=v;
+      else if(cat==='Limpeza')proveitos.limpeza+=v;
+      else if(cat==='Decoração'||cat==='Decoracao')proveitos.decoracao+=v;
+      else if(cat==='Catering')proveitos.catering+=v;
+      else proveitos.outros+=v;
+    });
   });
-  const acordado=proveitos.aluguer+proveitos.limpeza+proveitos.decoracao+proveitos.catering+proveitos.outros;
-  const recSheet=evMes.reduce((s,e)=>s+paidTotal(e),0);
+  // Em Falta: para os eventos do mês, quanto ainda falta receber (independente de quando entra)
+  const totalPagoEvMes=evMes.reduce((s,e)=>s+paidTotal(e),0);
   const rows=await fetchEventCosts(mes,evMes);
   const custosCat={};let custosEv=0;
   const custosPorEvento={};
@@ -1814,9 +1833,9 @@ async function aggregateMes(mes){
   const man={rec:manRec,cus:manCus,net:manRec-manCus,count:manItems.length};
   const recebido=recSheet+man.rec;
   const custos=custosEv+man.cus;
-  const emFalta=Math.max(0,acordado-recSheet);
+  const emFalta=Math.max(0,acordado-totalPagoEvMes);
   const margem=recebido-custos;
-  return{mes,evMes,acordado,recSheet,recebido,emFalta,custosEv,custos,custosCat,custosPorEvento,manual:man,margem,proveitos};
+  return{mes,evMes,acordado,recSheet,totalPagoEvMes,recebido,emFalta,custosEv,custos,custosCat,custosPorEvento,manual:man,margem,proveitos};
 }
 
 // NEXT EVENT
@@ -1866,7 +1885,7 @@ async function renderFin(){
   renderPipelineManual(m);
   // Visão Geral usa mesma agregação
   $('vgKpiRec').textContent=eur(a.recebido);
-  $('vgKpiRecSub').textContent=a.manual.rec>0?`sheet ${eur(a.recSheet)} + manual ${eur(a.manual.rec)}`:'da sheet';
+  $('vgKpiRecSub').textContent=a.manual.rec>0?`pagamentos ${eur(a.recSheet)} + manual ${eur(a.manual.rec)}`:'pagamentos no mês';
   $('vgKpiFalta').textContent=eur(a.emFalta);
   $('vgKpiFaltaSub').textContent=a.acordado>0?`sobre acordado ${eur(a.acordado)}`:'a cobrar';
   $('vgKpiCus').textContent=eur(a.custos);
@@ -1882,7 +1901,7 @@ async function renderFin(){
 function renderFinKpis(a){
   $('finKpiAcord').textContent=eur(a.acordado);
   $('finKpiRec').textContent=eur(a.recebido);
-  $('finKpiRecSub').textContent=a.manual.rec>0?`sheet ${eur(a.recSheet)} + manual ${eur(a.manual.rec)}`:'eventos (sheet)';
+  $('finKpiRecSub').textContent=a.manual.rec>0?`pagamentos ${eur(a.recSheet)} + manual ${eur(a.manual.rec)}`:'pagamentos no mês';
   $('finKpiFalta').textContent=eur(a.emFalta);
   $('finKpiCus').textContent=eur(a.custos);
   $('finKpiCusSub').textContent=a.manual.cus>0?`checklist ${eur(a.custosEv)} + manual ${eur(a.manual.cus)}`:'checklist eventos';
@@ -1896,18 +1915,18 @@ function renderProveitos(a){
   const el=$('proveitosList');
   const p=a.proveitos;
   const linhas=[
-    {key:'aluguer',label:'Aluguer',icon:'🏠',sub:'valorTotal + caução (sheet)'},
-    {key:'limpeza',label:'Limpeza',icon:'🧹',sub:'limpeza facturada (sheet)'},
-    {key:'decoracao',label:'Decoração',icon:'🎨',sub:'extras decoração'},
-    {key:'catering',label:'Catering',icon:'🍽️',sub:'extras catering'},
-    {key:'outros',label:'Outros extras',icon:'➕',sub:'extras espaço + outros'}
+    {key:'aluguer',label:'Aluguer',icon:'🏠',sub:'pagamentos Aluguer + Caução (sheet incluído)'},
+    {key:'limpeza',label:'Limpeza',icon:'🧹',sub:'pagamentos Limpeza'},
+    {key:'decoracao',label:'Decoração',icon:'🎨',sub:'pagamentos Decoração'},
+    {key:'catering',label:'Catering',icon:'🍽️',sub:'pagamentos Catering'},
+    {key:'outros',label:'Outros',icon:'➕',sub:'pagamentos Outro'}
   ];
-  const total=a.acordado;
+  const total=p.aluguer+p.limpeza+p.decoracao+p.catering+p.outros;
   el.innerHTML=linhas.filter(l=>p[l.key]>0||l.key==='aluguer').map(l=>{
     const v=p[l.key]||0;
     const pct=total>0?Math.round(v/total*100):0;
     return`<div class="cat-row">
-      <span class="cat-row-lbl"><span class="cat-row-ic">${l.icon}</span><span>${l.label}<div class="cat-row-sub">${l.sub} · ${pct}% do acordado</div></span></span>
+      <span class="cat-row-lbl"><span class="cat-row-ic">${l.icon}</span><span>${l.label}<div class="cat-row-sub">${l.sub} · ${pct}% do recebido</div></span></span>
       <span class="cat-row-val pos" style="color:var(--green)">${eur(v)}</span>
     </div>`;
   }).join('');
@@ -1948,7 +1967,7 @@ function renderEventosMes(a){
     </div>`;
   }).join('');
   foot.style.display='';
-  foot.innerHTML=`<span>Total · ${a.evMes.length} evento${a.evMes.length===1?'':'s'}</span><span>${eur(a.acordado)}</span><span style="color:var(--green)">${eur(a.recSheet)}</span><span style="color:${a.emFalta>0?'var(--red)':'var(--muted)'}">${a.emFalta>0?eur(a.emFalta):'✓'}</span><span style="color:var(--red)">${eur(a.custosEv)}</span><span style="color:${a.recSheet-a.custosEv>=0?'var(--green)':'var(--red)'}">${(a.recSheet-a.custosEv>=0?'+':'')+eur(a.recSheet-a.custosEv)}</span>`;
+  foot.innerHTML=`<span>Total · ${a.evMes.length} evento${a.evMes.length===1?'':'s'}</span><span>${eur(a.acordado)}</span><span style="color:var(--green)">${eur(a.totalPagoEvMes)}</span><span style="color:${a.emFalta>0?'var(--red)':'var(--muted)'}">${a.emFalta>0?eur(a.emFalta):'✓'}</span><span style="color:var(--red)">${eur(a.custosEv)}</span><span style="color:${a.totalPagoEvMes-a.custosEv>=0?'var(--green)':'var(--red)'}">${(a.totalPagoEvMes-a.custosEv>=0?'+':'')+eur(a.totalPagoEvMes-a.custosEv)}</span>`;
 }
 
 // Custos por categoria — limpo, só custos
@@ -2110,6 +2129,7 @@ async function savePagamentos(){
   // Atualizar cache global de pagamentos Supabase
   const sum=curPagamentos.reduce((s,p)=>s+(+p.valor||0),0);
   if(sum)pagSupabaseByKey[key]=sum;else delete pagSupabaseByKey[key];
+  if(curPagamentos.length)pagamentosByKey[key]=[...curPagamentos];else delete pagamentosByKey[key];
   // Re-render tudo o que depende de pagamentos
   invalidateFinCache();
   renderEventos(eventos);
