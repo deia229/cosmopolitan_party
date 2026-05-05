@@ -626,7 +626,7 @@ header{background:linear-gradient(135deg,var(--dark),var(--dark2));padding:0 20p
       </div>
       <div style="border-top:1px solid var(--border);margin-top:12px;padding-top:14px">
         <div style="font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--pink);margin-bottom:10px">Registar pagamento recebido</div>
-        <div style="display:grid;grid-template-columns:1fr 100px;gap:8px;margin-bottom:8px">
+        <div style="display:grid;grid-template-columns:1fr 140px 100px;gap:8px;margin-bottom:8px">
           <select id="pagCat" style="border:1px solid var(--border);border-radius:9px;padding:9px 10px;font-family:var(--font);font-size:13px;outline:none;background:var(--card);min-height:42px">
             <option value="Aluguer">🏠 Aluguer</option>
             <option value="Decoração">🎨 Decoração</option>
@@ -635,6 +635,7 @@ header{background:linear-gradient(135deg,var(--dark),var(--dark2));padding:0 20p
             <option value="Limpeza">🧹 Limpeza</option>
             <option value="Outro">➕ Outro</option>
           </select>
+          <input id="pagData" type="date" title="Data de recebimento" style="border:1px solid var(--border);border-radius:9px;padding:9px 10px;font-family:var(--mono);font-size:12px;outline:none;background:var(--card);min-height:42px"/>
           <input id="pagVal" type="number" placeholder="€" style="border:1px solid var(--border);border-radius:9px;padding:9px 10px;font-family:var(--mono);font-size:13px;outline:none;text-align:right;min-height:42px"/>
         </div>
         <div style="display:flex;gap:8px;margin-bottom:14px">
@@ -815,6 +816,8 @@ function parseMes(str){if(!str)return null;const p=str.split(' ');const idx=MESE
 function mesFromISODate(iso){if(!iso)return'';try{const d=new Date(iso+'T00:00:00');if(isNaN(d))return'';return MESES_PT[d.getMonth()]+' '+d.getFullYear();}catch(e){return'';}}
 // Aceita ISO (yyyy-MM-dd), PT (dd/MM/yyyy) ou com hora — devolve "Mês Ano" ou ''
 function mesFromAnyDate(s){if(!s)return'';return mesFromISODate(normEvDate(String(s)));}
+function todayISO(){const d=new Date();return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+function isoToPT(iso){const m=String(iso||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?`${m[3]}/${m[2]}/${m[1]}`:new Date().toLocaleDateString('pt-PT');}
 function eventoInMes(ev,mesStr){if(!ev?.dataFesta||!mesStr)return false;return mesFromISODate(ev.dataFesta)===mesStr;}
 function getAllMeses(){const set=new Set();(eventos||[]).forEach(e=>{if(e.dataFesta){const m=mesFromISODate(e.dataFesta);if(m)set.add(m);}});(fin.meses||[]).forEach(m=>{if(m)set.add(m);});set.add(getMes());return[...set].sort((a,b)=>{const pa=parseMes(a),pb=parseMes(b);if(!pa||!pb)return 0;return(pa.year-pb.year)||(pa.month-pb.month);});}
 function loadArchivedSet(){try{const r=localStorage.getItem(LS_ARCH);if(r)return new Set(JSON.parse(r));}catch(e){}return new Set();}
@@ -1312,6 +1315,7 @@ async function openEvModal(idx){
     if(data?.extras)try{const e=JSON.parse(data.extras);curEvExtras={espaco:[],decoracao:[],catering:[],outros:[],...e};}catch(e){}
     if(data?.pagamentos)try{curPagamentos=JSON.parse(data.pagamentos)||[];}catch(e){}
   }
+  if($('pagData'))$('pagData').value=todayISO();
   renderExtRows();renderPagHistorico();swET('et-info',document.querySelector('.et-btn'));
   updateArchBtn();
   $('evModal').classList.add('on');
@@ -2080,9 +2084,10 @@ async function addPagamento(){
   const cat=$('pagCat').value;
   const val=parseFloat($('pagVal').value)||0;
   const desc=($('pagDesc').value||'').trim();
+  const dataPT=isoToPT($('pagData').value);
   if(!val){showToast('Introduz um valor.');return;}
-  curPagamentos.push({categoria:cat,valor:val,descricao:desc,data:new Date().toLocaleDateString('pt-PT')});
-  $('pagVal').value='';$('pagDesc').value='';
+  curPagamentos.push({categoria:cat,valor:val,descricao:desc,data:dataPT});
+  $('pagVal').value='';$('pagDesc').value='';$('pagData').value=todayISO();
   await savePagamentos();
   renderPagHistorico();
   showToast('✓ +'+eur(val)+' ('+cat+') registado');
@@ -2107,8 +2112,9 @@ async function marcarTudoPago(){
   if(!confirm('Marcar como totalmente pago?\n\nValor em falta: '+eur(falta)))return;
   const cat=$('pagCat').value||'Outro';
   const desc=($('pagDesc').value||'').trim()||'Pagamento total';
-  curPagamentos.push({categoria:cat,valor:falta,descricao:desc,data:new Date().toLocaleDateString('pt-PT')});
-  $('pagVal').value='';$('pagDesc').value='';
+  const dataPT=isoToPT($('pagData').value);
+  curPagamentos.push({categoria:cat,valor:falta,descricao:desc,data:dataPT});
+  $('pagVal').value='';$('pagDesc').value='';$('pagData').value=todayISO();
   await savePagamentos();
   renderPagHistorico();
   renderEventos(eventos);
