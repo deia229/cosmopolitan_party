@@ -1802,10 +1802,25 @@ async function aggregateMes(mes){
   (eventos||[]).forEach(e=>{
     const k=evKey(e);
     // Sheet pago/pagoExtra → atribuído ao mês do "Carimbo de data/hora" (reserva pelo Ivo)
+    // Split proporcional entre Aluguer e Limpeza com base no valor contratado
     const sheetPag=(e.valorPago||0)+(e.pagoExtra||0);
     if(sheetPag>0&&mesFromAnyDate(e.carimbo)===mes){
-      proveitos.aluguer+=sheetPag;
-      recSheet+=sheetPag;
+      const alug=aluguerOf(e);
+      const limpProveito=limpezaOf(e); // 0 se Cliente/vazio
+      const grossBase=alug+(e.limpeza||0);
+      if(grossBase>0){
+        const alugShare=sheetPag*alug/grossBase;
+        const limpShare=sheetPag*(e.limpeza||0)/grossBase;
+        proveitos.aluguer+=alugShare;
+        recSheet+=alugShare;
+        if(limpProveito>0){ // só conta limpeza como proveito quando Cosmopolitan faz
+          proveitos.limpeza+=limpShare;
+          recSheet+=limpShare;
+        }
+      }else{
+        proveitos.aluguer+=sheetPag;
+        recSheet+=sheetPag;
+      }
     }
     // Pagamentos Supabase → cada um pelo mês da sua `data`
     (pagamentosByKey[k]||[]).forEach(p=>{
