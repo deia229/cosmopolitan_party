@@ -6,6 +6,7 @@
 <title>Cosmopolitan Party — Cockpit</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <style>
 :root{
   --pink:#e0187a;--pink2:#ff4da6;--pink3:#fce4ec;
@@ -454,6 +455,7 @@ header{background:linear-gradient(135deg,var(--dark),var(--dark2));padding:0 20p
       <select id="finMesSelect" onchange="setFinMes(this.value)"></select>
       <div class="mes-nav"><button onclick="navMes(-1)" aria-label="Anterior">‹</button><button onclick="navMes(1)" aria-label="Seguinte">›</button></div>
       <div style="flex:1"></div>
+      <button class="btn btn-p" onclick="gerarImagemMes()" style="font-size:12px">📸 Gerar imagem</button>
       <span class="card-mono" id="finResumoChip">–</span>
     </div>
   </div>
@@ -748,6 +750,7 @@ header{background:linear-gradient(135deg,var(--dark),var(--dark2));padding:0 20p
 </div>
 
 <div id="toastCont"></div>
+<div id="exportImg" style="position:fixed;left:-99999px;top:0;width:560px;background:#fff;font-family:'DM Sans',system-ui,sans-serif"></div>
 <script>
 const SB_URL='https://fsbpakhrfkrmfgpaxyly.supabase.co';
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZzYnBha2hyZmtybWZncGF4eWx5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1NzMyMjAsImV4cCI6MjA4OTE0OTIyMH0.fkF9Ch9QvX2lecY1B2FxuDWxD4DmH4T6WAg6ggYBVlY';
@@ -1914,6 +1917,49 @@ function loadFinFromLS(){
 function getManualItems(mes){return(fin.itemsByMonth&&fin.itemsByMonth[mes])||[];}
 function getManualTotals(mes){const it=getManualItems(mes);let rec=0,cus=0;it.forEach(i=>{const v=+i.valor||0;if(i.tipo==='pos')rec+=v;else cus+=v;});return{rec,cus,net:rec-cus,count:it.length};}
 function setFinMes(m){if(!m)return;curFinMes=m;fin.mes=m;invalidateFinCache();renderMesPicker();renderFin();}
+async function gerarImagemMes(){
+  if(typeof html2canvas==='undefined'){showToast('Biblioteca não carregada. Aguarda um momento e tenta de novo.');return;}
+  const m=curFinMes||fin.mes||getMes();
+  showToast('A gerar imagem…');
+  const a=await aggregateMes(m);
+  const proveitos=[
+    {key:'aluguer',label:'Aluguer',ic:'🏠'},
+    {key:'limpeza',label:'Limpeza',ic:'🧹'},
+    {key:'decoracao',label:'Decoração',ic:'🎨'},
+    {key:'catering',label:'Catering',ic:'🍽️'},
+    {key:'outros',label:'Outros',ic:'➕'}
+  ].filter(l=>(a.proveitos[l.key]||0)>0);
+  const cusIcons={Espaço:'🏠',Decoração:'🎨',Catering:'🍽️',Limpeza:'🧹',Staff:'👤',Outros:'💶',Pack:'📦',Manual:'✏️'};
+  const custos=Object.entries(a.custosCat||{}).filter(([,v])=>v>0).sort((x,y)=>y[1]-x[1]);
+  const saldoCor=a.margem>=0?'#0e7c3a':'#a40c1f';
+  const linhasProv=proveitos.map(l=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f3e8ee;font-size:14px"><span style="color:#6e2638">${l.ic} ${l.label}</span><span style="font-family:'DM Mono',monospace;color:#0e7c3a;font-weight:600">${eur(a.proveitos[l.key])}</span></div>`).join('');
+  const linhasCus=custos.length?custos.map(([k,v])=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f3e8ee;font-size:14px"><span style="color:#6e2638">${cusIcons[k]||'·'} ${esc(k)}</span><span style="font-family:'DM Mono',monospace;color:#a40c1f;font-weight:600">${eur(v)}</span></div>`).join(''):`<div style="padding:6px 0;font-size:13px;color:#9a7a86">Sem custos registados.</div>`;
+  const today=new Date().toLocaleDateString('pt-PT');
+  const div=$('exportImg');
+  div.innerHTML=`<div style="padding:28px 28px 24px 28px;background:linear-gradient(135deg,#fff,#fdf2f8);border-radius:18px;border:1px solid #f5d6e3">
+    <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:900;color:#3a0a1a;margin-bottom:2px">Cosmopolitan Party</div>
+    <div style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#a8617a;margin-bottom:18px">Movimento · ${esc(m)}</div>
+    <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#0e7c3a;margin-bottom:6px">＋ Entradas</div>
+    ${linhasProv||`<div style="padding:6px 0;font-size:13px;color:#9a7a86">Sem entradas registadas.</div>`}
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0 16px 0;font-size:15px;font-weight:700;color:#3a0a1a"><span>Total entradas</span><span style="font-family:'DM Mono',monospace;color:#0e7c3a">${eur(a.recebido)}</span></div>
+    <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#a40c1f;margin-bottom:6px">− Saídas</div>
+    ${linhasCus}
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0 18px 0;font-size:15px;font-weight:700;color:#3a0a1a"><span>Total saídas</span><span style="font-family:'DM Mono',monospace;color:#a40c1f">${eur(a.custos)}</span></div>
+    <div style="background:#3a0a1a;border-radius:12px;padding:18px 20px;display:flex;justify-content:space-between;align-items:center"><span style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#f5d6e3">Saldo</span><span style="font-family:'Playfair Display',serif;font-size:26px;font-weight:900;color:${saldoCor==='#0e7c3a'?'#9ee6b6':'#ffa8b8'}">${a.margem>=0?'+':''}${eur(a.margem)}</span></div>
+    <div style="margin-top:14px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#a8617a;text-align:right">Gerado em ${today}</div>
+  </div>`;
+  await new Promise(r=>setTimeout(r,150));
+  try{
+    const canvas=await html2canvas(div,{scale:2,backgroundColor:null,logging:false});
+    canvas.toBlob(blob=>{
+      const url=URL.createObjectURL(blob);
+      const link=document.createElement('a');
+      link.href=url;link.download=`cosmopolitan-${m.toLowerCase().replace(/\s+/g,'-')}.png`;
+      link.click();URL.revokeObjectURL(url);
+      showToast('✓ Imagem descarregada');
+    });
+  }catch(e){showToast('Erro a gerar imagem: '+e.message);}
+}
 function navMes(d){const all=getAllMeses();if(!all.length)return;let i=all.indexOf(curFinMes);if(i<0)i=all.length-1;i=Math.max(0,Math.min(all.length-1,i+d));setFinMes(all[i]);}
 function renderMesPicker(){const sel=$('finMesSelect');if(!sel)return;const all=getAllMeses();sel.innerHTML=all.map(m=>`<option value="${esc(m)}"${m===curFinMes?' selected':''}>${esc(m)}</option>`).join('');if(!all.includes(curFinMes)&&all.length){curFinMes=all[all.length-1];sel.value=curFinMes;}}
 
