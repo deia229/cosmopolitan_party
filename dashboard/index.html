@@ -839,8 +839,24 @@ document.addEventListener('DOMContentLoaded',async()=>{
   try{sb=window.supabase.createClient(SB_URL,SB_KEY);syncSt('ok','Supabase ✓');}catch(e){syncSt('err','Offline');return;}
   const {data:{session}}=await sb.auth.getSession();
   if(!session){$('loginOv').classList.add('on');return;}
+  applyAccessControl(session.user?.email||'');
   loadOrcamentos();loadEventos();loadTasks();loadContratosPendentes();renderFin();
 });
+// ─── ACESSO RESTRITO À ABA FINANCEIRO ───
+const ALLOWED_FIN_EMAILS=['ramalheiroa@gmail.com'];
+function canAccessFin(email){return ALLOWED_FIN_EMAILS.includes((email||'').toLowerCase());}
+function applyAccessControl(email){
+  if(canAccessFin(email))return;
+  // Esconder o botão da aba Financeiro
+  document.querySelectorAll('.tab-btn').forEach(b=>{
+    if((b.getAttribute('onclick')||'').includes("'financeiro'"))b.style.display='none';
+  });
+  // Esconder o botão "Detalhe →" da Visão Geral que aponta para Financeiro
+  document.querySelectorAll('button').forEach(b=>{
+    const oc=b.getAttribute('onclick')||'';
+    if(oc.includes("showTab('financeiro'"))b.style.display='none';
+  });
+}
 async function doLogin(e){
   e.preventDefault();
   const email=$('loginEmail').value.trim();const password=$('loginPwd').value;
@@ -922,7 +938,12 @@ function renderContratosWidget(error){
   }).join('')+'</div>';
 }
 
-function showTab(name,btn){
+async function showTab(name,btn){
+  // Gate: só Andreia acede à aba Financeiro
+  if(name==='financeiro'&&sb){
+    const {data:{session}}=await sb.auth.getSession();
+    if(!canAccessFin(session?.user?.email||'')){showToast('Acesso restrito');return;}
+  }
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('on'));
   $('tab-'+name).classList.add('on');
