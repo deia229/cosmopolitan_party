@@ -493,8 +493,16 @@ function vst_marcar(payload) {
     });
     if (!dentro) return { ok: false, mensagem: 'Esse horário não está disponível.' };
 
+    // Verifica overlap (não só slot exato) — apanha marcações antigas com slots não-redondos
+    const slotEnd = slotMin + 30;
     const marc = vst_lerMarcacoes_(ss).filter(m => m.data === data && m.status === 'ativa');
-    if (marc.some(m => m.slot === slot)) {
+    const overlap = marc.some(m => {
+      const ms = vst_horaToMin_(m.slot);
+      if (isNaN(ms)) return false;
+      const me = ms + 30;
+      return ms < slotEnd && me > slotMin;
+    });
+    if (overlap) {
       return { ok: false, mensagem: 'Outra pessoa marcou esse horário. Escolhe outro.' };
     }
 
@@ -564,7 +572,7 @@ function vst_emailCliente_(p, data, slot) {
         '<p style="font-size:18px;font-weight:700;color:#e0187a;margin:18px 0">' +
           vst_humanData_(data) + ' · ' + slot + ' (30 min)' +
         '</p>' +
-        '<p><strong>Local:</strong> Loures<br/><strong>Para alterar ou cancelar:</strong> 930 666 370 (Andreia) ou 964 505 429 (Ivo)</p>' +
+        '<p><strong>Local:</strong> Loures<br/><strong>Para alterar ou cancelar:</strong> 930 666 370 (Erica) ou 964 505 429 (Ivo)</p>' +
         '<p style="margin-top:18px">Também podes responder a este email.</p>' +
         '<p style="color:#8a5a70;font-size:12px;margin-top:24px;border-top:1px solid #f0c8dc;padding-top:14px">Cosmopolitan Party · Loures</p>' +
       '</div>' +
@@ -665,7 +673,7 @@ function vst_cancelarMarcacao(payload) {
           htmlBody:
             '<p>Olá ' + data[i][iNome] + ',</p>' +
             '<p>A tua visita marcada para <strong>' + vst_humanData_(dt) + ' às ' + slot + '</strong> foi cancelada.</p>' +
-            '<p>Para remarcares, abre <a href="' + VST_PAGINA_PUBLICA + '">a página de marcações</a> ou liga 930 666 370 (Andreia) / 964 505 429 (Ivo).</p>' +
+            '<p>Para remarcares, abre <a href="' + VST_PAGINA_PUBLICA + '">a página de marcações</a> ou liga 930 666 370 (Erica) / 964 505 429 (Ivo).</p>' +
             '<p style="color:#8a5a70;font-size:12px">— Cosmopolitan Party</p>',
           name: 'Cosmopolitan Party'
         });

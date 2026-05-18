@@ -305,7 +305,11 @@
     if(!state.data) return [];
     const blocos = state.data.blocos.filter(b => b.data === data);
     if(blocos.length === 0) return [];
-    const marcadosDia = new Set(state.data.marcacoes.filter(m => m.data === data).map(m => m.slot));
+    // Range em minutos de cada marcação (não apenas slot exato) — apanha overlap com marcações de slots esquisitos
+    const marcRanges = state.data.marcacoes.filter(m => m.data === data).map(m => {
+      const s = horaToMin(m.slot);
+      return [s, s + SLOT_MIN];
+    }).filter(r => !isNaN(r[0]));
     const agora = new Date();
     const ehHoje = (data === hojeYmd());
     const minAgora = ehHoje ? (agora.getHours() * 60 + agora.getMinutes()) : -1;
@@ -317,9 +321,10 @@
       const fim = Math.floor(horaToMin(b.fim) / SLOT_MIN) * SLOT_MIN;
       for(let m = ini; m + SLOT_MIN <= fim; m += SLOT_MIN){
         if(ehHoje && m <= minAgora) continue;
-        const s = minToHora(m);
-        if(marcadosDia.has(s)) continue;
-        set.add(s);
+        const slotEnd = m + SLOT_MIN;
+        const ocupado = marcRanges.some(([ms, me]) => ms < slotEnd && me > m);
+        if(ocupado) continue;
+        set.add(minToHora(m));
       }
     }
     return Array.from(set).sort();
