@@ -531,10 +531,10 @@ function vst_marcar(payload) {
                + 'Email: ' + payload.email + '\n'
                + 'Telefone: ' + payload.telefone
                + (payload.obs ? '\n\nObs: ' + payload.obs : '');
+    // Sem guests/sendInvites — evita Google Meet automático.
+    // O cliente recebe o nosso email HTML personalizado em vez de invite Calendar.
     const ev = cal.createEvent('Visita — ' + payload.nome, slotDt, fimDt, {
-      description: desc,
-      guests: payload.email,
-      sendInvites: true
+      description: desc
     });
     const calEventId = ev.getId();
 
