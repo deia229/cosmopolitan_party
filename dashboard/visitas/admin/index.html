@@ -473,10 +473,13 @@
 
   function addBloco(){
     if(!state.diaAberto) return;
-    const ini = document.getElementById('dmIni').value;
-    const fim = document.getElementById('dmFim').value;
-    if(!ini || !fim){ toast('Define início e fim.', true); return; }
-    if(horaToMin(ini) >= horaToMin(fim)){ toast('Fim tem de ser depois do início.', true); return; }
+    const iniRaw = document.getElementById('dmIni').value;
+    const fimRaw = document.getElementById('dmFim').value;
+    if(!iniRaw || !fimRaw){ toast('Define início e fim.', true); return; }
+    // Snap para múltiplos de 30 (ancora em :00 e :30 para slots limpos)
+    const ini = minToHora(Math.ceil(horaToMin(iniRaw) / SLOT_MIN) * SLOT_MIN);
+    const fim = minToHora(Math.floor(horaToMin(fimRaw) / SLOT_MIN) * SLOT_MIN);
+    if(horaToMin(ini) >= horaToMin(fim)){ toast('Bloco demasiado curto (mínimo 30 min entre :00 e :30).', true); return; }
     postAction('visitas.bloco.criar', {data: state.diaAberto, inicio: ini, fim: fim}).then(res=>{
       if(!res.ok){ toast(res.mensagem || 'Erro.', true); return; }
       toast('Bloco adicionado.');

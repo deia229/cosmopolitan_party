@@ -543,8 +543,8 @@ function vst_emailCliente_(p, data, slot) {
         '<p style="font-size:18px;font-weight:700;color:#e0187a;margin:18px 0">' +
           vst_humanData_(data) + ' · ' + slot + ' (30 min)' +
         '</p>' +
-        '<p><strong>Local:</strong> Loures<br/><strong>Contacto:</strong> 964 505 429</p>' +
-        '<p style="margin-top:18px">Se precisares de alterar ou cancelar, é só responder a este email.</p>' +
+        '<p><strong>Local:</strong> Loures<br/><strong>Para alterar ou cancelar:</strong> 930 666 370 (Andreia) ou 964 505 429 (Ivo)</p>' +
+        '<p style="margin-top:18px">Também podes responder a este email.</p>' +
         '<p style="color:#8a5a70;font-size:12px;margin-top:24px;border-top:1px solid #f0c8dc;padding-top:14px">Cosmopolitan Party · Loures</p>' +
       '</div>' +
     '</div>';
@@ -639,7 +639,7 @@ function vst_cancelarMarcacao(payload) {
           htmlBody:
             '<p>Olá ' + data[i][iNome] + ',</p>' +
             '<p>A tua visita marcada para <strong>' + vst_humanData_(dt) + ' às ' + slot + '</strong> foi cancelada.</p>' +
-            '<p>Para remarcares, abre <a href="' + VST_PAGINA_PUBLICA + '">a página de marcações</a> ou liga 964 505 429.</p>' +
+            '<p>Para remarcares, abre <a href="' + VST_PAGINA_PUBLICA + '">a página de marcações</a> ou liga 930 666 370 (Andreia) / 964 505 429 (Ivo).</p>' +
             '<p style="color:#8a5a70;font-size:12px">— Cosmopolitan Party</p>',
           name: 'Cosmopolitan Party'
         });

@@ -312,8 +312,9 @@
 
     const set = new Set();
     for(const b of blocos){
-      const ini = horaToMin(b.inicio);
-      const fim = horaToMin(b.fim);
+      // Snap para múltiplos de 30 (ancora em :00 e :30 mesmo que o bloco tenha horários esquisitos)
+      const ini = Math.ceil(horaToMin(b.inicio) / SLOT_MIN) * SLOT_MIN;
+      const fim = Math.floor(horaToMin(b.fim) / SLOT_MIN) * SLOT_MIN;
       for(let m = ini; m + SLOT_MIN <= fim; m += SLOT_MIN){
         if(ehHoje && m <= minAgora) continue;
         const s = minToHora(m);
