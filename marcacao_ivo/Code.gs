@@ -1,61 +1,328 @@
-/**
- * ============================================================
- * VISITAS AO ESPAÇO — BACKEND
- * ============================================================
- *
- * Como instalar no Apps Script existente da Marcação do Ivo
- * (o mesmo script que serve "?page=dados" para o dashboard):
- *
- * 1) Abre o Apps Script Editor desse projeto.
- *
- * 2) Cria um novo ficheiro "Visitas.gs" e cola TUDO o que está
- *    abaixo do separador "INÍCIO DO CÓDIGO".
- *
- * 3) No ficheiro principal (onde está o doGet existente):
- *    a) Dentro do doGet(e), antes do return final, adiciona:
- *
- *         if (e.parameter.page === 'visitas-disponibilidade')
- *           return vst_jsonp_(e, vst_disponibilidade(e.parameter.mes));
- *         if (e.parameter.page === 'visitas-admin')
- *           return vst_jsonp_(e, vst_admin(e.parameter.token));
- *
- *    b) Se ainda não existir um doPost no projeto, copia o doPost
- *       que está no fim deste ficheiro. Se já existir, adiciona
- *       os cases do switch (visitas.marcar, visitas.bloco.criar,
- *       visitas.bloco.remover, visitas.marcacao.cancelar).
- *
- * 4) No menu do Apps Script: Project Settings → Script Properties.
- *    Adiciona uma propriedade:
- *
- *         Key:   VISITAS_ADMIN_TOKEN
- *         Value: <escolhe uma palavra-passe qualquer, ex: "cosmo-2026-visitas">
- *
- *    Este token só é pedido para acções de admin (criar bloco,
- *    cancelar marcação). A página pública não o precisa.
- *
- * 5) Corre a função vst_setup() uma vez — vai criar as 2 sheets
- *    novas no spreadsheet ativo ("Visitas Blocos" e
- *    "Visitas Marcacoes"). Vai pedir autorização para Calendar
- *    e Gmail — aceita.
- *
- * 6) Re-deploy: Deploy → Manage Deployments → Edit → Nova versão
- *    → Deploy. O URL fica igual ao que já está em SCRIPT_URL.
- *
- * 7) No dashboard, vai a Ferramentas → "Visitas — Admin" e cola
- *    o mesmo token no campo que aparece.
- *
- * ============================================================
- * INÍCIO DO CÓDIGO
- * ============================================================ */
+/***** CONFIG *****/
+const TZ = 'Europe/Lisbon';
+const CAL_ID = 'cosmopolitanparty.loures@gmail.com';
+const SHEET_NAME = 'Festas';
 
-const VST_CAL_ID = 'cosmopolitanparty.loures@gmail.com';
+const HDR_TS        = 'Carimbo de data/hora';
+const HDR_DATA      = 'Data da festa';
+const HDR_INICIO    = 'Hora de início';
+const HDR_FIM       = 'Hora de término';
+const HDR_NOME      = 'Nome do cliente';
+const HDR_TEL       = 'Contacto do cliente (telefone)';
+const HDR_VALOR     = 'Valor da festa (€)';
+const HDR_CAUCAO    = 'Caução';
+const HDR_LIMPEZA   = 'Limpeza';
+const HDR_PAGO      = 'Valor já pago';
+const HDR_OBS       = 'Observações';
+const HDR_QUEM_LIMPA = 'Quem faz limpeza?';
+const HDR_LINK_A    = 'Link Calendário (Andreia)';
+const HDR_LINK_F    = 'Link Calendário (Festas)';
+const HDR_SYNC      = 'Sync';
+
+const EMAIL_TO = [
+  'cosmopolitanparty.loures@gmail.com',
+  'ramalheiroa@gmail.com'
+];
+
+const FORM_BASE_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSdwM0jlmYR8gWiFBlusZlzjIaV8lWaj85L3--sZaKURL3012Q/viewform';
+const FORM_FIELDS = {
+  data: 'entry.2141012538',
+  inicio: 'entry.1648949831',
+  fim: 'entry.694426724'
+};
+const BUFFER_MINUTES = 0;
+
+
+/***** CONFIG — VISITAS *****/
 const VST_EMAILS_INTERNOS = ['cosmopolitanparty.loures@gmail.com', 'ocasiaodemordomias@gmail.com'];
 const VST_SHEET_BLOCOS = 'Visitas Blocos';
 const VST_SHEET_MARC = 'Visitas Marcacoes';
-const VST_SHEET_FESTAS = 'Festas';
 const VST_PAGINA_PUBLICA = 'https://cosmopolitanparty.pt/visitas/';
 
-/* ---------- SETUP ---------- */
+
+/***** doGet — router principal *****/
+function doGet(e) {
+  const param = (e && e.parameter && e.parameter.page) ? e.parameter.page : '';
+
+  // === ROTAS VISITAS ===
+  if (param === 'visitas-disponibilidade') return vst_jsonp_(e, vst_disponibilidade(e.parameter.mes));
+  if (param === 'visitas-admin')           return vst_jsonp_(e, vst_admin(e.parameter.token));
+
+  if (param === 'dados') return doGetDashboard(e);
+
+  // Por defeito → página de disponibilidade
+  return HtmlService.createHtmlOutputFromFile('index')
+    .setTitle('Disponibilidade de Festas')
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
+
+/***** doPost — endpoint único de escrita (Visitas) *****/
+function doPost(e) {
+  let body;
+  try { body = JSON.parse(e.postData.contents); } catch (err) { body = {}; }
+  let res;
+  switch (body.action) {
+    case 'visitas.marcar':            res = vst_marcar(body); break;
+    case 'visitas.bloco.criar':       res = vst_criarBloco(body); break;
+    case 'visitas.bloco.remover':     res = vst_removerBloco(body); break;
+    case 'visitas.marcacao.cancelar': res = vst_cancelarMarcacao(body); break;
+    default: res = { ok: false, mensagem: 'Acção desconhecida: ' + body.action };
+  }
+  return ContentService
+    .createTextOutput(JSON.stringify(res))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+
+/***** API DASHBOARD — devolve JSON ou JSONP *****/
+function doGetDashboard(e) {
+  const callback = e && e.parameter && e.parameter.callback;
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName(SHEET_NAME);
+
+  if (!sh) {
+    const json = JSON.stringify({ error: 'Folha não encontrada.' });
+    return ContentService
+      .createTextOutput(callback ? `${callback}(${json})` : json)
+      .setMimeType(callback ? ContentService.MimeType.JAVASCRIPT : ContentService.MimeType.JSON);
+  }
+
+  const data    = sh.getDataRange().getValues();
+  const headers = data[0].map(h => String(h).trim());
+  const rows    = data.slice(1);
+
+  const events = rows
+    .filter(row => row[0] !== '')
+    .map((row, idx) => {
+      const col = name => {
+        const i = headers.indexOf(name);
+        return i >= 0 ? row[i] : '';
+      };
+      return {
+        rowIndex:    idx,
+        carimbo:     formatVal_(col(HDR_TS)),
+        dataFesta:   formatVal_(col(HDR_DATA)),
+        horaInicio:  formatVal_(col(HDR_INICIO)),
+        horaFim:     formatVal_(col(HDR_FIM)),
+        cliente:     col(HDR_NOME),
+        telefone:    String(col(HDR_TEL)),
+        valorTotal:  parseFloat(col(HDR_VALOR))   || 0,
+        caucao:      parseFloat(col(HDR_CAUCAO))  || 0,
+        limpeza:     parseFloat(col(HDR_LIMPEZA)) || 0,
+        valorPago:   parseFloat(col(HDR_PAGO))    || 0,
+        pagoExtra:   parseFloat(col('Pago Extra')) || 0,
+        observacoes: col(HDR_OBS),
+        quemLimpa:   col(HDR_QUEM_LIMPA),
+        sync:        col(HDR_SYNC),
+      };
+    });
+
+  const json = JSON.stringify(events);
+  return ContentService
+    .createTextOutput(callback ? `${callback}(${json})` : json)
+    .setMimeType(callback ? ContentService.MimeType.JAVASCRIPT : ContentService.MimeType.JSON);
+}
+
+
+/***** TRIGGER: Ao submeter o formulário *****/
+function onFormSubmit(e) {
+  if (!e || !e.range) {
+    throw new Error('Este script só funciona via acionador "Ao enviar um formulário".');
+  }
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName(SHEET_NAME);
+  if (!sh) throw new Error(`Folha "${SHEET_NAME}" não encontrada.`);
+
+  const row = e.range.getRow();
+  if (row <= 1) return;
+
+  const cols = getCols_(sh, [
+    HDR_DATA, HDR_INICIO, HDR_FIM,
+    HDR_NOME, HDR_TEL, HDR_VALOR, HDR_CAUCAO, HDR_LIMPEZA, HDR_PAGO, HDR_OBS,
+    HDR_LINK_A, HDR_LINK_F, HDR_SYNC
+  ]);
+
+  const syncVal = sh.getRange(row, cols[HDR_SYNC]).getValue();
+  if (String(syncVal).trim().toUpperCase() === 'OK') return;
+
+  const dataFesta = sh.getRange(row, cols[HDR_DATA]).getValue();
+  const horaIni   = sh.getRange(row, cols[HDR_INICIO]).getValue();
+  const horaFim   = sh.getRange(row, cols[HDR_FIM]).getValue();
+
+  const start = toDateTime_(dataFesta, horaIni);
+  let end     = toDateTime_(dataFesta, horaFim);
+
+  if (!(start instanceof Date) || isNaN(start.getTime())) {
+    throw new Error(`Start inválido na linha ${row}.`);
+  }
+  if (!(end instanceof Date) || isNaN(end.getTime())) {
+    throw new Error(`End inválido na linha ${row}.`);
+  }
+
+  if (end.getTime() <= start.getTime()) {
+    end = new Date(end.getTime() + 24 * 60 * 60 * 1000);
+  }
+
+  const nome  = sh.getRange(row, cols[HDR_NOME]).getValue();
+  const tel   = sh.getRange(row, cols[HDR_TEL]).getValue();
+  const valor = sh.getRange(row, cols[HDR_VALOR]).getValue();
+  const cau   = sh.getRange(row, cols[HDR_CAUCAO]).getValue();
+  const limp  = sh.getRange(row, cols[HDR_LIMPEZA]).getValue();
+  const pago  = sh.getRange(row, cols[HDR_PAGO]).getValue();
+  const obs   = sh.getRange(row, cols[HDR_OBS]).getValue();
+
+  const titulo = `Festa — ${nome || 'Cliente'} (Flamenga)`;
+
+  const descricao =
+`🎉 COSMOPOLITAN PARTY — Detalhes da Festa
+
+👤 Cliente: ${nome || ''}
+📞 Telefone: ${tel || ''}
+
+💰 Valores
+- Festa: ${fmtMoney_(valor)}
+- Caução: ${fmtMoney_(cau)}
+- Limpeza: ${fmtMoney_(limp)}
+- Pago: ${fmtMoney_(pago)}
+
+📝 Observações:
+${obs || ''}`.trim();
+
+  const cal = CalendarApp.getCalendarById(CAL_ID);
+  if (!cal) throw new Error(`Não consegui aceder ao calendário: ${CAL_ID}`);
+
+  const ev = cal.createEvent(titulo, start, end, {
+    description: descricao,
+    timeZone: TZ
+  });
+
+  const linkEvento = 'https://calendar.google.com/calendar/event?eid='
+    + Utilities.base64Encode(ev.getId()).replace(/=+$/, '');
+
+  sh.getRange(row, cols[HDR_LINK_F]).setValue(linkEvento);
+  sh.getRange(row, cols[HDR_LINK_A]).setValue(linkEvento);
+  sh.getRange(row, cols[HDR_SYNC]).setValue('OK');
+
+  const subj = `✅ Festa criada no calendário: ${titulo}`;
+  const body = `${descricao}\n\n🔗 Link do evento: ${linkEvento}`;
+  EMAIL_TO.forEach(to => { if (to) GmailApp.sendEmail(to, subj, body); });
+}
+
+
+/***** DISPONIBILIDADE (página HTML do Ivo) *****/
+function verificarDisponibilidade(data, inicio, fim) {
+  if (!data || !inicio || !fim) {
+    return { ok: false, mensagem: 'Preenche data, hora de início e hora de término.' };
+  }
+
+  const cal = CalendarApp.getCalendarById(CAL_ID);
+  if (!cal) return { ok: false, mensagem: 'Não foi possível aceder ao calendário.' };
+
+  let start = new Date(`${data}T${inicio}:00`);
+  let end   = new Date(`${data}T${fim}:00`);
+
+  if (end <= start) end.setDate(end.getDate() + 1);
+
+  if (BUFFER_MINUTES > 0) {
+    start = new Date(start.getTime() - BUFFER_MINUTES * 60000);
+    end   = new Date(end.getTime()   + BUFFER_MINUTES * 60000);
+  }
+
+  const eventos = cal.getEvents(start, end);
+  if (eventos.length > 0) {
+    return { ok: false, mensagem: 'Já existe uma festa ou bloqueio nesse horário.' };
+  }
+
+  return { ok: true, mensagem: 'Espaço disponível.', formUrl: construirLinkForm(data, inicio, fim) };
+}
+
+function construirLinkForm(data, inicio, fim) {
+  const ini = inicio.length === 5 ? inicio + ':00' : inicio;
+  const f   = fim.length   === 5 ? fim   + ':00' : fim;
+  return FORM_BASE_URL + '?usp=pp_url'
+    + '&' + FORM_FIELDS.data   + '=' + encodeURIComponent(data)
+    + '&' + FORM_FIELDS.inicio + '=' + encodeURIComponent(ini)
+    + '&' + FORM_FIELDS.fim    + '=' + encodeURIComponent(f);
+}
+
+function formatarDataParaForm(dataIso) { return dataIso; }
+
+
+/***** HELPERS GERAIS *****/
+function getCols_(sheet, headersNeeded) {
+  const lastCol = sheet.getLastColumn();
+  const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(h => String(h).trim());
+  const out = {};
+  headersNeeded.forEach(h => {
+    const idx = headers.indexOf(String(h).trim());
+    if (idx === -1) throw new Error(`Coluna "${h}" não encontrada.`);
+    out[h] = idx + 1;
+  });
+  return out;
+}
+
+function toDateTime_(dateVal, timeVal) {
+  const d = normalizeDate_(dateVal);
+  if (!d) return null;
+  const t = normalizeTime_(timeVal);
+  if (!t) return null;
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate(), t.hours, t.minutes, t.seconds, 0);
+}
+
+function normalizeDate_(v) {
+  if (v instanceof Date && !isNaN(v.getTime())) return v;
+  const s = String(v).trim();
+  if (!s) return null;
+  const parsed = new Date(s);
+  if (!isNaN(parsed.getTime())) return parsed;
+  const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (m) return new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
+  return null;
+}
+
+function normalizeTime_(v) {
+  if (v instanceof Date && !isNaN(v.getTime())) {
+    return { hours: v.getHours(), minutes: v.getMinutes(), seconds: v.getSeconds() };
+  }
+  if (typeof v === 'number') {
+    const total = Math.round(v * 86400);
+    return { hours: Math.floor(total / 3600) % 24, minutes: Math.floor((total % 3600) / 60), seconds: total % 60 };
+  }
+  const s = String(v).trim();
+  const m = s.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+  if (!m) return null;
+  const h = Number(m[1]), mi = Number(m[2]), se = m[3] ? Number(m[3]) : 0;
+  if (h > 23 || mi > 59 || se > 59) return null;
+  return { hours: h, minutes: mi, seconds: se };
+}
+
+function formatVal_(v) {
+  if (v instanceof Date && !isNaN(v.getTime())) {
+    return Utilities.formatDate(v, TZ, 'yyyy-MM-dd');
+  }
+  return String(v);
+}
+
+function fmtMoney_(v) {
+  if (v === '' || v === null || v === undefined) return '';
+  return String(v).trim() + (String(v).includes('€') ? '' : ' €');
+}
+
+
+/* =====================================================================
+   VISITAS AO ESPAÇO (30 min)
+   =====================================================================
+   Setup (uma vez):
+   1. Project Settings → Script Properties → adiciona
+        VISITAS_ADMIN_TOKEN = <palavra-passe à tua escolha>
+   2. Corre uma vez a função vst_setup() (cria as 2 sheets novas e
+      pede autorização Calendar + Gmail — aceita).
+   3. Deploy → Manage Deployments → ✏️ → New version → Deploy.
+   ===================================================================== */
+
 function vst_setup() {
   const ss = SpreadsheetApp.getActive();
   if (!ss.getSheetByName(VST_SHEET_BLOCOS)) {
@@ -71,7 +338,6 @@ function vst_setup() {
   }
 }
 
-/* ---------- HELPERS DE RESPOSTA ---------- */
 function vst_jsonp_(e, obj) {
   const cb = (e && e.parameter && e.parameter.callback) || 'cb';
   return ContentService
@@ -79,13 +345,6 @@ function vst_jsonp_(e, obj) {
     .setMimeType(ContentService.MimeType.JAVASCRIPT);
 }
 
-function vst_json_(obj) {
-  return ContentService
-    .createTextOutput(JSON.stringify(obj))
-    .setMimeType(ContentService.MimeType.JSON);
-}
-
-/* ---------- PARSERS ---------- */
 function vst_normData_(v) {
   if (!v) return '';
   if (v instanceof Date) {
@@ -122,7 +381,6 @@ function vst_humanData_(d) {
   return D + ' ' + meses[M - 1] + ' ' + Y;
 }
 
-/* ---------- LEITURAS ---------- */
 function vst_lerBlocos_(ss) {
   const sh = ss.getSheetByName(VST_SHEET_BLOCOS);
   if (!sh) return [];
@@ -157,12 +415,13 @@ function vst_lerMarcacoes_(ss) {
 }
 
 function vst_lerFestasDias_(ss) {
-  const sh = ss.getSheetByName(VST_SHEET_FESTAS);
+  const sh = ss.getSheetByName(SHEET_NAME);
   if (!sh) return [];
   const data = sh.getDataRange().getValues();
   if (data.length <= 1) return [];
   const hdr = data[0].map(h => String(h).trim().toLowerCase());
-  const iData = hdr.indexOf('data');
+  let iData = hdr.indexOf('data');
+  if (iData < 0) iData = hdr.indexOf(HDR_DATA.toLowerCase());
   if (iData < 0) return [];
   const out = new Set();
   for (let i = 1; i < data.length; i++) {
@@ -172,7 +431,6 @@ function vst_lerFestasDias_(ss) {
   return Array.from(out);
 }
 
-/* ---------- ROTAS PÚBLICAS ---------- */
 function vst_disponibilidade(mes) {
   if (!mes || !/^\d{4}-\d{2}$/.test(mes)) {
     const hoje = new Date();
@@ -221,7 +479,7 @@ function vst_marcar(payload) {
     }
 
     const fimDt = new Date(slotDt.getTime() + 30 * 60 * 1000);
-    const cal = CalendarApp.getCalendarById(VST_CAL_ID);
+    const cal = CalendarApp.getCalendarById(CAL_ID);
     const desc = 'Visita ao espaço Cosmopolitan Party.\n\n'
                + 'Nome: ' + payload.nome + '\n'
                + 'Email: ' + payload.email + '\n'
@@ -292,7 +550,6 @@ function vst_emailInternos_(p, data, slot) {
   MailApp.sendEmail({ to: VST_EMAILS_INTERNOS.join(','), subject: assunto, htmlBody: html, name: 'Cosmopolitan Party' });
 }
 
-/* ---------- ADMIN ---------- */
 function vst_adminCheckToken_(token) {
   const expected = PropertiesService.getScriptProperties().getProperty('VISITAS_ADMIN_TOKEN');
   return expected && token === expected;
@@ -351,10 +608,10 @@ function vst_cancelarMarcacao(payload) {
   for (let i = 1; i < data.length; i++) {
     if (String(data[i][0]) === payload.id) {
       try {
-        const cal = CalendarApp.getCalendarById(VST_CAL_ID);
+        const cal = CalendarApp.getCalendarById(CAL_ID);
         const ev = cal.getEventById(data[i][iCalId]);
         if (ev) ev.deleteEvent();
-      } catch (e) {}
+      } catch (err) {}
       sh.getRange(i + 1, iStatus + 1).setValue('cancelada');
       try {
         const dt = vst_normData_(data[i][iData]);
@@ -369,24 +626,9 @@ function vst_cancelarMarcacao(payload) {
             '<p style="color:#8a5a70;font-size:12px">— Cosmopolitan Party</p>',
           name: 'Cosmopolitan Party'
         });
-      } catch (e) {}
+      } catch (err) {}
       return { ok: true };
     }
   }
   return { ok: false, mensagem: 'Marcação não encontrada.' };
-}
-
-/* ---------- doPost (cola se ainda não existir; senão merge) ---------- */
-function doPost(e) {
-  let body;
-  try { body = JSON.parse(e.postData.contents); } catch (err) { body = {}; }
-  let res;
-  switch (body.action) {
-    case 'visitas.marcar':              res = vst_marcar(body); break;
-    case 'visitas.bloco.criar':         res = vst_criarBloco(body); break;
-    case 'visitas.bloco.remover':       res = vst_removerBloco(body); break;
-    case 'visitas.marcacao.cancelar':   res = vst_cancelarMarcacao(body); break;
-    default: res = { ok: false, mensagem: 'Acção desconhecida: ' + body.action };
-  }
-  return vst_json_(res);
 }
