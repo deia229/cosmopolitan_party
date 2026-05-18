@@ -478,9 +478,19 @@ function vst_marcar(payload) {
       return { ok: false, mensagem: 'Preenche nome, email e telefone.' };
     }
 
-    const blocos = vst_lerBlocos_(ss).filter(b => b.data === data);
     const slotMin = vst_horaToMin_(slot);
-    const dentro = blocos.some(b => slotMin >= vst_horaToMin_(b.inicio) && (slotMin + 30) <= vst_horaToMin_(b.fim));
+    // Defesa 1: slots têm de ser múltiplos de 30 min (ancorados em :00 e :30)
+    if (slotMin % 30 !== 0) {
+      return { ok: false, mensagem: 'Horário inválido. Os slots começam em :00 ou :30.' };
+    }
+
+    // Snap retroactivo dos blocos antigos para garantir que slots redondos cabem em blocos esquisitos
+    const blocos = vst_lerBlocos_(ss).filter(b => b.data === data);
+    const dentro = blocos.some(b => {
+      const bi = Math.ceil(vst_horaToMin_(b.inicio) / 30) * 30;
+      const bf = Math.floor(vst_horaToMin_(b.fim) / 30) * 30;
+      return slotMin >= bi && (slotMin + 30) <= bf;
+    });
     if (!dentro) return { ok: false, mensagem: 'Esse horário não está disponível.' };
 
     const marc = vst_lerMarcacoes_(ss).filter(m => m.data === data && m.status === 'ativa');
@@ -488,7 +498,7 @@ function vst_marcar(payload) {
       return { ok: false, mensagem: 'Outra pessoa marcou esse horário. Escolhe outro.' };
     }
 
-    if (vst_lerFestasDias_(ss).indexOf(data) >= 0) {
+    if (vst_lerFestasDias_(ss, data.substring(0,7)).indexOf(data) >= 0) {
       return { ok: false, mensagem: 'Esse dia já tem evento marcado.' };
     }
 
@@ -501,6 +511,13 @@ function vst_marcar(payload) {
 
     const fimDt = new Date(slotDt.getTime() + 30 * 60 * 1000);
     const cal = CalendarApp.getCalendarById(CAL_ID);
+
+    // Defesa 2: verificar no Calendar se já existe qualquer evento neste slot
+    // (cobre rows com slot mal-parsed na sheet + bloqueios manuais da Andreia)
+    const conflitos = cal.getEvents(slotDt, fimDt);
+    if (conflitos.length > 0) {
+      return { ok: false, mensagem: 'Outra pessoa marcou esse horário. Escolhe outro.' };
+    }
     const desc = 'Visita ao espaço Cosmopolitan Party.\n\n'
                + 'Nome: ' + payload.nome + '\n'
                + 'Email: ' + payload.email + '\n'
@@ -590,12 +607,17 @@ function vst_admin(token) {
 function vst_criarBloco(payload) {
   if (!vst_adminCheckToken_(payload.token)) return { ok: false, mensagem: 'Token inválido.' };
   const data = vst_normData_(payload.data);
-  const inicio = vst_normHora_(payload.inicio);
-  const fim = vst_normHora_(payload.fim);
+  let inicio = vst_normHora_(payload.inicio);
+  let fim = vst_normHora_(payload.fim);
   if (!data || !inicio || !fim) return { ok: false, mensagem: 'Dados inválidos.' };
-  if (vst_horaToMin_(inicio) >= vst_horaToMin_(fim)) {
-    return { ok: false, mensagem: 'O fim tem de ser depois do início.' };
+  // Snap server-side para múltiplos de 30 (defesa contra clients antigos)
+  const iniMin = Math.ceil(vst_horaToMin_(inicio) / 30) * 30;
+  const fimMin = Math.floor(vst_horaToMin_(fim) / 30) * 30;
+  if (iniMin >= fimMin) {
+    return { ok: false, mensagem: 'Bloco demasiado curto (mínimo 30 min entre :00 e :30).' };
   }
+  inicio = String(Math.floor(iniMin / 60)).padStart(2, '0') + ':' + String(iniMin % 60).padStart(2, '0');
+  fim = String(Math.floor(fimMin / 60)).padStart(2, '0') + ':' + String(fimMin % 60).padStart(2, '0');
   const id = Utilities.getUuid();
   SpreadsheetApp.getActive().getSheetByName(VST_SHEET_BLOCOS)
     .appendRow([id, data, inicio, fim, new Date().toISOString()]);
