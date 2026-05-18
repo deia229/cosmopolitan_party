@@ -346,11 +346,20 @@ function vst_jsonp_(e, obj) {
 }
 
 function vst_normData_(v) {
-  if (!v) return '';
+  if (v === '' || v === null || v === undefined) return '';
   if (v instanceof Date) {
     const y = v.getFullYear(),
           m = String(v.getMonth() + 1).padStart(2, '0'),
           d = String(v.getDate()).padStart(2, '0');
+    return y + '-' + m + '-' + d;
+  }
+  if (typeof v === 'number') {
+    // Serial number do Sheets (dias desde 1899-12-30)
+    const epoch = new Date(1899, 11, 30);
+    const dt = new Date(epoch.getTime() + v * 86400000);
+    const y = dt.getFullYear(),
+          m = String(dt.getMonth() + 1).padStart(2, '0'),
+          d = String(dt.getDate()).padStart(2, '0');
     return y + '-' + m + '-' + d;
   }
   const s = String(v).trim();
@@ -360,9 +369,17 @@ function vst_normData_(v) {
 }
 
 function vst_normHora_(v) {
-  if (!v) return '';
+  if (v === '' || v === null || v === undefined) return '';
   if (v instanceof Date) {
     return Utilities.formatDate(v, Session.getScriptTimeZone(), 'HH:mm');
+  }
+  if (typeof v === 'number') {
+    // Fração de dia (0.604166… = 14:30) — pode vir > 1 se Sheets guardou como datetime serial
+    const frac = v - Math.floor(v);
+    const totalMin = Math.round(frac * 24 * 60);
+    const h = Math.floor(totalMin / 60) % 24;
+    const m = totalMin % 60;
+    return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
   }
   const s = String(v).trim();
   const m = s.match(/^(\d{1,2}):(\d{2})/);
