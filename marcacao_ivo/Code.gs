@@ -431,19 +431,23 @@ function vst_lerMarcacoes_(ss) {
   })).filter(m => m.id);
 }
 
-function vst_lerFestasDias_(ss) {
+function vst_lerFestasDias_(ss, mesFiltro) {
   const sh = ss.getSheetByName(SHEET_NAME);
   if (!sh) return [];
-  const data = sh.getDataRange().getValues();
-  if (data.length <= 1) return [];
-  const hdr = data[0].map(h => String(h).trim().toLowerCase());
+  const lastRow = sh.getLastRow();
+  const lastCol = sh.getLastColumn();
+  if (lastRow <= 1 || lastCol <= 0) return [];
+  // Lê só o header para encontrar a coluna Data
+  const hdr = sh.getRange(1, 1, 1, lastCol).getValues()[0].map(h => String(h).trim().toLowerCase());
   let iData = hdr.indexOf('data');
   if (iData < 0) iData = hdr.indexOf(HDR_DATA.toLowerCase());
   if (iData < 0) return [];
+  // Lê apenas a coluna Data (1 coluna em vez da sheet inteira)
+  const vals = sh.getRange(2, iData + 1, lastRow - 1, 1).getValues();
   const out = new Set();
-  for (let i = 1; i < data.length; i++) {
-    const d = vst_normData_(data[i][iData]);
-    if (d) out.add(d);
+  for (let i = 0; i < vals.length; i++) {
+    const d = vst_normData_(vals[i][0]);
+    if (d && (!mesFiltro || d.indexOf(mesFiltro) === 0)) out.add(d);
   }
   return Array.from(out);
 }
@@ -458,7 +462,7 @@ function vst_disponibilidade(mes) {
   const marcacoes = vst_lerMarcacoes_(ss)
     .filter(m => m.data.indexOf(mes) === 0 && m.status === 'ativa')
     .map(m => ({ data: m.data, slot: m.slot }));
-  const festas = vst_lerFestasDias_(ss).filter(d => d.indexOf(mes) === 0);
+  const festas = vst_lerFestasDias_(ss, mes);
   return { ok: true, mes: mes, blocos: blocos, marcacoes: marcacoes, festas: festas };
 }
 
