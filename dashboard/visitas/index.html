@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<base target="_top">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>Marca uma visita — Cosmopolitan Party</title>
+<meta name="description" content="Marca uma visita de 30 minutos ao espaço Cosmopolitan Party em Loures. Escolhe o dia e a hora que te der jeito.">
+<meta property="og:title" content="Visita o espaço — Cosmopolitan Party">
+<meta property="og:description" content="Marca uma visita de 30 min ao espaço. Escolhe o dia e a hora.">
+<meta property="og:type" content="website">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;700;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --pink:#e0187a; --pink2:#ff4da6; --pink3:#fce4ec;
+    --dark:#1a0010; --dark2:#3d0030;
+    --bg:#faf8f9; --card:#fff; --border:#f0c8dc;
+    --text:#1a0010; --muted:#8a5a70;
+    --green:#1d6a4a; --green-bg:#e8f5e9;
+    --red:#c0143c;
+    --tap:48px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.5;-webkit-text-size-adjust:100%}
+  .screen{min-height:100vh;width:100%;max-width:520px;margin:0 auto;padding:22px 18px 28px;display:flex;flex-direction:column}
+
+  /* HEADER */
+  .top{padding:6px 0 18px}
+  .brand-row{display:flex;align-items:center;gap:10px;margin-bottom:22px}
+  .logo{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--pink),var(--pink2));display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 6px 18px rgba(224,24,122,.25)}
+  .brand-name{font-family:'Playfair Display',serif;font-size:19px;font-weight:900;color:var(--dark);line-height:1}
+  .brand-sub{font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:3px;text-transform:uppercase;margin-top:4px}
+  h1{font-family:'Playfair Display',serif;font-weight:900;font-size:28px;line-height:1.1;color:var(--dark);margin-bottom:8px}
+  .sub{font-size:14px;color:var(--muted);line-height:1.55}
+
+  /* MES NAV */
+  .mes-nav{display:flex;align-items:center;justify-content:space-between;margin:18px 0 10px;padding:8px 6px}
+  .mes-nav button{background:none;border:none;cursor:pointer;color:var(--pink);font-size:20px;padding:8px 14px;line-height:1;border-radius:10px;transition:background .15s;font-family:inherit}
+  .mes-nav button:hover{background:var(--pink3)}
+  .mes-nav button:disabled{color:#d8c4cf;cursor:not-allowed;background:transparent}
+  .mes-lbl{font-family:'Playfair Display',serif;font-size:18px;font-weight:700;text-transform:capitalize;color:var(--dark)}
+
+  /* CALENDAR */
+  .cal-wrap{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px;box-shadow:0 4px 14px rgba(224,24,122,.04)}
+  .cal-dows{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:6px}
+  .cal-dow{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);text-align:center;padding:6px 0}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+  .cal-day{aspect-ratio:1;border:1px solid transparent;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;color:var(--text);cursor:default;position:relative;background:transparent}
+  .cal-day.outside{color:#d8c4cf}
+  .cal-day.past{color:#c8b5c0}
+  .cal-day.busy{color:#b89bab;text-decoration:line-through;text-decoration-color:rgba(184,155,171,.5)}
+  .cal-day.open{background:var(--pink3);color:var(--dark);cursor:pointer;font-weight:700;border-color:transparent;transition:all .15s}
+  .cal-day.open:hover{background:var(--pink);color:#fff;transform:scale(1.04)}
+  .cal-day.sel{background:var(--pink)!important;color:#fff!important;box-shadow:0 4px 14px rgba(224,24,122,.35)}
+  .cal-day .dot{width:5px;height:5px;border-radius:50%;background:var(--pink);margin-top:3px}
+  .cal-day.sel .dot, .cal-day.open:hover .dot{background:#fff}
+
+  /* SLOTS */
+  .slots-wrap{margin-top:18px}
+  .slots-hdr{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;padding-left:4px}
+  .slots-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .slot-btn{padding:14px 0;border:1.5px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);font-family:'DM Mono',monospace;font-size:14px;font-weight:600;cursor:pointer;transition:all .15s}
+  .slot-btn:hover{border-color:var(--pink);color:var(--pink)}
+  .slot-btn.sel{background:var(--pink);border-color:var(--pink);color:#fff;box-shadow:0 4px 14px rgba(224,24,122,.3)}
+
+  .empty-slots{padding:20px;text-align:center;color:var(--muted);font-size:13px;background:var(--bg);border-radius:12px}
+
+  /* FORM */
+  .form-wrap{margin-top:22px;display:flex;flex-direction:column;gap:14px}
+  .field{display:flex;flex-direction:column}
+  label{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;font-weight:500;color:var(--muted);margin-bottom:7px;margin-left:4px}
+  input[type="text"], input[type="email"], input[type="tel"], textarea{width:100%;padding:15px 18px;border:1.5px solid var(--border);border-radius:14px;background:var(--card);color:var(--text);font-family:'DM Sans',sans-serif;font-size:16px;font-weight:500;appearance:none;-webkit-appearance:none;transition:border-color .15s, box-shadow .15s;outline:none;resize:vertical}
+  textarea{min-height:80px;line-height:1.4}
+  input:focus, textarea:focus{border-color:var(--pink);box-shadow:0 0 0 4px rgba(224,24,122,.12)}
+
+  /* CTA */
+  .cta-wrap{margin-top:18px}
+  button.cta{width:100%;height:60px;border:none;border-radius:16px;background:linear-gradient(135deg,var(--pink),var(--pink2));color:#fff;font-family:'DM Sans',sans-serif;font-size:16px;font-weight:700;letter-spacing:.3px;cursor:pointer;box-shadow:0 8px 22px rgba(224,24,122,.28);transition:transform .1s, opacity .15s}
+  button.cta:active{transform:translateY(1px)}
+  button.cta:disabled{opacity:.55;cursor:not-allowed;box-shadow:none}
+  button.cta.loading{opacity:.7;cursor:wait}
+  button.cta.loading::after{content:'';display:inline-block;width:14px;height:14px;margin-left:10px;vertical-align:middle;border:2px solid rgba(255,255,255,.5);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* MSG */
+  .msg{margin-top:14px;padding:16px 18px;border-radius:14px;font-size:14px;font-weight:500;line-height:1.45;display:flex;align-items:flex-start;gap:10px}
+  .msg .ic{font-size:18px;line-height:1;flex-shrink:0;margin-top:1px}
+  .msg.ok{background:var(--green-bg);color:var(--green);border:1px solid #cdebd9}
+  .msg.error{background:#fdecec;color:var(--red);border:1px solid #f8c8d2}
+
+  /* SUCCESS PAGE */
+  .success{background:linear-gradient(135deg,var(--dark),var(--dark2));border-radius:18px;padding:28px 22px;color:#fff;text-align:center;margin-top:8px}
+  .success-icon{width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,var(--pink),var(--pink2));display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 16px;box-shadow:0 8px 24px rgba(224,24,122,.4)}
+  .success-title{font-family:'Playfair Display',serif;font-size:24px;font-weight:900;margin-bottom:10px}
+  .success-meta{font-family:'DM Mono',monospace;font-size:13px;color:rgba(255,180,220,.7);letter-spacing:1px;margin-bottom:18px}
+  .success-text{font-size:14px;line-height:1.6;color:rgba(255,255,255,.85)}
+  .success a{color:var(--pink2);text-decoration:none}
+
+  .hint{margin-top:14px;font-size:11px;line-height:1.5;color:var(--muted);text-align:center;font-family:'DM Mono',monospace;letter-spacing:.3px}
+
+  .legenda{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-top:12px;font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;letter-spacing:.5px}
+  .legenda .li{display:flex;align-items:center;gap:6px}
+  .legenda .sw{width:12px;height:12px;border-radius:4px}
+  .sw.open{background:var(--pink3);border:1px solid var(--pink)}
+  .sw.none{background:#fff;border:1px dashed #d8c4cf}
+
+  .loader{padding:40px 0;text-align:center;color:var(--muted);font-size:13px}
+  .loader::before{content:'';display:inline-block;width:18px;height:18px;border:2.5px solid var(--border);border-top-color:var(--pink);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:10px}
+
+  @media (max-width:380px){
+    h1{font-size:24px}
+    .screen{padding:18px 14px 22px}
+    .slots-grid{grid-template-columns:repeat(2,1fr)}
+  }
+</style>
+</head>
+<body>
+
+<div class="screen">
+
+  <div class="top">
+    <div class="brand-row">
+      <div class="logo">🍹</div>
+      <div>
+        <div class="brand-name">Cosmopolitan Party</div>
+        <div class="brand-sub">Visitas · Loures</div>
+      </div>
+    </div>
+    <h1 id="hTitle">Visita o espaço</h1>
+    <div class="sub" id="hSub">30 minutos para conheceres a sala, tirar dúvidas e perceber se faz match para a tua festa. Escolhe o dia que te der jeito.</div>
+  </div>
+
+  <div id="mainArea">
+    <!-- MES NAV -->
+    <div class="mes-nav">
+      <button id="btnPrev" onclick="prevMes()" aria-label="Mês anterior">‹</button>
+      <div class="mes-lbl" id="mesLbl">—</div>
+      <button id="btnNext" onclick="nextMes()" aria-label="Mês seguinte">›</button>
+    </div>
+
+    <!-- CALENDAR -->
+    <div class="cal-wrap">
+      <div class="cal-dows">
+        <div class="cal-dow">Seg</div><div class="cal-dow">Ter</div><div class="cal-dow">Qua</div>
+        <div class="cal-dow">Qui</div><div class="cal-dow">Sex</div><div class="cal-dow">Sáb</div><div class="cal-dow">Dom</div>
+      </div>
+      <div class="cal-grid" id="calGrid">
+        <div class="loader" style="grid-column:span 7">A carregar disponibilidade</div>
+      </div>
+    </div>
+
+    <div class="legenda">
+      <div class="li"><span class="sw open"></span>Com horários livres</div>
+      <div class="li"><span class="sw none"></span>Sem horários</div>
+    </div>
+
+    <!-- SLOTS -->
+    <div class="slots-wrap" id="slotsWrap" style="display:none">
+      <div class="slots-hdr" id="slotsHdr">Horários disponíveis</div>
+      <div id="slotsBody"></div>
+    </div>
+
+    <!-- FORM -->
+    <div id="formWrap" style="display:none">
+      <div class="form-wrap">
+        <div class="field">
+          <label for="fNome">Nome</label>
+          <input type="text" id="fNome" autocomplete="name" placeholder="Como te chamas?">
+        </div>
+        <div class="field">
+          <label for="fEmail">Email</label>
+          <input type="email" id="fEmail" autocomplete="email" placeholder="email@exemplo.com">
+        </div>
+        <div class="field">
+          <label for="fTel">Telefone</label>
+          <input type="tel" id="fTel" autocomplete="tel" placeholder="912 345 678">
+        </div>
+        <div class="field">
+          <label for="fObs">Observações (opcional)</label>
+          <textarea id="fObs" placeholder="Tipo de festa, número de pessoas, dúvidas…"></textarea>
+        </div>
+      </div>
+      <div class="cta-wrap">
+        <button class="cta" id="btnConfirmar" onclick="submeter()">Marcar visita</button>
+        <div id="formMsg"></div>
+        <div class="hint">Recebes confirmação por email. Podes cancelar respondendo a esse email.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUCCESS (substitui mainArea ao submeter) -->
+  <div id="successArea" style="display:none">
+    <div class="success">
+      <div class="success-icon">✓</div>
+      <div class="success-title">Visita marcada</div>
+      <div class="success-meta" id="successMeta"></div>
+      <div class="success-text">Enviámos a confirmação para o teu email com todos os detalhes. Até já!</div>
+    </div>
+    <div class="hint" style="margin-top:18px"><a href="" onclick="event.preventDefault();location.reload()" style="color:var(--pink);text-decoration:none">↻ Marcar outra visita</a></div>
+  </div>
+
+</div>
+
+<script>
+  const API_URL = 'https://script.google.com/macros/s/AKfycbx5SeYyBiSlv8pkFEg_DMjg0BGiNoLAso_VB00cSFBuCz_038Ojfu6SwBGK95yt4QiJ4A/exec';
+  const SLOT_MIN = 30;
+
+  const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+  const state = {
+    mes: null,            // "YYYY-MM"
+    data: null,           // resposta API: {blocos, marcacoes, festas}
+    diaSel: null,         // "YYYY-MM-DD"
+    slotSel: null,        // "HH:MM"
+    loading: false
+  };
+
+  // ---- HELPERS ----
+  const pad = n => String(n).padStart(2, '0');
+  const ymd = dt => dt.getFullYear() + '-' + pad(dt.getMonth() + 1) + '-' + pad(dt.getDate());
+  const ym = dt => dt.getFullYear() + '-' + pad(dt.getMonth() + 1);
+  const hojeYmd = () => ymd(new Date());
+  function mesAtual(){ const d = new Date(); return ym(d); }
+  function dtFromYmd(s){ const [Y,M,D] = s.split('-').map(Number); return new Date(Y, M-1, D); }
+  function humanMes(mes){ const [Y,M] = mes.split('-').map(Number); return MESES[M-1] + ' ' + Y; }
+  function humanData(d){ const [Y,M,D] = d.split('-').map(Number); const meses=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']; return D+' '+meses[M-1]; }
+  function horaToMin(h){ const [H,M] = h.split(':').map(Number); return H*60 + M; }
+  function minToHora(m){ return pad(Math.floor(m/60)) + ':' + pad(m%60); }
+
+  // ---- INIT ----
+  function init(){
+    state.mes = mesAtual();
+    loadMes();
+  }
+
+  // ---- LOAD ----
+  function loadMes(){
+    state.loading = true;
+    state.diaSel = null;
+    state.slotSel = null;
+    document.getElementById('mesLbl').textContent = humanMes(state.mes);
+    document.getElementById('calGrid').innerHTML = '<div class="loader" style="grid-column:span 7">A carregar</div>';
+    document.getElementById('slotsWrap').style.display = 'none';
+    document.getElementById('formWrap').style.display = 'none';
+    atualizarNav();
+
+    const cbName = '__vstcb_' + Date.now();
+    window[cbName] = function(res){
+      try{ delete window[cbName]; }catch(e){}
+      const s = document.getElementById('_vstScript'); if(s) s.remove();
+      state.loading = false;
+      if(!res || !res.ok){
+        document.getElementById('calGrid').innerHTML = '<div class="loader" style="grid-column:span 7;color:var(--red)">Erro a carregar. Tenta atualizar a página.</div>';
+        return;
+      }
+      state.data = res;
+      renderCal();
+    };
+    const url = API_URL + '?page=visitas-disponibilidade&mes=' + encodeURIComponent(state.mes) + '&callback=' + cbName;
+    const sc = document.createElement('script');
+    sc.id = '_vstScript';
+    sc.src = url;
+    sc.onerror = function(){
+      state.loading = false;
+      document.getElementById('calGrid').innerHTML = '<div class="loader" style="grid-column:span 7;color:var(--red)">Sem ligação. Tenta atualizar.</div>';
+    };
+    document.head.appendChild(sc);
+  }
+
+  function atualizarNav(){
+    const prev = document.getElementById('btnPrev');
+    // Não permite voltar a meses passados
+    prev.disabled = (state.mes <= mesAtual());
+  }
+
+  function prevMes(){
+    if(state.mes <= mesAtual()) return;
+    const [Y,M] = state.mes.split('-').map(Number);
+    const dt = new Date(Y, M-2, 1);
+    state.mes = ym(dt);
+    loadMes();
+  }
+  function nextMes(){
+    const [Y,M] = state.mes.split('-').map(Number);
+    const dt = new Date(Y, M, 1);
+    state.mes = ym(dt);
+    loadMes();
+  }
+
+  // ---- DISPONIBILIDADE ----
+  function diaTemSlots(data){
+    if(!state.data) return false;
+    if(state.data.festas.indexOf(data) >= 0) return false;
+    const blocos = state.data.blocos.filter(b => b.data === data);
+    if(blocos.length === 0) return false;
+    return slotsDoDia(data).length > 0;
+  }
+
+  function diaTemFesta(data){
+    return state.data && state.data.festas.indexOf(data) >= 0;
+  }
+
+  function slotsDoDia(data){
+    if(!state.data) return [];
+    const blocos = state.data.blocos.filter(b => b.data === data);
+    if(blocos.length === 0) return [];
+    const marcadosDia = new Set(state.data.marcacoes.filter(m => m.data === data).map(m => m.slot));
+    const agora = new Date();
+    const ehHoje = (data === hojeYmd());
+    const minAgora = ehHoje ? (agora.getHours() * 60 + agora.getMinutes()) : -1;
+
+    const set = new Set();
+    for(const b of blocos){
+      const ini = horaToMin(b.inicio);
+      const fim = horaToMin(b.fim);
+      for(let m = ini; m + SLOT_MIN <= fim; m += SLOT_MIN){
+        if(ehHoje && m <= minAgora) continue;
+        const s = minToHora(m);
+        if(marcadosDia.has(s)) continue;
+        set.add(s);
+      }
+    }
+    return Array.from(set).sort();
+  }
+
+  // ---- RENDER CAL ----
+  function renderCal(){
+    const grid = document.getElementById('calGrid');
+    grid.innerHTML = '';
+    const [Y,M] = state.mes.split('-').map(Number);
+    const primeiro = new Date(Y, M-1, 1);
+    const ultimo = new Date(Y, M, 0);
+    // Dia da semana do dia 1 (0=Dom, 1=Seg…). Queremos Seg=0.
+    let offset = (primeiro.getDay() + 6) % 7;
+    const hoje = hojeYmd();
+    // Células antes
+    for(let i = 0; i < offset; i++){
+      const cell = document.createElement('div');
+      cell.className = 'cal-day outside';
+      grid.appendChild(cell);
+    }
+    // Dias do mês
+    for(let d = 1; d <= ultimo.getDate(); d++){
+      const data = state.mes + '-' + pad(d);
+      const cell = document.createElement('div');
+      cell.className = 'cal-day';
+      cell.textContent = d;
+      if(data < hoje){
+        cell.classList.add('past');
+      } else if(diaTemFesta(data)){
+        cell.classList.add('busy');
+        cell.title = 'Já tem evento marcado';
+      } else if(diaTemSlots(data)){
+        cell.classList.add('open');
+        cell.onclick = () => selDia(data, cell);
+        const dot = document.createElement('div');
+        dot.className = 'dot';
+        cell.appendChild(dot);
+      }
+      grid.appendChild(cell);
+    }
+  }
+
+  // ---- SELECT DIA ----
+  function selDia(data, cell){
+    state.diaSel = data;
+    state.slotSel = null;
+    // Highlight
+    document.querySelectorAll('.cal-day.sel').forEach(c => c.classList.remove('sel'));
+    if(cell) cell.classList.add('sel');
+
+    const wrap = document.getElementById('slotsWrap');
+    const hdr = document.getElementById('slotsHdr');
+    const body = document.getElementById('slotsBody');
+    hdr.textContent = 'Horários · ' + humanData(data);
+    const slots = slotsDoDia(data);
+    if(slots.length === 0){
+      body.innerHTML = '<div class="empty-slots">Sem horários disponíveis neste dia.</div>';
+    } else {
+      body.innerHTML = '<div class="slots-grid">' + slots.map(s =>
+        '<button class="slot-btn" data-slot="' + s + '" onclick="selSlot(\'' + s + '\', this)">' + s + '</button>'
+      ).join('') + '</div>';
+    }
+    wrap.style.display = 'block';
+    document.getElementById('formWrap').style.display = 'none';
+    wrap.scrollIntoView({behavior:'smooth', block:'center'});
+  }
+
+  // ---- SELECT SLOT ----
+  function selSlot(slot, btn){
+    state.slotSel = slot;
+    document.querySelectorAll('.slot-btn.sel').forEach(b => b.classList.remove('sel'));
+    if(btn) btn.classList.add('sel');
+    document.getElementById('formWrap').style.display = 'block';
+    document.getElementById('formMsg').innerHTML = '';
+    setTimeout(() => {
+      document.getElementById('fNome').focus({preventScroll:true});
+      document.getElementById('formWrap').scrollIntoView({behavior:'smooth', block:'start'});
+    }, 50);
+  }
+
+  // ---- SUBMIT ----
+  function submeter(){
+    const nome = document.getElementById('fNome').value.trim();
+    const email = document.getElementById('fEmail').value.trim();
+    const tel = document.getElementById('fTel').value.trim();
+    const obs = document.getElementById('fObs').value.trim();
+    const msg = document.getElementById('formMsg');
+    const btn = document.getElementById('btnConfirmar');
+
+    if(!nome || !email || !tel){
+      msg.innerHTML = '<div class="msg error"><span class="ic">⚠️</span><span>Preenche nome, email e telefone.</span></div>';
+      return;
+    }
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){
+      msg.innerHTML = '<div class="msg error"><span class="ic">⚠️</span><span>Email inválido.</span></div>';
+      return;
+    }
+    if(!state.diaSel || !state.slotSel){
+      msg.innerHTML = '<div class="msg error"><span class="ic">⚠️</span><span>Escolhe primeiro um dia e um horário.</span></div>';
+      return;
+    }
+
+    btn.classList.add('loading');
+    btn.disabled = true;
+    btn.textContent = 'A marcar';
+    msg.innerHTML = '';
+
+    fetch(API_URL, {
+      method: 'POST',
+      headers: {'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({
+        action: 'visitas.marcar',
+        data: state.diaSel,
+        slot: state.slotSel,
+        nome, email, telefone: tel, obs
+      })
+    })
+    .then(r => r.json())
+    .then(res => {
+      btn.classList.remove('loading');
+      btn.disabled = false;
+      btn.textContent = 'Marcar visita';
+      if(!res.ok){
+        msg.innerHTML = '<div class="msg error"><span class="ic">✗</span><span>' + (res.mensagem || 'Erro a marcar.') + '</span></div>';
+        return;
+      }
+      // Sucesso
+      document.getElementById('mainArea').style.display = 'none';
+      document.getElementById('successArea').style.display = 'block';
+      document.getElementById('successMeta').textContent = humanData(state.diaSel) + ' · ' + state.slotSel + ' · 30 min';
+      window.scrollTo({top:0, behavior:'smooth'});
+    })
+    .catch(err => {
+      btn.classList.remove('loading');
+      btn.disabled = false;
+      btn.textContent = 'Marcar visita';
+      msg.innerHTML = '<div class="msg error"><span class="ic">⚠️</span><span>Erro de ligação: ' + (err.message || err) + '</span></div>';
+    });
+  }
+
+  init();
+</script>
+
+</body>
+</html>

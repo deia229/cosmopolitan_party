@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<base target="_top">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;700;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --pink:#e0187a; --pink2:#ff4da6; --pink3:#fce4ec;
+    --dark:#1a0010; --dark2:#3d0030;
+    --bg:#faf8f9; --card:#fff; --border:#f0c8dc;
+    --text:#1a0010; --muted:#8a5a70;
+    --green:#1d6a4a; --green-bg:#e8f5e9;
+    --red:#c0143c; --red-bg:#fce4ec;
+    --tap:48px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    font-family:'DM Sans',sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    font-size:15px;
+    line-height:1.5;
+    -webkit-text-size-adjust:100%;
+  }
+  .screen{
+    min-height:100vh;
+    width:100%;
+    max-width:520px;
+    margin:0 auto;
+    padding:22px 18px 28px;
+    display:flex;
+    flex-direction:column;
+  }
+
+  /* HEADER */
+  .top{padding:6px 0 22px}
+  .brand-row{display:flex;align-items:center;gap:10px;margin-bottom:24px}
+  .logo{
+    width:42px;height:42px;border-radius:12px;
+    background:linear-gradient(135deg,var(--pink),var(--pink2));
+    display:flex;align-items:center;justify-content:center;
+    font-size:22px;
+    box-shadow:0 6px 18px rgba(224,24,122,.25);
+  }
+  .brand-name{
+    font-family:'Playfair Display',serif;
+    font-size:19px;font-weight:900;color:var(--dark);line-height:1;
+  }
+  .brand-sub{
+    font-family:'DM Mono',monospace;
+    font-size:9px;color:var(--muted);
+    letter-spacing:3px;text-transform:uppercase;margin-top:4px;
+  }
+  h1{
+    font-family:'Playfair Display',serif;
+    font-weight:900;
+    font-size:28px;
+    line-height:1.1;
+    color:var(--dark);
+    margin-bottom:8px;
+  }
+  .sub{
+    font-size:14px;
+    color:var(--muted);
+    line-height:1.55;
+  }
+
+  /* FORM */
+  .form-area{
+    margin-top:24px;
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+  }
+  .field{display:flex;flex-direction:column}
+  label{
+    font-family:'DM Mono',monospace;
+    font-size:10px;
+    letter-spacing:2px;
+    text-transform:uppercase;
+    font-weight:500;
+    color:var(--muted);
+    margin-bottom:8px;
+    margin-left:4px;
+  }
+  input[type="date"], input[type="time"]{
+    width:100%;
+    height:60px;
+    padding:0 18px;
+    border:1.5px solid var(--border);
+    border-radius:14px;
+    background:var(--card);
+    color:var(--text);
+    font-family:'DM Sans',sans-serif;
+    font-size:17px;
+    font-weight:500;
+    appearance:none;
+    -webkit-appearance:none;
+    transition:border-color .15s, box-shadow .15s;
+  }
+  input:focus{
+    outline:none;
+    border-color:var(--pink);
+    box-shadow:0 0 0 4px rgba(224,24,122,.12);
+  }
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .spacer{flex:1;min-height:24px}
+
+  /* BOTTOM (CTA) */
+  .bottom{
+    position:sticky;
+    bottom:0;
+    background:linear-gradient(180deg,rgba(250,248,249,0) 0%,rgba(250,248,249,1) 30%);
+    padding-top:18px;
+    margin-top:8px;
+  }
+  button.cta{
+    width:100%;
+    height:60px;
+    border:none;
+    border-radius:16px;
+    background:linear-gradient(135deg,var(--pink),var(--pink2));
+    color:#fff;
+    font-family:'DM Sans',sans-serif;
+    font-size:16px;
+    font-weight:700;
+    letter-spacing:.3px;
+    cursor:pointer;
+    box-shadow:0 8px 22px rgba(224,24,122,.28);
+    transition:transform .1s, box-shadow .15s, opacity .15s;
+  }
+  button.cta:active{transform:translateY(1px)}
+  button.cta:disabled, button.cta.loading{
+    opacity:.6;
+    cursor:not-allowed;
+    box-shadow:none;
+  }
+  button.cta.loading::after{
+    content:'';
+    display:inline-block;
+    width:14px;height:14px;
+    margin-left:10px;
+    vertical-align:middle;
+    border:2px solid rgba(255,255,255,.5);
+    border-top-color:#fff;
+    border-radius:50%;
+    animation:spin .7s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* RESULT */
+  .msg{
+    margin-top:14px;
+    padding:16px 18px;
+    border-radius:14px;
+    font-size:14px;
+    font-weight:500;
+    line-height:1.45;
+    display:flex;
+    align-items:flex-start;
+    gap:10px;
+  }
+  .msg .ic{font-size:18px;line-height:1;flex-shrink:0;margin-top:1px}
+  .msg.ok{
+    background:var(--green-bg);
+    color:var(--green);
+    border:1px solid #cdebd9;
+  }
+  .msg.error{
+    background:#fdecec;
+    color:var(--red);
+    border:1px solid #f8c8d2;
+  }
+
+  /* SECONDARY ACTION (continuar para o form) */
+  .secondary{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    width:100%;
+    margin-top:12px;
+    padding:18px;
+    border-radius:16px;
+    background:var(--dark);
+    color:#fff;
+    text-align:center;
+    text-decoration:none;
+    font-family:'DM Sans',sans-serif;
+    font-size:16px;
+    font-weight:700;
+    letter-spacing:.3px;
+    box-shadow:0 6px 16px rgba(26,0,16,.25);
+    transition:transform .1s, opacity .15s;
+  }
+  .secondary:active{transform:translateY(1px)}
+  .secondary .arrow{font-size:18px}
+
+  .hint{
+    margin-top:16px;
+    font-size:12px;
+    line-height:1.5;
+    color:var(--muted);
+    text-align:center;
+    font-family:'DM Mono',monospace;
+    letter-spacing:.3px;
+  }
+
+  /* MOBILE TIGHT */
+  @media (max-width: 380px){
+    h1{font-size:24px}
+    .row{grid-template-columns:1fr}
+    .screen{padding:18px 14px 22px}
+  }
+</style>
+</head>
+<body>
+
+<div class="screen">
+
+  <div class="top">
+    <div class="brand-row">
+      <div class="logo">🍹</div>
+      <div>
+        <div class="brand-name">Cosmopolitan Party</div>
+        <div class="brand-sub">Marcação · Loures</div>
+      </div>
+    </div>
+    <h1>Verificar disponibilidade</h1>
+    <div class="sub">Confirma se o espaço está livre para a data e horário que pretendes. Se sim, segue logo para o registo da festa.</div>
+  </div>
+
+  <div class="form-area">
+    <div class="field">
+      <label for="data">Data da festa</label>
+      <input type="date" id="data">
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label for="inicio">Hora de início</label>
+        <input type="time" id="inicio">
+      </div>
+      <div class="field">
+        <label for="fim">Hora de término</label>
+        <input type="time" id="fim">
+      </div>
+    </div>
+  </div>
+
+  <div class="spacer"></div>
+
+  <div class="bottom">
+    <button class="cta" onclick="verificar()" id="btnVerificar">Ver disponibilidade</button>
+    <div id="resultado"></div>
+    <div id="acao"></div>
+    <div class="hint">Se estiver disponível, o formulário abre já com data e horários preenchidos.</div>
+  </div>
+
+</div>
+
+<script>
+  function verificar() {
+    const data = document.getElementById('data').value;
+    const inicio = document.getElementById('inicio').value;
+    const fim = document.getElementById('fim').value;
+
+    const resultado = document.getElementById('resultado');
+    const acao = document.getElementById('acao');
+    const btn = document.getElementById('btnVerificar');
+
+    // Validação básica antes de chamar o backend
+    if (!data || !inicio || !fim) {
+      resultado.innerHTML = '<div class="msg error"><span class="ic">⚠️</span><span>Preenche data, hora de início e hora de término.</span></div>';
+      acao.innerHTML = '';
+      return;
+    }
+
+    resultado.innerHTML = '';
+    acao.innerHTML = '';
+    btn.classList.add('loading');
+    btn.disabled = true;
+    btn.textContent = 'A verificar';
+
+    google.script.run
+      .withSuccessHandler(function(res) {
+        btn.classList.remove('loading');
+        btn.disabled = false;
+        btn.textContent = 'Verificar novamente';
+
+        if (!res.ok) {
+          resultado.innerHTML = '<div class="msg error"><span class="ic">✗</span><span>' + res.mensagem + '</span></div>';
+          return;
+        }
+
+        resultado.innerHTML = '<div class="msg ok"><span class="ic">✓</span><span>' + res.mensagem + '</span></div>';
+        acao.innerHTML = '<a class="secondary" href="' + res.formUrl + '" target="_blank">Criar festa <span class="arrow">→</span></a>';
+      })
+      .withFailureHandler(function(err) {
+        btn.classList.remove('loading');
+        btn.disabled = false;
+        btn.textContent = 'Ver disponibilidade';
+        resultado.innerHTML = '<div class="msg error"><span class="ic">⚠️</span><span>Erro: ' + err.message + '</span></div>';
+      })
+      .verificarDisponibilidade(data, inicio, fim);
+  }
+</script>
+
+</body>
+</html>

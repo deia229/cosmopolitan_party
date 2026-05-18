@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Visitas — Admin · Cosmopolitan Party</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --pink:#e0187a;--pink2:#ff4da6;--pink3:#fce4ec;
+    --dark:#1a0010;--dark2:#3d0030;
+    --bg:#faf8f9;--card:#fff;--border:#f0c8dc;
+    --text:#1a0010;--muted:#8a5a70;
+    --green:#1d6a4a;--amber:#8a6d00;--red:#c0143c;
+    --green-bg:#e8f5e9;
+    --font:'DM Sans',sans-serif;--mono:'DM Mono',monospace;--serif:'Playfair Display',serif;
+    --tap:44px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh}
+  header{background:linear-gradient(135deg,var(--dark),var(--dark2));padding:0 20px;height:54px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200;box-shadow:0 2px 16px rgba(0,0,0,.3)}
+  .brand{display:flex;align-items:center;gap:10px}
+  .brand-logo{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--pink),var(--pink2));display:flex;align-items:center;justify-content:center;font-size:17px}
+  .brand-name{font-family:var(--serif);font-size:17px;font-weight:900;color:#fff}
+  .brand-sub{font-family:var(--mono);font-size:8px;color:rgba(255,180,220,.45);letter-spacing:3px;text-transform:uppercase;margin-top:1px}
+  .back{font-family:var(--mono);font-size:11px;color:rgba(255,180,220,.6);text-decoration:none;letter-spacing:1px}
+  .back:hover{color:#fff}
+
+  .page{max-width:1100px;margin:0 auto;padding:18px 14px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:16px}
+  .card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:8px;flex-wrap:wrap}
+  .card-title{font-family:var(--serif);font-size:17px;font-weight:700}
+  .card-sub{font-size:12px;color:var(--muted);margin-top:2px}
+
+  .btn{border:none;cursor:pointer;font-family:var(--font);transition:all .15s;border-radius:9px;font-weight:600;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;min-height:36px;padding:0 14px;font-size:13px}
+  .btn-p{background:linear-gradient(135deg,var(--pink),var(--pink2));color:#fff}
+  .btn-p:hover{opacity:.88}
+  .btn-g{background:var(--pink3);color:var(--pink);border:1px solid rgba(224,24,122,.18)}
+  .btn-g:hover{background:#f8b4d4}
+  .btn-d{background:var(--dark);color:#fff}
+  .btn-x{background:transparent;color:var(--red);border:1px solid #f8c8d2;min-height:30px;padding:0 10px;font-size:12px}
+  .btn-x:hover{background:#fdecec}
+
+  /* TOKEN GATE */
+  .gate{max-width:420px;margin:80px auto;padding:32px 26px;background:var(--card);border:1px solid var(--border);border-radius:18px;box-shadow:0 12px 40px rgba(224,24,122,.06)}
+  .gate h2{font-family:var(--serif);font-size:22px;margin-bottom:10px}
+  .gate p{font-size:13px;color:var(--muted);margin-bottom:18px;line-height:1.5}
+  .gate input{width:100%;padding:14px 16px;border:1.5px solid var(--border);border-radius:12px;font-family:var(--mono);font-size:14px;outline:none;margin-bottom:14px}
+  .gate input:focus{border-color:var(--pink)}
+  .gate button{width:100%;padding:14px;border:none;border-radius:12px;background:linear-gradient(135deg,var(--pink),var(--pink2));color:#fff;font-weight:700;font-size:15px;cursor:pointer}
+  .gate-err{color:var(--red);font-size:12px;margin-top:10px;min-height:16px}
+
+  /* MES NAV */
+  .mes-nav{display:flex;align-items:center;justify-content:space-between;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px 14px;margin-bottom:14px}
+  .mes-nav button{background:none;border:none;cursor:pointer;color:var(--pink);font-size:18px;padding:6px 14px;border-radius:8px;font-family:inherit;line-height:1}
+  .mes-nav button:hover{background:var(--pink3)}
+  .mes-nav button:disabled{color:#d8c4cf;cursor:not-allowed;background:transparent}
+  .mes-lbl{font-family:var(--serif);font-size:16px;font-weight:700;text-transform:capitalize}
+
+  /* CALENDAR */
+  .cal-dows{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:6px}
+  .cal-dow{font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);text-align:center;padding:6px 0}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+  .cal-day{min-height:74px;border:1px solid var(--border);border-radius:10px;padding:6px;background:#fff;display:flex;flex-direction:column;cursor:pointer;transition:all .15s;position:relative}
+  .cal-day:hover{border-color:var(--pink);box-shadow:0 3px 10px rgba(224,24,122,.08)}
+  .cal-day.outside{background:transparent;border-color:transparent;cursor:default;pointer-events:none}
+  .cal-day.past{opacity:.55;cursor:default}
+  .cal-day.festa{background:#fff7ed;border-color:#fde0c4}
+  .cal-day.tem-bloco{background:#fdf2f8;border-color:#f5d4e4}
+  .cal-day.tem-marc{background:#ecfdf5;border-color:#cdebd9}
+  .cd-num{font-size:13px;font-weight:700;color:var(--text);margin-bottom:auto}
+  .cd-mini{font-family:var(--mono);font-size:9px;letter-spacing:.5px;color:var(--muted);line-height:1.3;margin-top:auto}
+  .cd-mini .bk{color:var(--pink);font-weight:600}
+  .cd-mini .mk{color:var(--green);font-weight:600}
+  .cd-mini .fs{color:#a04510;font-weight:600}
+
+  /* MODAL */
+  .overlay{position:fixed;inset:0;background:rgba(26,0,16,.55);display:none;align-items:center;justify-content:center;z-index:300;padding:14px}
+  .overlay.on{display:flex}
+  .modal{background:var(--card);border-radius:18px;padding:22px;max-width:480px;width:100%;max-height:90vh;overflow-y:auto}
+  .modal h3{font-family:var(--serif);font-size:20px;margin-bottom:6px}
+  .modal-sub{font-family:var(--mono);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:16px}
+
+  .blk-list{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+  .blk-row{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--pink3);border-radius:10px;font-family:var(--mono);font-size:13px}
+  .blk-empty{padding:14px;text-align:center;color:var(--muted);font-size:12px;background:var(--bg);border-radius:10px;margin-bottom:14px}
+
+  .add-blk{background:var(--bg);border:1px dashed var(--border);border-radius:10px;padding:14px;margin-bottom:14px}
+  .add-blk-hdr{font-family:var(--mono);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+  .add-blk-row{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:center}
+  .add-blk-row input{padding:10px 12px;border:1px solid var(--border);border-radius:9px;font-family:var(--mono);font-size:14px;outline:none;background:var(--card);min-height:42px}
+  .add-blk-row input:focus{border-color:var(--pink)}
+
+  .day-marc-hdr{font-family:var(--mono);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin:14px 0 8px}
+  .marc-row{padding:11px 13px;border:1px solid var(--border);border-radius:10px;background:#fff;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .marc-info{min-width:0;flex:1}
+  .marc-when{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--pink)}
+  .marc-nome{font-size:14px;font-weight:600;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .marc-meta{font-size:11px;color:var(--muted);margin-top:2px;font-family:var(--mono)}
+  .marc-obs{font-size:11px;color:var(--text);margin-top:5px;padding-top:5px;border-top:1px dashed var(--border);font-style:italic}
+  .marc-status{font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;font-family:var(--mono);background:var(--green-bg);color:var(--green);text-transform:uppercase;letter-spacing:1px}
+  .marc-status.cancelada{background:#fce4ec;color:var(--red);text-decoration:line-through;text-decoration-color:rgba(192,20,60,.4)}
+
+  /* PRÓXIMAS */
+  .marc-list{display:flex;flex-direction:column;gap:7px}
+  .empty-state{padding:30px 14px;text-align:center;color:var(--muted);font-size:13px;background:var(--bg);border-radius:12px}
+
+  .legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:11px;color:var(--muted);font-family:var(--mono);letter-spacing:.5px}
+  .lg{display:flex;align-items:center;gap:6px}
+  .lg-sw{width:14px;height:14px;border-radius:4px}
+  .sw-blk{background:#fdf2f8;border:1px solid #f5d4e4}
+  .sw-mar{background:#ecfdf5;border:1px solid #cdebd9}
+  .sw-fes{background:#fff7ed;border:1px solid #fde0c4}
+
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);background:var(--dark);color:#fff;padding:12px 18px;border-radius:12px;font-size:13px;z-index:400;transition:transform .25s;box-shadow:0 8px 24px rgba(0,0,0,.3)}
+  .toast.on{transform:translateX(-50%) translateY(0)}
+  .toast.err{background:var(--red)}
+
+  .link-pub{display:inline-flex;align-items:center;gap:6px;background:var(--bg);border:1px dashed var(--border);border-radius:8px;padding:8px 12px;font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;letter-spacing:.5px}
+  .link-pub:hover{border-color:var(--pink);color:var(--pink)}
+
+  @media (max-width:640px){
+    .cal-day{min-height:60px;padding:4px}
+    .cd-num{font-size:11px}
+    .cd-mini{font-size:8px}
+    .add-blk-row{grid-template-columns:1fr 1fr;gap:8px}
+    .add-blk-row .btn{grid-column:span 2}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="brand-logo">📅</div>
+    <div>
+      <div class="brand-name">Visitas — Admin</div>
+      <div class="brand-sub">Cosmopolitan Party</div>
+    </div>
+  </div>
+  <a class="back" href="/">← Dashboard</a>
+</header>
+
+<!-- TOKEN GATE -->
+<div id="gateWrap" class="page" style="display:none">
+  <div class="gate">
+    <h2>Entrar</h2>
+    <p>Cola o token de admin (o valor que puseste na Script Property <code>VISITAS_ADMIN_TOKEN</code>).</p>
+    <input type="password" id="gateInput" placeholder="token de admin" autocomplete="off" onkeydown="if(event.key==='Enter')gateSubmit()">
+    <button onclick="gateSubmit()">Entrar</button>
+    <div class="gate-err" id="gateErr"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="appWrap" class="page" style="display:none">
+
+  <div class="card">
+    <div class="card-hdr">
+      <div>
+        <div class="card-title">Disponibilidade</div>
+        <div class="card-sub">Clica num dia para abrir/fechar horários. Os clientes só veem dias com blocos e sem festa.</div>
+      </div>
+      <a class="link-pub" href="/visitas/" target="_blank">🔗 Página pública /visitas/</a>
+    </div>
+
+    <div class="mes-nav">
+      <button id="btnPrev" onclick="prevMes()">‹</button>
+      <div class="mes-lbl" id="mesLbl">—</div>
+      <button onclick="nextMes()">›</button>
+    </div>
+
+    <div class="cal-dows">
+      <div class="cal-dow">Seg</div><div class="cal-dow">Ter</div><div class="cal-dow">Qua</div>
+      <div class="cal-dow">Qui</div><div class="cal-dow">Sex</div><div class="cal-dow">Sáb</div><div class="cal-dow">Dom</div>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+
+    <div class="legend">
+      <div class="lg"><span class="lg-sw sw-blk"></span>Tem disponibilidade aberta</div>
+      <div class="lg"><span class="lg-sw sw-mar"></span>Tem marcações</div>
+      <div class="lg"><span class="lg-sw sw-fes"></span>Tem festa (bloqueado)</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
+      <div>
+        <div class="card-title">Próximas marcações</div>
+        <div class="card-sub">As próximas 15 visitas ativas. Cancelar aqui apaga o evento do Calendar e envia email ao cliente.</div>
+      </div>
+    </div>
+    <div id="proximasBody"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
+      <div>
+        <div class="card-title">Configuração</div>
+      </div>
+    </div>
+    <button class="btn btn-g" onclick="logout()">Sair (esquecer token)</button>
+  </div>
+
+</div>
+
+<!-- MODAL DIA -->
+<div class="overlay" id="dayModal" onclick="closeIfBackdrop(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <h3 id="dmTitle">—</h3>
+    <div class="modal-sub" id="dmSub">—</div>
+
+    <div id="dmFestaWarning" style="display:none;background:#fff7ed;border:1px solid #fde0c4;padding:12px;border-radius:10px;margin-bottom:14px;font-size:13px;color:#a04510">⚠️ Este dia tem uma festa marcada na sheet "Festas". Os clientes não vão poder marcar visitas aqui, mesmo que abras blocos.</div>
+
+    <div style="font-family:var(--mono);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Blocos abertos</div>
+    <div id="dmBlocos"></div>
+
+    <div class="add-blk">
+      <div class="add-blk-hdr">+ Adicionar bloco (será partido em slots de 30 min)</div>
+      <div class="add-blk-row">
+        <input type="time" id="dmIni" value="14:00">
+        <input type="time" id="dmFim" value="17:00">
+        <button class="btn btn-p" onclick="addBloco()">Adicionar</button>
+      </div>
+    </div>
+
+    <div id="dmMarcWrap"></div>
+
+    <div style="display:flex;justify-content:flex-end;margin-top:14px">
+      <button class="btn btn-g" onclick="closeDay()">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const API_URL = 'https://script.google.com/macros/s/AKfycbx5SeYyBiSlv8pkFEg_DMjg0BGiNoLAso_VB00cSFBuCz_038Ojfu6SwBGK95yt4QiJ4A/exec';
+  const TK_KEY = 'cp_vst_token';
+  const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const SLOT_MIN = 30;
+
+  const state = {
+    token: null,
+    mes: null,
+    data: null,        // {blocos, marcacoes, festas}
+    diaAberto: null
+  };
+
+  const pad = n => String(n).padStart(2,'0');
+  const ymd = dt => dt.getFullYear()+'-'+pad(dt.getMonth()+1)+'-'+pad(dt.getDate());
+  const ym = dt => dt.getFullYear()+'-'+pad(dt.getMonth()+1);
+  const hojeYmd = () => ymd(new Date());
+  function mesAtual(){ return ym(new Date()); }
+  function humanMes(m){ const [Y,M]=m.split('-').map(Number); return MESES[M-1]+' '+Y; }
+  function humanData(d){ const [Y,M,D]=d.split('-').map(Number); const ms=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']; return D+' '+ms[M-1]+' '+Y; }
+  function nomeDow(d){ const dt=new Date(d+'T00:00:00'); return ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'][dt.getDay()]; }
+  function horaToMin(h){ const [H,M]=h.split(':').map(Number); return H*60+M; }
+  function minToHora(m){ return pad(Math.floor(m/60))+':'+pad(m%60); }
+
+  function toast(msg, err){
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.toggle('err', !!err);
+    el.classList.add('on');
+    clearTimeout(toast._t);
+    toast._t = setTimeout(()=>el.classList.remove('on'), 3000);
+  }
+
+  // ---- GATE ----
+  function init(){
+    state.token = localStorage.getItem(TK_KEY);
+    if(state.token){
+      tryLoad(true);
+    } else {
+      document.getElementById('gateWrap').style.display='block';
+    }
+  }
+  function gateSubmit(){
+    const v = document.getElementById('gateInput').value.trim();
+    if(!v) return;
+    state.token = v;
+    tryLoad(false);
+  }
+  function tryLoad(silent){
+    state.mes = mesAtual();
+    fetchAdmin().then(res=>{
+      if(!res.ok){
+        if(!silent){
+          document.getElementById('gateErr').textContent = res.mensagem || 'Erro a entrar.';
+          return;
+        }
+        // token inválido — limpa e mostra gate
+        localStorage.removeItem(TK_KEY);
+        document.getElementById('gateWrap').style.display='block';
+        document.getElementById('appWrap').style.display='none';
+        return;
+      }
+      localStorage.setItem(TK_KEY, state.token);
+      state.data = res;
+      document.getElementById('gateWrap').style.display='none';
+      document.getElementById('appWrap').style.display='block';
+      renderAll();
+    });
+  }
+  function logout(){
+    localStorage.removeItem(TK_KEY);
+    location.reload();
+  }
+
+  function fetchAdmin(){
+    return new Promise(resolve=>{
+      const cb = '__adm_' + Date.now();
+      window[cb] = function(res){
+        try{delete window[cb]}catch(e){}
+        const s = document.getElementById('_admScript'); if(s) s.remove();
+        resolve(res || {ok:false, mensagem:'sem resposta'});
+      };
+      const sc = document.createElement('script');
+      sc.id = '_admScript';
+      sc.src = API_URL + '?page=visitas-admin&token=' + encodeURIComponent(state.token) + '&callback=' + cb;
+      sc.onerror = ()=>resolve({ok:false,mensagem:'erro de ligação'});
+      document.head.appendChild(sc);
+    });
+  }
+
+  function postAction(action, extra){
+    return fetch(API_URL, {
+      method:'POST',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify(Object.assign({action, token: state.token}, extra))
+    }).then(r=>r.json());
+  }
+
+  function reload(){
+    return fetchAdmin().then(res=>{
+      if(res.ok){
+        state.data = res;
+        renderAll();
+        if(state.diaAberto) renderDayModal(state.diaAberto);
+      }
+    });
+  }
+
+  // ---- RENDER ----
+  function renderAll(){
+    renderMesNav();
+    renderCal();
+    renderProximas();
+  }
+
+  function renderMesNav(){
+    document.getElementById('mesLbl').textContent = humanMes(state.mes);
+    document.getElementById('btnPrev').disabled = false; // admin pode ver passados
+  }
+
+  function blocosDoDia(d){ return state.data.blocos.filter(b=>b.data===d); }
+  function marcDoDia(d){ return state.data.marcacoes.filter(m=>m.data===d); }
+  function festaNoDia(d){ return state.data.festas.indexOf(d) >= 0; }
+
+  function renderCal(){
+    const grid = document.getElementById('calGrid');
+    grid.innerHTML = '';
+    const [Y,M] = state.mes.split('-').map(Number);
+    const primeiro = new Date(Y, M-1, 1);
+    const ultimo = new Date(Y, M, 0);
+    let offset = (primeiro.getDay()+6)%7;
+    const hoje = hojeYmd();
+    for(let i=0;i<offset;i++){
+      const c=document.createElement('div'); c.className='cal-day outside'; grid.appendChild(c);
+    }
+    for(let d=1; d<=ultimo.getDate(); d++){
+      const data = state.mes+'-'+pad(d);
+      const cell = document.createElement('div');
+      cell.className = 'cal-day';
+      const blocos = blocosDoDia(data);
+      const marc = marcDoDia(data).filter(m=>m.status==='ativa');
+      const festa = festaNoDia(data);
+      if(data < hoje) cell.classList.add('past');
+      if(festa) cell.classList.add('festa');
+      else if(blocos.length) cell.classList.add('tem-bloco');
+      if(marc.length) cell.classList.add('tem-marc');
+
+      let mini = '';
+      if(festa) mini += '<div class="fs">🎉 Festa</div>';
+      if(blocos.length){
+        const totMin = blocos.reduce((s,b)=>s + (horaToMin(b.fim)-horaToMin(b.inicio)),0);
+        mini += '<div class="bk">'+ blocos.length +' bloco'+(blocos.length>1?'s':'')+' · '+ (totMin/60).toFixed(1).replace('.0','') +'h</div>';
+      }
+      if(marc.length){
+        mini += '<div class="mk">'+ marc.length +' marcad'+(marc.length>1?'as':'a')+'</div>';
+      }
+      cell.innerHTML = '<div class="cd-num">'+d+'</div><div class="cd-mini">'+mini+'</div>';
+      cell.onclick = ()=>openDay(data);
+      grid.appendChild(cell);
+    }
+  }
+
+  function renderProximas(){
+    const hoje = hojeYmd();
+    const lista = state.data.marcacoes
+      .filter(m=>m.status==='ativa' && m.data >= hoje)
+      .sort((a,b)=> (a.data+a.slot).localeCompare(b.data+b.slot))
+      .slice(0,15);
+    const body = document.getElementById('proximasBody');
+    if(!lista.length){
+      body.innerHTML = '<div class="empty-state">Sem marcações futuras.</div>';
+      return;
+    }
+    body.innerHTML = '<div class="marc-list">' + lista.map(m=>(
+      '<div class="marc-row">'+
+        '<div class="marc-info">'+
+          '<div class="marc-when">'+ humanData(m.data) +' · '+ m.slot +'</div>'+
+          '<div class="marc-nome">'+ esc(m.nome) +'</div>'+
+          '<div class="marc-meta">'+ esc(m.telefone) +' · '+ esc(m.email) +'</div>'+
+          (m.obs ? '<div class="marc-obs">'+ esc(m.obs) +'</div>' : '')+
+        '</div>'+
+        '<button class="btn btn-x" onclick="cancelar(\''+ m.id +'\',\''+ esc(m.nome) +'\')">Cancelar</button>'+
+      '</div>'
+    )).join('') + '</div>';
+  }
+
+  function esc(s){ return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+  // ---- DAY MODAL ----
+  function openDay(d){
+    state.diaAberto = d;
+    renderDayModal(d);
+    document.getElementById('dayModal').classList.add('on');
+  }
+  function closeDay(){
+    document.getElementById('dayModal').classList.remove('on');
+    state.diaAberto = null;
+  }
+  function closeIfBackdrop(e){ if(e.target.id==='dayModal') closeDay(); }
+
+  function renderDayModal(d){
+    document.getElementById('dmTitle').textContent = humanData(d);
+    document.getElementById('dmSub').textContent = nomeDow(d);
+    document.getElementById('dmFestaWarning').style.display = festaNoDia(d) ? 'block':'none';
+
+    const blocos = blocosDoDia(d);
+    const dmBlocos = document.getElementById('dmBlocos');
+    if(!blocos.length){
+      dmBlocos.innerHTML = '<div class="blk-empty">Sem blocos abertos neste dia.</div>';
+    } else {
+      dmBlocos.innerHTML = '<div class="blk-list">' + blocos.map(b=>(
+        '<div class="blk-row">'+
+          '<span>'+ b.inicio +' — '+ b.fim +' &nbsp;<span style="color:var(--muted);font-size:11px">('+ Math.round((horaToMin(b.fim)-horaToMin(b.inicio))/SLOT_MIN) +' slots)</span></span>'+
+          '<button class="btn btn-x" onclick="removerBloco(\''+ b.id +'\')">Remover</button>'+
+        '</div>'
+      )).join('') + '</div>';
+    }
+
+    const marc = marcDoDia(d);
+    const wrap = document.getElementById('dmMarcWrap');
+    if(!marc.length){
+      wrap.innerHTML = '';
+    } else {
+      wrap.innerHTML = '<div class="day-marc-hdr">Marcações deste dia</div>' + marc.map(m=>(
+        '<div class="marc-row">'+
+          '<div class="marc-info">'+
+            '<div class="marc-when">'+ m.slot +' <span class="marc-status'+ (m.status==='cancelada'?' cancelada':'') +'">'+ m.status +'</span></div>'+
+            '<div class="marc-nome">'+ esc(m.nome) +'</div>'+
+            '<div class="marc-meta">'+ esc(m.telefone) +' · '+ esc(m.email) +'</div>'+
+            (m.obs ? '<div class="marc-obs">'+ esc(m.obs) +'</div>' : '')+
+          '</div>'+
+          (m.status==='ativa' ? '<button class="btn btn-x" onclick="cancelar(\''+ m.id +'\',\''+ esc(m.nome) +'\')">Cancelar</button>' : '')+
+        '</div>'
+      )).join('');
+    }
+  }
+
+  function addBloco(){
+    if(!state.diaAberto) return;
+    const ini = document.getElementById('dmIni').value;
+    const fim = document.getElementById('dmFim').value;
+    if(!ini || !fim){ toast('Define início e fim.', true); return; }
+    if(horaToMin(ini) >= horaToMin(fim)){ toast('Fim tem de ser depois do início.', true); return; }
+    postAction('visitas.bloco.criar', {data: state.diaAberto, inicio: ini, fim: fim}).then(res=>{
+      if(!res.ok){ toast(res.mensagem || 'Erro.', true); return; }
+      toast('Bloco adicionado.');
+      reload();
+    }).catch(e=>toast('Erro de ligação.', true));
+  }
+
+  function removerBloco(id){
+    if(!confirm('Remover este bloco? Marcações existentes ficam intactas.')) return;
+    postAction('visitas.bloco.remover', {id}).then(res=>{
+      if(!res.ok){ toast(res.mensagem || 'Erro.', true); return; }
+      toast('Bloco removido.');
+      reload();
+    }).catch(e=>toast('Erro de ligação.', true));
+  }
+
+  function cancelar(id, nome){
+    if(!confirm('Cancelar a visita de '+ nome +'? O evento do Calendar é apagado e o cliente recebe email.')) return;
+    postAction('visitas.marcacao.cancelar', {id}).then(res=>{
+      if(!res.ok){ toast(res.mensagem || 'Erro.', true); return; }
+      toast('Marcação cancelada.');
+      reload();
+    }).catch(e=>toast('Erro de ligação.', true));
+  }
+
+  // ---- NAV ----
+  function prevMes(){
+    const [Y,M] = state.mes.split('-').map(Number);
+    state.mes = ym(new Date(Y, M-2, 1));
+    reload();
+  }
+  function nextMes(){
+    const [Y,M] = state.mes.split('-').map(Number);
+    state.mes = ym(new Date(Y, M, 1));
+    reload();
+  }
+
+  init();
+</script>
+
+</body>
+</html>
