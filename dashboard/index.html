@@ -1259,7 +1259,7 @@ function renderEventos(evs){
       <td style="font-family:var(--mono);font-size:12px;font-weight:600;color:var(--pink)">${eur(total)}</td>
       <td style="font-family:var(--mono);font-size:12px;font-weight:600;color:var(--${fc})">${eur(falta)}</td>
       <td><span style="font-size:10px;color:var(--muted)" id="ev-srv-${ev.rowIndex}">…</span></td>
-      <td style="color:var(--pink)">→</td>
+      <td style="text-align:right;white-space:nowrap"><button class="btn-ic" title="Registar pagamento" onclick="event.stopPropagation();openEvPagamento(${ev.rowIndex})" style="color:var(--pink);font-size:18px">💶</button></td>
     </tr>`;
   }).join(''):'<tr><td colspan="7" class="empty-row">Sem eventos.</td></tr>';
   // Carregar indicadores de serviços
@@ -1349,6 +1349,12 @@ async function openEvModal(idx){
   renderExtRows();renderPagHistorico();swET('et-info',document.querySelector('.et-btn'));
   updateArchBtn();
   $('evModal').classList.add('on');
+}
+async function openEvPagamento(idx){
+  await openEvModal(idx);
+  const btns=document.querySelectorAll('#evModal .et-tabs .et-btn');
+  if(btns[2]) swET('et-pag',btns[2]);
+  setTimeout(()=>$('pagVal')?.focus(),150);
 }
 function updateArchBtn(){
   const ev=eventos.find(e=>e.rowIndex===curEvIdx);const b=$('evArchBtn');if(!b||!ev)return;

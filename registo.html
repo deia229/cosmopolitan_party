@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Cosmopolitan Party · Registar pagamento</title>
+<meta name="theme-color" content="#e0187a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CP Registar">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --pink:#e0187a;--pink2:#ff4da6;--pink3:#fce4ec;
+  --dark:#1a0010;--dark2:#3d0030;
+  --bg:#faf8f9;--card:#fff;--border:#f0c8dc;
+  --text:#1a0010;--muted:#8a5a70;
+  --green:#1d6a4a;--green-bg:#e8f5e9;
+  --red:#c0143c;--amber:#8a6d00;
+  --serif:'Playfair Display',serif;--font:'DM Sans',sans-serif;
+  --radius:14px;--tap:48px;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);display:flex;flex-direction:column;align-items:center}
+#app{width:100%;max-width:480px;padding:0 0 40px}
+.top-bar{padding:22px 20px 4px;display:flex;align-items:center;justify-content:space-between}
+.top-logo{font-family:var(--serif);font-size:18px;font-weight:900;color:var(--pink);letter-spacing:.3px}
+.top-date{font-size:11px;color:var(--muted);text-transform:capitalize}
+.subtitle{padding:0 20px 16px;font-size:11px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;font-weight:600}
+
+.form-wrap{padding:8px 20px 0}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px}
+.field select,.field input{width:100%;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:15px 14px;font-size:16px;color:var(--text);outline:none;font-family:var(--font);appearance:none;-webkit-appearance:none;transition:border-color .15s}
+.field select:focus,.field input:focus{border-color:var(--pink)}
+.field select option{background:var(--card);color:var(--text)}
+.field select:disabled{opacity:.5}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+.ev-info{display:none;background:var(--pink3);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin:-4px 0 16px;font-size:12px;color:var(--muted)}
+.ev-info.show{display:block}
+.ev-info-row{display:flex;justify-content:space-between;padding:3px 0}
+.ev-info-row strong{color:var(--text);font-weight:600}
+.ev-info-row.total strong{color:var(--pink)}
+.ev-info-row.falta strong{color:var(--red)}
+.ev-info-row.pago strong{color:var(--green)}
+
+.submit-btn{width:calc(100% - 40px);margin:24px 20px 0;background:linear-gradient(135deg,var(--pink),var(--pink2));border:none;border-radius:14px;padding:18px;font-size:17px;font-weight:700;color:#fff;cursor:pointer;transition:opacity .2s;display:block;min-height:var(--tap);box-shadow:0 4px 14px rgba(224,24,122,.25)}
+.submit-btn:active{opacity:.85}
+.submit-btn:disabled{opacity:.4;cursor:default;box-shadow:none}
+
+.toast{position:fixed;bottom:32px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--dark);border:1.5px solid var(--dark2);border-radius:14px;padding:14px 22px;font-size:14px;font-weight:600;color:#fff;transition:transform .3s cubic-bezier(.34,1.56,.64,1);pointer-events:none;white-space:nowrap;z-index:999;max-width:90vw}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast.ok{background:var(--green-bg);border-color:var(--green);color:var(--green)}
+.toast.err{background:#fce4ec;border-color:var(--red);color:var(--red)}
+
+.loading{padding:30px 20px;text-align:center;color:var(--muted);font-size:13px}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div class="top-bar">
+    <div class="top-logo">Cosmopolitan Party</div>
+    <div class="top-date" id="top-date"></div>
+  </div>
+  <div class="subtitle">Registar pagamento</div>
+
+  <div id="loading" class="loading">A carregar eventos…</div>
+
+  <div id="form" style="display:none">
+    <div class="form-wrap">
+      <div class="field">
+        <label>Evento</label>
+        <select id="f-event"><option value="">— Selecionar —</option></select>
+      </div>
+
+      <div class="ev-info" id="ev-info">
+        <div class="ev-info-row total"><span>Acordado</span><strong id="ev-total">—</strong></div>
+        <div class="ev-info-row pago"><span>Já pago</span><strong id="ev-pago">—</strong></div>
+        <div class="ev-info-row falta"><span>Em falta</span><strong id="ev-falta">—</strong></div>
+      </div>
+
+      <div class="row2">
+        <div class="field">
+          <label>Valor (€)</label>
+          <input type="number" id="f-valor" placeholder="ex: 150" min="1" step="0.01" inputmode="decimal">
+        </div>
+        <div class="field">
+          <label>Data</label>
+          <input type="date" id="f-data">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Categoria</label>
+        <select id="f-cat">
+          <option value="Aluguer">🏠 Aluguer</option>
+          <option value="Caução">🔒 Caução</option>
+          <option value="Decoração">🎨 Decoração</option>
+          <option value="Catering">🍽️ Catering</option>
+          <option value="Limpeza">🧹 Limpeza</option>
+          <option value="Outro">➕ Outro</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Descrição (opcional)</label>
+        <input type="text" id="f-desc" placeholder="ex: sinal, 2º adiantamento…">
+      </div>
+    </div>
+    <button class="submit-btn" id="submit-btn" onclick="registar()">Registar pagamento</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SCRIPT_URL='https://script.google.com/macros/s/AKfycbx5SeYyBiSlv8pkFEg_DMjg0BGiNoLAso_VB00cSFBuCz_038Ojfu6SwBGK95yt4QiJ4A/exec';
+const SB_URL='https://fsbpakhrfkrmfgpaxyly.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZzYnBha2hyZmtybWZncGF4eWx5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1NzMyMjAsImV4cCI6MjA4OTE0OTIyMH0.fkF9Ch9QvX2lecY1B2FxuDWxD4DmH4T6WAg6ggYBVlY';
+const sb=supabase.createClient(SB_URL,SB_KEY);
+
+let eventos=[];
+let pagamentosByKey={};
+
+const $=id=>document.getElementById(id);
+const todayISO=()=>{const d=new Date();return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;};
+const isoToPT=iso=>{const m=String(iso||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?`${m[3]}/${m[2]}/${m[1]}`:new Date().toLocaleDateString('pt-PT');};
+const eur=n=>(+n||0).toLocaleString('pt-PT',{minimumFractionDigits:0,maximumFractionDigits:2})+' €';
+const evKey=ev=>(ev.dataFesta||'')+'__'+(ev.cliente||'');
+function normEvDate(s){
+  if(!s)return'';
+  s=String(s).trim().split(/[T ]/)[0];
+  let m=s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+  if(m)return`${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
+  m=s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if(m)return`${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
+  return s;
+}
+function fmtPT(iso){const m=String(iso||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?`${m[3]}/${m[2]}`:iso;}
+
+function init(){
+  $('f-data').value=todayISO();
+  $('top-date').textContent=new Date().toLocaleDateString('pt-PT',{weekday:'long',day:'numeric',month:'long'});
+  loadEventos();
+}
+
+function loadEventos(){
+  const cb='cpreg_'+Date.now();
+  window[cb]=async data=>{
+    delete window[cb];
+    document.getElementById('_evs')?.remove();
+    if(!Array.isArray(data)){$('loading').textContent='Erro ao carregar eventos.';return;}
+    eventos=data.map(e=>({...e,dataFesta:normEvDate(e.dataFesta)})).filter(e=>e.dataFesta&&e.cliente);
+    await loadPagamentos();
+    populateSelect();
+    $('loading').style.display='none';
+    $('form').style.display='block';
+  };
+  const s=document.createElement('script');
+  s.id='_evs';
+  s.src=`${SCRIPT_URL}?page=dados&callback=${cb}`;
+  s.onerror=()=>{delete window[cb];$('loading').textContent='Sem ligação. Tenta de novo.';};
+  document.head.appendChild(s);
+}
+
+async function loadPagamentos(){
+  const keys=eventos.map(evKey);
+  if(!keys.length)return;
+  try{
+    const{data}=await sb.from('cp_event_costs').select('event_key,pagamentos').in('event_key',keys);
+    (data||[]).forEach(r=>{
+      try{const ps=JSON.parse(r.pagamentos||'[]');if(Array.isArray(ps))pagamentosByKey[r.event_key]=ps;}catch(e){}
+    });
+  }catch(e){}
+}
+
+function populateSelect(){
+  const today=todayISO();
+  const futuros=eventos.filter(e=>e.dataFesta>=today).sort((a,b)=>a.dataFesta.localeCompare(b.dataFesta));
+  const sel=$('f-event');
+  sel.innerHTML='<option value="">— Selecionar —</option>'+futuros.map(e=>{
+    const k=evKey(e);
+    return`<option value="${k}">${fmtPT(e.dataFesta)} — ${e.cliente}</option>`;
+  }).join('');
+  sel.onchange=onEventChange;
+  if(!futuros.length)$('loading').style.display='none';
+}
+
+function onEventChange(){
+  const k=$('f-event').value;
+  const ev=eventos.find(e=>evKey(e)===k);
+  if(!ev){$('ev-info').classList.remove('show');return;}
+  const total=(+ev.valorTotal||0)+(+ev.caucao||0)+(+ev.limpeza||0);
+  const pagSheet=(+ev.valorPago||0)+(+ev.pagoExtra||0);
+  const pagSb=(pagamentosByKey[k]||[]).reduce((s,p)=>s+(+p.valor||0),0);
+  const pago=pagSheet+pagSb;
+  const falta=Math.max(0,total-pago);
+  $('ev-total').textContent=eur(total);
+  $('ev-pago').textContent=eur(pago);
+  $('ev-falta').textContent=eur(falta);
+  $('ev-info').classList.add('show');
+}
+
+async function registar(){
+  const k=$('f-event').value;
+  const valor=parseFloat($('f-valor').value);
+  const dataISO=$('f-data').value;
+  const cat=$('f-cat').value;
+  const desc=($('f-desc').value||'').trim();
+  if(!k){toast('Seleciona o evento.','err');return;}
+  if(!valor||valor<=0){toast('Indica um valor válido.','err');return;}
+  if(!dataISO){toast('Indica a data.','err');return;}
+  const ev=eventos.find(e=>evKey(e)===k);
+  if(!ev){toast('Evento inválido.','err');return;}
+
+  const btn=$('submit-btn');
+  btn.disabled=true;btn.textContent='A guardar…';
+
+  // Read-modify-write: ler array actual para não sobrescrever pagamentos prévios
+  let actuais=[];
+  try{
+    const{data}=await sb.from('cp_event_costs').select('pagamentos').eq('event_key',k).maybeSingle();
+    if(data?.pagamentos){try{actuais=JSON.parse(data.pagamentos)||[];}catch(e){actuais=[];}}
+  }catch(e){}
+
+  actuais.push({categoria:cat,valor,descricao:desc,data:isoToPT(dataISO)});
+
+  const{error}=await sb.from('cp_event_costs').upsert({
+    event_key:k,
+    event_cliente:ev.cliente||'',
+    event_data:ev.dataFesta||'',
+    pagamentos:JSON.stringify(actuais),
+    updated_at:new Date().toISOString()
+  },{onConflict:'event_key'});
+
+  btn.disabled=false;btn.textContent='Registar pagamento';
+
+  if(error){toast('Erro ao guardar. Tenta de novo.','err');return;}
+
+  pagamentosByKey[k]=actuais;
+  toast('✓ '+eur(valor)+' registado','ok');
+  $('f-valor').value='';
+  $('f-desc').value='';
+  $('f-data').value=todayISO();
+  onEventChange();
+}
+
+let toastTimer;
+function toast(msg,type){
+  const el=$('toast');
+  el.textContent=msg;
+  el.className='toast '+(type||'')+' show';
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>el.classList.remove('show'),2800);
+}
+
+init();
+</script>
+</body>
+</html>
