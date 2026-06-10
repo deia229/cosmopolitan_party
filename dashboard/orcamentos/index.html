@@ -1119,11 +1119,15 @@ function updatePreview(){
     $('packSectionH2').textContent='Espaço — sem pack';
     $('packHint').textContent = diaInteiro ? 'Dia inteiro: 650€.' : 'Aluguer do espaço: 300€.';
     const spaceLabel = diaInteiro ? 'Dia inteiro (650€)' : 'Até 5 horas (300€)';
+    const paxVal = parseInt($('ePax').value)||0;
+    const capLine = paxVal>0
+      ? '<div class="espaco-item"><span class="ck">✓</span><span>Capacidade para '+paxVal+' pessoas</span></div>'
+      : '';
     $('packDetail').innerHTML=
       '<div class="espaco-box">'+
         '<div class="espaco-title">Aluguer de Espaço</div>'+
         '<div class="espaco-item"><span class="ck">✓</span><span>'+spaceLabel+'</span></div>'+
-        '<div class="espaco-item"><span class="ck">✓</span><span>Capacidade até 100 pessoas</span></div>'+
+        capLine+
         '<div class="espaco-note">Catering · Decoração · Limpeza — orçamento à parte</div>'+
       '</div>';
   }
