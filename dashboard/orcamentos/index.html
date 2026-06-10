@@ -309,11 +309,11 @@ input[type=checkbox]{width:16px;height:16px;accent-color:var(--pink);cursor:poin
       <div id="decoOn" style="display:none">
         <div class="f" style="margin-bottom:6px"><label>Nível de decoração</label>
           <div class="deco-levels" id="decoLevels">
-            <button class="deco-level-btn" onclick="setDecoLevel('Basic',this)">Basic</button>
-            <button class="deco-level-btn" onclick="setDecoLevel('Gold',this)">Gold</button>
-            <button class="deco-level-btn" onclick="setDecoLevel('Premium',this)">Premium</button>
-            <button class="deco-level-btn" onclick="setDecoLevel('Mesas',this)">Mesas</button>
-            <button class="deco-level-btn" onclick="setDecoLevel('Mesas Premium',this)">Mesas Premium</button>
+            <button class="deco-level-btn" onclick="setDecoLevel('Essencial',this)">Essencial</button>
+            <button class="deco-level-btn" onclick="setDecoLevel('Signature',this)">Signature</button>
+            <button class="deco-level-btn" onclick="setDecoLevel('Luxe',this)">Luxe</button>
+            <button class="deco-level-btn" onclick="setDecoLevel('Mesa Posta só',this)">Mesa Posta só · 11€/p</button>
+            <button class="deco-level-btn" onclick="setDecoLevel('Mesa Posta c/ deco',this)">Mesa Posta c/ deco · 7,5€/p</button>
           </div>
         </div>
         <div class="f">
@@ -578,11 +578,11 @@ const docNum=()=>{const y=new Date().getFullYear();const p=$('docType').value===
 
 // ─── DECORAÇÃO CONFIG ──────────────────────────────────────────────────────
 const DECO_LEVELS = {
-  'Basic':         {price:200, cost:60,  items:['Painel','Arco de balões','Número em LED','Cilindro decorativo']},
-  'Gold':          {price:350, cost:105, items:['Arco de balões premium','Painel ou estrutura shimmer','Mesa de apoio decorada','Coordenação cromática completa']},
-  'Premium':       {price:450, cost:135, items:['Tudo do nível Gold','Elementos florais e de luxo','Painéis backdrops','Coordenação total do espaço']},
-  'Mesas':         {perPax:15, costPerPax:4.5, items:['Toalha','Guardanapo','Centro de mesa composto','Prato marcador','Cores da festa','Pratos, talheres e copos']},
-  'Mesas Premium': {perPax:25, costPerPax:7.5, items:['Toalha','Guardanapo','Centro de mesa composto','Prato marcador','Cores da festa','Pratos, talheres e copos','Loiça diferenciada','Flores naturais','Styling completo']},
+  'Essencial':  {price:300,  cost:90,  items:['Painel / backdrop','Arco de balões','Número em LED','Mesa de apoio decorada']},
+  'Signature':  {price:750,  cost:225, items:['Palco premium','Flores','Coordenação cromática total']},
+  'Luxe':       {price:2500, cost:750, items:['Design total do espaço','Flores naturais de destaque','Zonas: entrada / lounge / mesa principal','Iluminação ambiente','Sinalética','Mesa posta premium']},
+  'Mesa Posta só':     {perPax:11,  costPerPax:3.5, items:['Toalha','Guardanapo','Centro de mesa','Prato marcador','Pratos, talheres e copos','Cores da festa']},
+  'Mesa Posta c/ deco':{perPax:7.5, costPerPax:3.5, items:['Toalha','Guardanapo','Centro de mesa','Prato marcador','Pratos, talheres e copos','Cores da festa','(valor reduzido por já incluir decoração)']},
 };
 let decoLevel = null; // nível selecionado
 let decoElems = [];   // elementos editáveis
@@ -623,7 +623,7 @@ function toggleDecoSection(){
   const on = $('decoToggle').checked;
   $('decoOff').style.display = on ? 'none' : 'block';
   $('decoOn').style.display  = on ? 'block' : 'none';
-  if(on && !decoLevel) setDecoLevel('Basic', $('decoLevels').children[0]);
+  if(on && !decoLevel) setDecoLevel('Essencial', $('decoLevels').children[0]);
   updatePreview();
 }
 
@@ -709,61 +709,36 @@ function updateDecoMargin(){
 // includesSpace: true = pack already includes space rental (don't add hour calc)
 // horasBase = horas incluídas no pack antes de cobrar extra
 const PACKS = [
-  {id:'cosmo-classic',name:'Cosmo Classic',price:920,includesSpace:true,horasBase:5,
-   description:'Festa bonita, simples e memorável — ~23,50€/pessoa.',
+  {id:'easy-celebration',name:'Easy Celebration',price:720,includesSpace:false,horasBase:24,
+   description:'Decoração + catering, sem complicações (até 40). Espaço não incluído.',
    sections:[
-     {t:'Espaço',items:['Aluguer do espaço (5 horas)','Limpeza do espaço']},
-     {t:'Decoração',items:['Decoração Ultra Basic']},
-     {t:'Catering Finger Food (~40 pessoas)',items:['50 mini hot dogs','50 mini pizzas','25 mini hambúrgueres','130 mini salgados fritos','1 tábua de queijos','1 tábua de frutas','3 L de sopa']},
+     {t:'Decoração — Essencial',items:['Painel / backdrop','Arco de balões','Número em LED','Mesa de apoio decorada']},
+     {t:'Catering — Kit Essencial finger food (até 40)',items:['50 mini hot dogs','50 mini pizzas','25 mini hambúrgueres','130 mini salgados fritos','Tábuas: queijo e frutas','3 L de sopa']},
+     {t:'Nota',items:['Aluguer do espaço não incluído (à parte, com o Ivo)']},
    ]},
-  {id:'set-table',name:'Set the Table',price:600,includesSpace:true,horasBase:5,
-   description:'Mesa posta, ambiente preparado. Chegas e está tudo pronto.',
+  {id:'signature-party',name:'Signature Party',price:750,includesSpace:false,horasBase:24,
+   description:'Decoração Signature + Menu Completo por pessoa — desde 750€ + 25€/pessoa. Espaço não incluído.',
    sections:[
-     {t:'Espaço',items:['Aluguer do espaço (5 horas)','Limpeza do espaço']},
-     {t:'Decoração de Mesas (até 55 lugares)',items:['Colocação e montagem completa','Toalhas, pratos, copos e talheres','Decoração alinhada com o estilo do evento']},
+     {t:'Decoração — Signature',items:['Palco premium','Flores','Coordenação cromática total']},
+     {t:'Catering — Menu Completo (25€/pessoa)',items:['Entradas + Prato (escolher 2) + Sobremesa (escolher 3) + Bebidas','Upgrade premium +5€/pessoa disponível']},
+     {t:'Como cobrar',items:['Valor base = decoração 750€','Adicionar em Extras o "Menu Completo por pessoa" com quantidade = nº de convidados','Aluguer do espaço não incluído (à parte, com o Ivo)']},
    ]},
-  {id:'easy-celebration',name:'Easy Celebration',price:1050,includesSpace:true,horasBase:5,
-   description:'Sabores caseiros, zero stress. Limpeza incluída (oferta) — 440€ + 25€/p.',
+  {id:'the-cosmopolitan',name:'The Cosmopolitan',price:1445,includesSpace:false,horasBase:24,
+   description:'Decoração Signature + Kit Festa (até 80). Mesa Posta opcional. Espaço não incluído.',
    sections:[
-     {t:'Espaço',items:['Aluguer do espaço (5 horas)','Limpeza incluída — oferta (val. 125€)']},
-     {t:'Decoração',items:['Decoração Basic']},
-     {t:'Catering Completo (25 pessoas × 25€/p)',items:[
-       'Entradas: Paté de Atum, Paté Delícias do Mar, 100 Miniaturas, Tostas',
-       'Prato Principal (escolher 2): Bacalhau com Natas / Arroz de Pato',
-       'Sobremesas (escolher 3): Arroz Doce, Cheesecake Morangos, Tarte Lemon Curd, Crumble de Maçã, Bolo de Mousse de Chocolate',
-       'Bebidas (escolher 3): Água, Icea, Coca-Cola, Sumos Laranja/Ananás',
-     ]},
-   ]},
-  {id:'cosmo-deluxe',name:'Cosmo Deluxe',price:1130,includesSpace:true,horasBase:5,
-   description:'Decoração gold e finger food farto — ~22,50€/pessoa.',
-   sections:[
-     {t:'Espaço',items:['Aluguer do espaço (5 horas)','Limpeza do espaço']},
-     {t:'Decoração',items:['Decoração Gold']},
-     {t:'Catering Finger Food (~50 pessoas)',items:['50 mini hot dogs','50 mini pizzas','50 mini hambúrgueres','130 mini salgados fritos','1 tábua de queijos','1 tábua de frutas','1 tábua mexicana','5 L de sopa']},
-   ]},
-  {id:'cosmo-experience',name:'Cosmo Experience',price:1280,includesSpace:true,horasBase:6,
-   description:'6 horas sem pensar em nada — ~18€/pessoa.',
-   sections:[
-     {t:'Espaço',items:['Aluguer do espaço (5h + 1h grátis = 6 horas)','Limpeza: 125€']},
-     {t:'Decoração',items:['Decoração Gold']},
-     {t:'Catering Finger Food (~70 pessoas)',items:['75 mini hot dogs','75 mini pizzas','50 mini hambúrgueres','260 mini salgados fritos','1 tábua de queijos','1 tábua de frutas','1 tábua mexicana','10 L de sopa']},
-   ]},
-  {id:'the-cosmopolitan',name:'The Cosmopolitan',price:1850,includesSpace:true,horasBase:5,
-   description:'O pacote 5 estrelas. Decoração premium + catering deluxe — ~18,50€/p.',
-   sections:[
-     {t:'Espaço',items:['Aluguer do espaço (5 horas)','Limpeza do espaço']},
-     {t:'Decoração',items:['Decoração Premium']},
-     {t:'Catering Completo Deluxe (~100 pessoas)',items:['100 mini hot dogs','100 mini pizzas','75 mini hambúrgueres','260 mini salgados fritos','1 tábua de queijos','1 tábua de frutas','1 tábua mexicana','10 L de sopa']},
+     {t:'Decoração — Signature',items:['Palco premium','Flores','Coordenação cromática total']},
+     {t:'Catering — Kit Festa finger food (até 80)',items:['75 mini hot dogs','75 mini pizzas','50 mini hambúrgueres','260 mini salgados fritos','Tábuas: queijo, frutas e mexicana','8 L de sopa']},
+     {t:'Opcional',items:['Mesa Posta — 7,5€/pessoa (já tem decoração; adicionar na Decoração)','Experiência Luxe — 2500€, bespoke, à parte']},
+     {t:'Nota',items:['Aluguer do espaço não incluído (à parte, com o Ivo)']},
    ]},
 ];
 
 const EXTRAS = [
-  {id:'kit-30',name:'Kit Catering 30/40 pessoas',price:395,cat:'Catering',desc:'50 hot dogs, 50 pizzas, 25 hambúrgueres, 130 salgados, tábuas, 3L sopa'},
-  {id:'kit-50',name:'Kit Catering 50 pessoas',price:515,cat:'Catering',desc:'50 hot dogs, 50 pizzas, 50 hambúrgueres, 130 salgados, 2 tábuas, 5L sopa'},
-  {id:'kit-70',name:'Kit Catering 70 pessoas',price:655,cat:'Catering',desc:'75 hot dogs, 75 pizzas, 50 hambúrgueres, 260 salgados, 3 tábuas, 10L sopa'},
-  {id:'kit-100',name:'Kit Catering 100 pessoas',price:770,cat:'Catering',desc:'100 hot dogs, 100 pizzas, 75 hambúrgueres, 260 salgados, 3 tábuas, 10L sopa'},
-  {id:'menu-pp',name:'Menu Completo por pessoa',price:25,cat:'Catering',desc:'Entradas + Prato + Sobremesa + Bebidas (mín. 15p)',included:'Entradas: Paté de Atum, Paté de Delícias do Mar, Miniaturas, Tostas\nPrato Principal (escolher 2): Bacalhau com Natas, Arroz de Pato (ou pratos variados todas as semanas)\nSobremesas (escolher 3): Arroz Doce, Cheesecake Morangos, Tarte Lemon Curd c/ Morangos, Crumble de Maçã, Bolo de Mousse de Chocolate\nBebidas: Água incluída + escolher 2 opções entre Icea (vários sabores), Coca-Cola, Sumos (Laranja, Ananás)\nMínimo 15 pessoas'},
-  {id:'pack-sobremesas-20',name:'Pack Sobremesas (20 pessoas)',price:60,cat:'Catering',desc:'Sobremesas para ~20 pessoas — escolher 3 opções',included:'Para ~20 pessoas\nEscolher 3 opções entre: Arroz Doce, Cheesecake Morangos, Tarte Lemon Curd c/ Morangos, Crumble de Maçã, Bolo de Mousse de Chocolate, Bolo Brigadeiros, Bolo Nata do Céu, Tarte de Amêndoa, Bolo de Bolachas'},
+  {id:'kit-essencial',name:'Kit Essencial finger food (até 40)',price:420,cat:'Catering',desc:'50 hot dogs, 50 pizzas, 25 hambúrgueres, 130 salgados, tábuas (queijo, frutas), 3L sopa'},
+  {id:'kit-festa',name:'Kit Festa finger food (até 80)',price:695,cat:'Catering',desc:'75 hot dogs, 75 pizzas, 50 hambúrgueres, 260 salgados, tábuas (queijo, frutas, mexicana), 8L sopa'},
+  {id:'menu-pp',name:'Menu Completo por pessoa',price:25,cat:'Catering',desc:'Entradas + Prato + Sobremesa + Bebidas (mín. 15p)',included:'Entradas: Paté de Atum, Paté de Delícias do Mar, 100 Miniaturas, Tostas\nPrato Principal (escolher 2): Bacalhau com Natas, Arroz de Pato, Empadão de Carne, Strogonoff de Frango (c/ arroz)\nSobremesas (escolher 3): Arroz Doce, Cheesecake de Morangos, Crumble de Maçã, Mousse de Chocolate, Bolo de Bolacha, Bolo Brigadeiro de Chocolate, Torta de Laranja, Tarte de Amêndoa\nBebidas (incluídas): Água, Icea, Coca-Cola, Sumos (Laranja/Ananás)\nUpgrade premium +5€/pessoa: troca um prato por Bacalhau Espiritual ou Lombo de Porco Assado (c/ arroz)\nMínimo 15 pessoas'},
+  {id:'menu-premium-pp',name:'Upgrade Premium Menu (por pessoa)',price:5,cat:'Catering',desc:'Troca um prato por Bacalhau Espiritual ou Lombo de Porco Assado (c/ arroz) — +5€/pessoa'},
+  {id:'pack-sobremesas-20',name:'Pack Sobremesas (20 pessoas)',price:60,cat:'Catering',desc:'Sobremesas para ~20 pessoas — escolher 3 de 8',included:'Para ~20 pessoas\nEscolher 3 de 8: Arroz Doce, Cheesecake de Morangos, Crumble de Maçã, Mousse de Chocolate, Bolo de Bolacha, Bolo Brigadeiro de Chocolate, Torta de Laranja, Tarte de Amêndoa'},
   {id:'arroz-pato',name:'Tabuleiro Arroz de Pato 4kg',price:165,cat:'Catering',desc:'Serve ~20 pessoas'},
   {id:'bacalhau',name:'Tabuleiro Bacalhau com Natas 4kg',price:195,cat:'Catering',desc:'Serve ~20 pessoas'},
   {id:'mini-burg',name:'Pack 25 Mini Hambúrgueres',price:30,cat:'Catering',desc:'Pack de encomenda'},
