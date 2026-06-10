@@ -246,6 +246,49 @@ header{background:linear-gradient(135deg,var(--dark),var(--dark2));padding:0 20p
 @media(max-width:480px){.tools-grid{grid-template-columns:1fr}.p-val{font-size:20px}}
 .lo-ov{display:none;position:fixed;inset:0;background:linear-gradient(135deg,#fdf2f8,#fce7f3);z-index:9999;align-items:center;justify-content:center;padding:20px}
 .lo-ov.on{display:flex}
+/* CALENDÁRIO */
+.cal-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:10px}
+.cal-title{font-family:var(--serif);font-size:18px;font-weight:700;text-transform:capitalize}
+.cal-nav{display:flex;gap:6px;align-items:center}
+.cal-nav button{background:var(--pink3);border:1px solid var(--border);color:var(--pink);border-radius:9px;width:36px;height:36px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700}
+.cal-nav button:hover{background:#f8b4d4}
+.cal-nav .cal-today-btn{width:auto;padding:0 12px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px}
+.cal-dow{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:10px 10px 0 0;overflow:hidden}
+.cal-dow div{background:#fdf2f8;padding:7px 4px;text-align:center;font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);font-weight:700}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-top:none;border-radius:0 0 10px 10px;overflow:hidden}
+.cal-cell{background:var(--card);min-height:88px;padding:5px 6px;cursor:pointer;display:flex;flex-direction:column;gap:3px;transition:background .12s;position:relative}
+.cal-cell:hover{background:var(--pink3)}
+.cal-cell.other{background:#fbf6f9;color:var(--muted)}
+.cal-cell.other .cal-num{opacity:.4}
+.cal-cell.today .cal-num{background:var(--pink);color:#fff}
+.cal-num{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--text);width:22px;height:22px;display:flex;align-items:center;justify-content:center;border-radius:50%;flex-shrink:0}
+.cal-chips{display:flex;flex-direction:column;gap:2px;overflow:hidden}
+.cal-chip{font-size:10px;padding:2px 6px;border-radius:4px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500;display:flex;align-items:center;gap:4px}
+.cal-chip.ev{background:linear-gradient(135deg,var(--pink),var(--pink2));color:#fff}
+.cal-chip.task{background:#fce4ec;color:var(--pink);border:1px solid #f5c4d8}
+.cal-chip.task.done{background:#e8f5e9;color:var(--green);border-color:#cdebd9;text-decoration:line-through}
+.cal-more{font-size:9px;color:var(--muted);font-family:var(--mono);padding-left:4px}
+@media(max-width:767px){
+  .cal-cell{min-height:64px;padding:3px 4px}
+  .cal-num{font-size:10px;width:18px;height:18px}
+  .cal-chip{font-size:8px;padding:1px 4px}
+  .cal-more{font-size:8px}
+  .cal-dow div{font-size:8px;padding:5px 2px}
+}
+.day-sect{margin-top:14px;font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-weight:700;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.day-ev{padding:9px 11px;background:linear-gradient(135deg,var(--pink),var(--pink2));color:#fff;border-radius:9px;margin:8px 0;font-size:13px;font-weight:500;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.day-ev-sub{font-size:11px;opacity:.85}
+.day-task{display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px solid var(--border)}
+.day-task:last-child{border-bottom:none}
+.day-task-chk{width:22px;height:22px;border:1.5px solid var(--pink);border-radius:6px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;color:transparent;transition:.15s;background:#fff}
+.day-task-chk.done{background:var(--pink);color:#fff;border-color:var(--pink)}
+.day-task-txt{flex:1;font-size:13.5px}
+.day-task.done .day-task-txt{text-decoration:line-through;color:var(--muted)}
+.day-task-meta{font-size:10px;color:var(--muted);font-family:var(--mono)}
+.day-add{margin-top:14px;padding:12px;background:var(--pink3);border-radius:10px}
+.day-add-grid{display:grid;grid-template-columns:1fr 130px;gap:8px;margin-bottom:8px}
+.day-add-grid.recur{grid-template-columns:1fr 120px}
+@media(max-width:480px){.day-add-grid{grid-template-columns:1fr}.day-add-grid.recur{grid-template-columns:1fr}}
 .lo-card{background:#fff;border-radius:18px;padding:32px 28px;box-shadow:0 20px 60px rgba(224,24,122,.18);max-width:380px;width:100%}
 .lo-card h2{font-family:var(--serif);font-size:24px;margin:0 0 4px;color:var(--pink)}
 .lo-card .lo-sub{font-size:12px;color:var(--muted);margin-bottom:22px;font-family:var(--mono);letter-spacing:1.5px;text-transform:uppercase}
@@ -372,6 +415,23 @@ header{background:linear-gradient(135deg,var(--dark),var(--dark2));padding:0 20p
         <tbody id="evBody"><tr><td colspan="7" class="empty-row">A carregar…</td></tr></tbody>
       </table>
     </div>
+  </div>
+</div>
+
+<!-- CALENDÁRIO -->
+<div class="page" id="tab-calendario">
+  <div class="card">
+    <div class="cal-hdr">
+      <div class="cal-title" id="calTitle">—</div>
+      <div class="cal-nav">
+        <button onclick="changeCalMonth(-1)" title="Mês anterior">‹</button>
+        <button class="cal-today-btn" onclick="goCalToday()">Hoje</button>
+        <button onclick="changeCalMonth(1)" title="Mês seguinte">›</button>
+      </div>
+    </div>
+    <div class="cal-dow"><div>Seg</div><div>Ter</div><div>Qua</div><div>Qui</div><div>Sex</div><div>Sáb</div><div>Dom</div></div>
+    <div class="cal-grid" id="calGrid"></div>
+    <div style="font-size:11px;color:var(--muted);margin-top:10px">Toca num dia para ver eventos e tarefas. As festas aparecem automaticamente; as tarefas adicionas-as no detalhe do dia (uma vez, semanal ou mensal).</div>
   </div>
 </div>
 
@@ -732,6 +792,47 @@ header{background:linear-gradient(135deg,var(--dark),var(--dark2));padding:0 20p
   </div>
 </div>
 
+<!-- MODAL DIA DO CALENDÁRIO -->
+<div class="overlay" id="calDayModal" onclick="closeOverlay('calDayModal',event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="drag-bar" onclick="closeModal('calDayModal')"></div>
+    <h2 id="calDayTitle">Dia</h2>
+    <div id="calDayEvents"></div>
+    <div id="calDayTasks"></div>
+    <div class="day-add">
+      <div class="day-sect" style="margin-top:0;border:none;padding-bottom:8px">Adicionar tarefa</div>
+      <div class="day-add-grid">
+        <input id="newCalTitle" placeholder="Ex: Inventário, Pagar SS…" class="f-inp" style="margin-bottom:0"/>
+        <select id="newCalType" class="f-inp" style="margin-bottom:0" onchange="updateCalTypeUI()">
+          <option value="once">Uma vez</option>
+          <option value="weekly">Semanal</option>
+          <option value="monthly">Mensal</option>
+        </select>
+      </div>
+      <div id="newCalWeeklyBox" class="day-add-grid recur" style="display:none">
+        <select id="newCalWeekday" class="f-inp" style="margin-bottom:0">
+          <option value="1">Toda 2ª feira</option>
+          <option value="2">Toda 3ª feira</option>
+          <option value="3">Toda 4ª feira</option>
+          <option value="4">Toda 5ª feira</option>
+          <option value="5">Toda 6ª feira</option>
+          <option value="6">Todo Sábado</option>
+          <option value="0">Todo Domingo</option>
+        </select>
+        <div></div>
+      </div>
+      <div id="newCalMonthlyBox" class="day-add-grid recur" style="display:none">
+        <input id="newCalDayOfMonth" type="number" min="1" max="31" placeholder="Dia do mês (1-31)" class="f-inp" style="margin-bottom:0"/>
+        <div></div>
+      </div>
+      <button class="btn btn-p" onclick="addCalTaskFromForm()" style="width:100%">+ Adicionar tarefa</button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-g" onclick="closeModal('calDayModal')">Fechar</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL PIPELINE MANUAL -->
 <div class="overlay" id="finModal" onclick="closeOverlay('finModal',event)">
   <div class="modal" style="max-width:640px" onclick="event.stopPropagation()">
@@ -1015,6 +1116,7 @@ async function showTab(name,btn){
   if(name==='eventos')loadEventos();
   if(name==='orcamentos')loadOrcamentos();
   if(name==='pedidos')loadPedidos();
+  if(name==='calendario')loadCalTasks();
   if(name==='financeiro')renderFin();
   if(name==='checklist')renderCkSel();
   if(name==='ferramentas'){initDriveInput();loadEricaHoras(false);}
@@ -1280,6 +1382,7 @@ function loadEventos(){
   window[cb]=data=>{delete window[cb];$('_evs')?.remove();
     if(!Array.isArray(data)){syncSt('err','Erro script');renderEventos([]);return;}
     eventos=data.map(normalizeEvento);syncSt('ok','Sincronizado');invalidateFinCache();renderEventos(eventos);renderNextEvent();renderPulse();renderFin();renderCkSel();
+    if($('calGrid'))renderCalendar();
     loadPagSupabase().then(()=>{renderEventos(eventos);renderPulse();renderFin();renderCkSel();});
   };
   const s=document.createElement('script');s.id='_evs';s.src=`${SCRIPT_URL}?page=dados&callback=${cb}`;
@@ -2322,6 +2425,157 @@ async function guardarDadosCliente(){
 }
 
 // TAREFAS
+// CALENDÁRIO
+let calTasks=[];
+let calY=new Date().getFullYear(), calM=new Date().getMonth();
+let curCalDay=null;
+const PT_MESES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+function calToISO(d){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0');return`${y}-${m}-${dd}`;}
+function calFromISO(s){const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d);}
+async function loadCalTasks(){
+  if(!sb){renderCalendar();return;}
+  const{data}=await sb.from('cp_cal_tasks').select('*').eq('archived',false);
+  calTasks=(data||[]).map(t=>({...t,done_dates:Array.isArray(t.done_dates)?t.done_dates:[]}));
+  renderCalendar();
+}
+function tasksForCalDay(iso){
+  const d=calFromISO(iso);
+  const wd=d.getDay(),dom=d.getDate();
+  return calTasks.filter(t=>{
+    if(t.type==='once')return t.date===iso;
+    if(t.type==='weekly')return t.weekday===wd;
+    if(t.type==='monthly')return t.day_of_month===dom;
+    return false;
+  });
+}
+function eventsForCalDay(iso){return eventos.filter(e=>e.dataFesta===iso);}
+function calTaskDone(t,iso){return Array.isArray(t.done_dates)&&t.done_dates.includes(iso);}
+function renderCalendar(){
+  $('calTitle').textContent=PT_MESES[calM]+' '+calY;
+  const first=new Date(calY,calM,1);
+  const firstDow=(first.getDay()+6)%7; // 0=Mon
+  const daysInMonth=new Date(calY,calM+1,0).getDate();
+  const daysInPrev=new Date(calY,calM,0).getDate();
+  const todayISO=calToISO(new Date());
+  let html='';
+  // cells before day 1 (previous month)
+  for(let i=firstDow-1;i>=0;i--){
+    const d=daysInPrev-i;
+    const iso=calToISO(new Date(calY,calM-1,d));
+    html+=cellHTML(d,iso,true);
+  }
+  // current month
+  for(let d=1;d<=daysInMonth;d++){
+    const iso=calToISO(new Date(calY,calM,d));
+    html+=cellHTML(d,iso,false,iso===todayISO);
+  }
+  // trailing cells to fill last week (multiples of 7)
+  const used=firstDow+daysInMonth;
+  const trailing=(7-(used%7))%7;
+  for(let i=1;i<=trailing;i++){
+    const iso=calToISO(new Date(calY,calM+1,i));
+    html+=cellHTML(i,iso,true);
+  }
+  $('calGrid').innerHTML=html;
+}
+function cellHTML(num,iso,other,today){
+  const evs=eventsForCalDay(iso);
+  const tks=tasksForCalDay(iso);
+  const items=[
+    ...evs.map(e=>({kind:'ev',label:e.cliente||'Festa',sort:0})),
+    ...tks.map(t=>({kind:'task',label:t.title,done:calTaskDone(t,iso),sort:1}))
+  ];
+  const max=2;
+  const shown=items.slice(0,max);
+  const extra=items.length-shown.length;
+  const chips=shown.map(it=>{
+    if(it.kind==='ev')return`<div class="cal-chip ev">${esc(it.label)}</div>`;
+    return`<div class="cal-chip task${it.done?' done':''}">${esc(it.label)}</div>`;
+  }).join('')+(extra>0?`<div class="cal-more">+${extra}</div>`:'');
+  return`<div class="cal-cell${other?' other':''}${today?' today':''}" onclick="openCalDay('${iso}')">
+    <div class="cal-num">${num}</div>
+    <div class="cal-chips">${chips}</div>
+  </div>`;
+}
+function changeCalMonth(d){calM+=d;if(calM<0){calM=11;calY--;}if(calM>11){calM=0;calY++;}renderCalendar();}
+function goCalToday(){const n=new Date();calY=n.getFullYear();calM=n.getMonth();renderCalendar();}
+function openCalDay(iso){
+  curCalDay=iso;
+  $('newCalTitle').value='';
+  $('newCalType').value='once';
+  $('newCalDayOfMonth').value=calFromISO(iso).getDate();
+  $('newCalWeekday').value=String(calFromISO(iso).getDay());
+  updateCalTypeUI();
+  renderCalDay(iso);
+  $('calDayModal').classList.add('on');
+}
+function updateCalTypeUI(){
+  const t=$('newCalType').value;
+  $('newCalWeeklyBox').style.display=t==='weekly'?'grid':'none';
+  $('newCalMonthlyBox').style.display=t==='monthly'?'grid':'none';
+}
+function renderCalDay(iso){
+  const d=calFromISO(iso);
+  const ddl=['Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo'][(d.getDay()+6)%7];
+  $('calDayTitle').textContent=`${ddl}, ${d.getDate()} ${PT_MESES[d.getMonth()].toLowerCase()}`;
+  const evs=eventsForCalDay(iso);
+  $('calDayEvents').innerHTML=evs.length
+    ?'<div class="day-sect">Festas</div>'+evs.map(e=>`<div class="day-ev"><span>${esc(e.cliente||'—')}</span><span class="day-ev-sub">${esc(e.horaInicio||'')}${e.horaFim?'–'+esc(e.horaFim):''}</span></div>`).join('')
+    :'';
+  const tks=tasksForCalDay(iso);
+  $('calDayTasks').innerHTML='<div class="day-sect">Tarefas</div>'+(tks.length
+    ?tks.map(t=>{
+      const done=calTaskDone(t,iso);
+      const meta=t.type==='weekly'?'semanal':t.type==='monthly'?`dia ${t.day_of_month}`:'';
+      return`<div class="day-task${done?' done':''}">
+        <div class="day-task-chk${done?' done':''}" onclick="togCalDone('${t.id}','${iso}')">${done?'✓':''}</div>
+        <div class="day-task-txt">${esc(t.title)}</div>
+        ${meta?`<div class="day-task-meta">${meta}</div>`:''}
+        <button class="btn-ic" onclick="delCalTask('${t.id}')" title="Apagar">✕</button>
+      </div>`;
+    }).join('')
+    :'<div style="text-align:center;padding:14px;color:var(--muted);font-size:12px">Sem tarefas neste dia.</div>');
+}
+async function togCalDone(taskId,iso){
+  if(!sb)return;
+  const t=calTasks.find(x=>x.id===taskId);if(!t)return;
+  const arr=Array.isArray(t.done_dates)?[...t.done_dates]:[];
+  const i=arr.indexOf(iso);
+  if(i>=0)arr.splice(i,1);else arr.push(iso);
+  t.done_dates=arr;
+  await sb.from('cp_cal_tasks').update({done_dates:arr,updated_at:new Date().toISOString()}).eq('id',taskId);
+  renderCalDay(iso);renderCalendar();
+}
+async function addCalTaskFromForm(){
+  if(!sb){showToast('Sem Supabase');return;}
+  const title=$('newCalTitle').value.trim();
+  if(!title){showToast('Indica o título');return;}
+  const type=$('newCalType').value;
+  const row={title,type,done_dates:[]};
+  if(type==='once'){row.date=curCalDay;}
+  else if(type==='weekly'){row.weekday=parseInt($('newCalWeekday').value);}
+  else if(type==='monthly'){
+    const dom=parseInt($('newCalDayOfMonth').value);
+    if(!dom||dom<1||dom>31){showToast('Dia do mês inválido');return;}
+    row.day_of_month=dom;
+  }
+  const{data,error}=await sb.from('cp_cal_tasks').insert(row).select().single();
+  if(error){showToast('Erro: '+error.message);return;}
+  calTasks.push({...data,done_dates:Array.isArray(data.done_dates)?data.done_dates:[]});
+  $('newCalTitle').value='';
+  renderCalDay(curCalDay);renderCalendar();
+  showToast('✓ Tarefa adicionada');
+}
+async function delCalTask(id){
+  if(!sb)return;
+  if(!confirm('Apagar esta tarefa? (todas as ocorrências)'))return;
+  await sb.from('cp_cal_tasks').update({archived:true,updated_at:new Date().toISOString()}).eq('id',id);
+  calTasks=calTasks.filter(t=>t.id!==id);
+  if(curCalDay)renderCalDay(curCalDay);
+  renderCalendar();
+  showToast('✓ Tarefa apagada');
+}
+
 // PEDIDOS DE DECORAÇÃO
 async function loadPedidos(){
   if(!sb){$('pedBody').innerHTML='<tr><td colspan="7" class="empty-row">Sem Supabase.</td></tr>';return;}
@@ -2430,7 +2684,7 @@ function saveNota(){localStorage.setItem(LS_NOTA,$('notaArea').value);$('notaTs'
 
 // MODAL
 function closeOverlay(id,e){if(e&&e.target!==$(id))return;closeModal(id);}
-function closeModal(id){$(id).classList.remove('on');if(id==='evModal')curEvIdx=null;if(id==='orcModal')curOrcId=null;if(id==='pedModal')curPedId=null;}
+function closeModal(id){$(id).classList.remove('on');if(id==='evModal')curEvIdx=null;if(id==='orcModal')curOrcId=null;if(id==='pedModal')curPedId=null;if(id==='calDayModal')curCalDay=null;}
 
 // TOAST
 function showToast(msg){const c=$('toastCont'),t=document.createElement('div');t.className='toast';t.innerHTML=`<span>${esc(msg)}</span><button class="tc" onclick="this.closest('.toast').remove()">✕</button>`;c.appendChild(t);setTimeout(()=>t.remove(),5000);}
