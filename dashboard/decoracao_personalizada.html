@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,500&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
   --cream:#ECE6DE; --paper:#F7F1EC; --coral:#EE9C8F; --rose:#C0496A;
@@ -64,10 +65,7 @@ button:disabled{opacity:.6;}
     <p>Conta-nos a tua visão e desenhamos uma experiência à tua medida. Demora 2 minutos.</p>
   </div>
 
-  <form name="decoracao-personalizada" method="POST" data-netlify="true"
-        netlify-honeypot="bot-field" enctype="multipart/form-data" id="form">
-    <input type="hidden" name="form-name" value="decoracao-personalizada">
-    <input type="hidden" name="subject" value="Novo pedido de decoração personalizada · Cosmopolitan Party">
+  <form id="form">
     <p class="hidden"><label>Não preencher: <input name="bot-field"></label></p>
 
     <div class="sect">Os teus dados</div>
@@ -148,10 +146,8 @@ button:disabled{opacity:.6;}
     </select>
 
     <div class="sect">Inspiração</div>
-    <label>Tens referências? (Pinterest, Instagram…)</label>
+    <label>Tens referências? (Pinterest, Instagram, Pinterest board, fotos online…)</label>
     <input type="url" name="referencias" placeholder="cola aqui um link">
-    <label>Ou envia imagens de inspiração</label>
-    <input type="file" name="inspiracao" accept="image/*" multiple>
 
     <label>Mais alguma coisa que queiras que saibamos?</label>
     <textarea name="notas" placeholder="pormenores, pedidos especiais…"></textarea>
@@ -169,6 +165,10 @@ button:disabled{opacity:.6;}
 </div>
 
 <script>
+const SB_URL='https://fsbpakhrfkrmfgpaxyly.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZzYnBha2hyZmtybWZncGF4eWx5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1NzMyMjAsImV4cCI6MjA4OTE0OTIyMH0.fkF9Ch9QvX2lecY1B2FxuDWxD4DmH4T6WAg6ggYBVlY';
+const sb=supabase.createClient(SB_URL,SB_KEY);
+
 // mostrar campo de lugares quando "mesa posta = Sim"
 document.querySelectorAll('input[name="mesa_posta"]').forEach(r=>{
   r.addEventListener('change',()=>{
@@ -182,18 +182,51 @@ form.addEventListener('submit',async(e)=>{
   e.preventDefault();
   const btn=document.getElementById('btn');
   document.getElementById('err').style.display='none';
-  btn.disabled=true; btn.textContent='A enviar…';
-  try{
-    const fd=new FormData(form);
-    const res=await fetch('/',{method:'POST',body:fd});
-    if(!res.ok) throw new Error('net');
+
+  // Honeypot — se preenchido, abortar silenciosamente
+  if(form.querySelector('input[name="bot-field"]').value){
     form.style.display='none';
     document.getElementById('thanks').style.display='block';
-    document.querySelector('.thanks').scrollIntoView({behavior:'smooth'});
-  }catch(err){
+    return;
+  }
+
+  btn.disabled=true; btn.textContent='A enviar…';
+
+  const fd=new FormData(form);
+  const get=k=>(fd.get(k)||'').toString().trim();
+  const getAll=k=>fd.getAll(k).map(v=>v.toString());
+  const num=k=>{const v=parseInt(get(k));return Number.isFinite(v)?v:null;};
+
+  const payload={
+    nome:get('nome'),
+    contacto:get('contacto'),
+    email:get('email')||null,
+    tipo_evento:get('tipo_evento')||null,
+    data_evento:get('data_evento')||null,
+    num_convidados:num('num_convidados'),
+    para_quem:get('para_quem')||null,
+    tema:get('tema')||null,
+    cores:get('cores')||null,
+    estilo:getAll('estilo'),
+    elementos:getAll('elementos'),
+    mesa_posta:get('mesa_posta')||null,
+    lugares_mesa:get('mesa_posta')==='Sim'?num('lugares_mesa'):null,
+    orcamento_faixa:get('orcamento')||null,
+    referencias:get('referencias')||null,
+    notas:get('notas')||null
+  };
+
+  const{error}=await sb.from('cp_decoracao_pedidos').insert(payload);
+
+  if(error){
     document.getElementById('err').style.display='block';
     btn.disabled=false; btn.textContent='Enviar a minha visão';
+    return;
   }
+
+  form.style.display='none';
+  document.getElementById('thanks').style.display='block';
+  document.querySelector('.thanks').scrollIntoView({behavior:'smooth'});
 });
 </script>
 </body>

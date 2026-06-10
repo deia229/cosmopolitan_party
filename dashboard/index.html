@@ -288,6 +288,7 @@ header{background:linear-gradient(135deg,var(--dark),var(--dark2));padding:0 20p
   <button class="tab-btn" onclick="showTab('eventos',this)">Eventos</button>
   <button class="tab-btn" onclick="showTab('calendario',this)">Calendário</button>
   <button class="tab-btn" onclick="showTab('orcamentos',this)">Orçamentos</button>
+  <button class="tab-btn" onclick="showTab('pedidos',this)">Pedidos</button>
   <button class="tab-btn" onclick="showTab('checklist',this)">Checklist</button>
   <button class="tab-btn" onclick="showTab('financeiro',this)">Financeiro</button>
   <button class="tab-btn" onclick="showTab('ferramentas',this)">Ferramentas</button>
@@ -393,6 +394,35 @@ header{background:linear-gradient(135deg,var(--dark),var(--dark2));padding:0 20p
       <table class="tbl">
         <thead><tr><th>Nº</th><th>Cliente</th><th>Evento</th><th>Data</th><th>Total</th><th>Estado</th><th></th></tr></thead>
         <tbody id="orcBody"><tr><td colspan="7" class="empty-row">A carregar…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- PEDIDOS DE DECORAÇÃO -->
+<div class="page" id="tab-pedidos">
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-title">Pedidos de Decoração</span>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <select id="pedFiltroStatus" onchange="loadPedidos()" style="border:1px solid var(--border);border-radius:9px;padding:8px 10px;font-size:12px;font-family:var(--font);outline:none;min-height:36px">
+          <option value="">Todos</option>
+          <option value="novo">Novo</option>
+          <option value="conversa">Em conversa</option>
+          <option value="orcado">Orçado</option>
+          <option value="fechado">Fechado</option>
+          <option value="descartado">Descartado</option>
+        </select>
+        <input id="pedSearch" placeholder="Pesquisar…" style="border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:12px;font-family:var(--font);outline:none;width:130px;min-height:36px" oninput="filterPedidos()"/>
+        <button class="btn btn-g" onclick="loadPedidos()">↻</button>
+        <a href="/decoracao_personalizada.html" target="_blank" class="btn btn-p">↗ Form público</a>
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:12px">Pedidos recebidos via formulário público de decoração personalizada.</div>
+    <div style="overflow-x:auto">
+      <table class="tbl">
+        <thead><tr><th>Recebido</th><th>Cliente</th><th>Evento</th><th>Data</th><th>Pax</th><th>Estado</th><th></th></tr></thead>
+        <tbody id="pedBody"><tr><td colspan="7" class="empty-row">A carregar…</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -679,6 +709,29 @@ header{background:linear-gradient(135deg,var(--dark),var(--dark2));padding:0 20p
   </div>
 </div>
 
+<!-- MODAL PEDIDO DECORAÇÃO -->
+<div class="overlay" id="pedModal" onclick="closeOverlay('pedModal',event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="drag-bar" onclick="closeModal('pedModal')"></div>
+    <h2 id="pedModalTitle">Pedido</h2>
+    <div id="pedContent" style="font-size:13px;line-height:1.6"></div>
+    <label class="f-lbl" style="margin-top:14px">Estado</label>
+    <select id="pedStatus" class="f-inp">
+      <option value="novo">Novo</option>
+      <option value="conversa">Em conversa</option>
+      <option value="orcado">Orçado</option>
+      <option value="fechado">Fechado</option>
+      <option value="descartado">Descartado</option>
+    </select>
+    <div class="modal-actions">
+      <button class="btn btn-p" onclick="savePedStatus()">✓ Atualizar estado</button>
+      <button class="btn btn-g" onclick="abrirContactoPed()">💬 WhatsApp</button>
+      <button class="btn btn-g" onclick="apagarPedido()" style="color:var(--red)">🗑️ Apagar</button>
+      <button class="btn btn-g" onclick="closeModal('pedModal')">Fechar</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL PIPELINE MANUAL -->
 <div class="overlay" id="finModal" onclick="closeOverlay('finModal',event)">
   <div class="modal" style="max-width:640px" onclick="event.stopPropagation()">
@@ -763,6 +816,7 @@ const CONTRATOS_DEF='https://script.google.com/macros/s/AKfycbwjJjbku9KCiy4L3abn
 let sb=null,SCRIPT_URL=localStorage.getItem(LS_URL)||AS_DEF;
 let CONTRATOS_URL=localStorage.getItem(LS_CURL)||CONTRATOS_DEF;
 let eventos=[],orcFull=[],orcamentos=[],curEvIdx=null,curOrcId=null;
+let pedFull=[],pedidos=[],curPedId=null;
 let fin={mes:getMes(),itemsByMonth:{},meses:[],metas:[{label:'Meta CP',meta:4000}]},mesIdx=0;
 let tasks=[],ckData=null;
 let curEvExtras={espaco:[],decoracao:[],catering:[],outros:[]};
@@ -846,7 +900,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
   const {data:{session}}=await sb.auth.getSession();
   if(!session){$('loginOv').classList.add('on');return;}
   applyAccessControl(session.user?.email||'');
-  loadOrcamentos();loadEventos();loadTasks();loadContratosPendentes();renderFin();
+  loadOrcamentos();loadEventos();loadTasks();loadContratosPendentes();loadPedidos();renderFin();
 });
 // ─── ACESSO RESTRITO À ABA FINANCEIRO ───
 const ALLOWED_FIN_EMAILS=['ramalheiroa@gmail.com'];
@@ -960,6 +1014,7 @@ async function showTab(name,btn){
   });
   if(name==='eventos')loadEventos();
   if(name==='orcamentos')loadOrcamentos();
+  if(name==='pedidos')loadPedidos();
   if(name==='financeiro')renderFin();
   if(name==='checklist')renderCkSel();
   if(name==='ferramentas'){initDriveInput();loadEricaHoras(false);}
@@ -2267,6 +2322,99 @@ async function guardarDadosCliente(){
 }
 
 // TAREFAS
+// PEDIDOS DE DECORAÇÃO
+async function loadPedidos(){
+  if(!sb){$('pedBody').innerHTML='<tr><td colspan="7" class="empty-row">Sem Supabase.</td></tr>';return;}
+  const st=$('pedFiltroStatus')?.value||'';
+  let q=sb.from('cp_decoracao_pedidos').select('*').order('created_at',{ascending:false}).limit(200);
+  if(st) q=q.eq('status',st);
+  const{data,error}=await q;
+  if(error){$('pedBody').innerHTML=`<tr><td colspan="7" class="empty-row">Erro: ${esc(error.message)}</td></tr>`;return;}
+  pedFull=data||[];
+  filterPedidos();
+  // Marcar tab com badge se houver "novo"
+  const novos=pedFull.filter(p=>p.status==='novo').length;
+  const btn=document.querySelector('.tab-btn[onclick*="pedidos"]');
+  if(btn){
+    const base='Pedidos';
+    btn.textContent=novos>0?`${base} (${novos})`:base;
+  }
+}
+function filterPedidos(){
+  const q=($('pedSearch')?.value||'').trim().toLowerCase();
+  pedidos=pedFull.filter(p=>{
+    if(!q)return true;
+    return(p.nome||'').toLowerCase().includes(q)
+      ||(p.tipo_evento||'').toLowerCase().includes(q)
+      ||(p.contacto||'').toLowerCase().includes(q)
+      ||(p.email||'').toLowerCase().includes(q);
+  });
+  renderPedidos();
+}
+const PED_ST_LBL={novo:'Novo',conversa:'Em conversa',orcado:'Orçado',fechado:'Fechado',descartado:'Descartado'};
+const PED_ST_CLS={novo:'pendente',conversa:'enviado',orcado:'enviado',fechado:'confirmado',descartado:'cancelado'};
+function renderPedidos(){
+  $('pedBody').innerHTML=pedidos.length?pedidos.map(p=>{
+    const dt=p.created_at?new Date(p.created_at).toLocaleDateString('pt-PT'):'—';
+    const dataEv=p.data_evento?fmtD(p.data_evento):'—';
+    return`<tr onclick="openPedModal('${p.id}')">
+      <td style="font-family:var(--mono);font-size:11px">${dt}</td>
+      <td><strong>${esc(p.nome||'—')}</strong><br><span style="font-size:10px;color:var(--muted)">${esc(p.contacto||p.email||'')}</span></td>
+      <td style="font-size:12px">${esc(p.tipo_evento||'—')}</td>
+      <td style="font-family:var(--mono);font-size:11px">${dataEv}</td>
+      <td style="font-family:var(--mono);font-size:12px">${p.num_convidados||'—'}</td>
+      <td><span class="bst ${PED_ST_CLS[p.status]||'rascunho'}">${PED_ST_LBL[p.status]||p.status}</span></td>
+      <td style="color:var(--pink)">→</td>
+    </tr>`;
+  }).join(''):'<tr><td colspan="7" class="empty-row">Sem pedidos.</td></tr>';
+}
+function openPedModal(id){
+  const p=pedFull.find(x=>x.id===id);if(!p)return;
+  curPedId=id;
+  $('pedModalTitle').textContent=p.nome||'Pedido';
+  const row=(lbl,val)=>val?`<div style="margin-bottom:6px"><span style="font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)">${lbl}</span><div style="font-size:13px">${esc(val)}</div></div>`:'';
+  const arr=(lbl,val)=>(Array.isArray(val)&&val.length)?`<div style="margin-bottom:6px"><span style="font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)">${lbl}</span><div style="font-size:13px">${val.map(esc).join(' · ')}</div></div>`:'';
+  const link=p.referencias?`<div style="margin-bottom:6px"><span style="font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)">Referências</span><div style="font-size:12px"><a href="${esc(p.referencias)}" target="_blank" style="color:var(--pink);word-break:break-all">${esc(p.referencias)}</a></div></div>`:'';
+  $('pedContent').innerHTML=
+    row('Contacto',p.contacto)+
+    row('Email',p.email)+
+    row('Tipo de evento',p.tipo_evento)+
+    row('Data do evento',p.data_evento?fmtD(p.data_evento):'')+
+    row('Nº convidados',p.num_convidados)+
+    row('Para quem',p.para_quem)+
+    row('Tema',p.tema)+
+    row('Cores',p.cores)+
+    arr('Estilo',p.estilo)+
+    arr('Elementos',p.elementos)+
+    row('Mesa posta',p.mesa_posta+(p.lugares_mesa?` (${p.lugares_mesa} lugares)`:''))+
+    row('Faixa de orçamento',p.orcamento_faixa)+
+    link+
+    row('Notas',p.notas);
+  $('pedStatus').value=p.status||'novo';
+  $('pedModal').classList.add('on');
+}
+async function savePedStatus(){
+  if(!curPedId||!sb)return;
+  const s=$('pedStatus').value;
+  const{error}=await sb.from('cp_decoracao_pedidos').update({status:s,updated_at:new Date().toISOString()}).eq('id',curPedId);
+  if(error){showToast('Erro: '+error.message);return;}
+  closeModal('pedModal');loadPedidos();showToast('✓ Estado: '+PED_ST_LBL[s]);
+}
+function abrirContactoPed(){
+  const p=pedFull.find(x=>x.id===curPedId);if(!p)return;
+  const tel=(p.contacto||'').replace(/\D/g,'');
+  if(!tel){showToast('Sem contacto');return;}
+  const num=tel.length===9?'351'+tel:tel;
+  window.open(`https://wa.me/${num}`,'_blank');
+}
+async function apagarPedido(){
+  if(!curPedId||!sb)return;
+  if(!confirm('Apagar este pedido?'))return;
+  const{error}=await sb.from('cp_decoracao_pedidos').delete().eq('id',curPedId);
+  if(error){showToast('Erro: '+error.message);return;}
+  closeModal('pedModal');loadPedidos();showToast('✓ Pedido apagado');
+}
+
 function loadTasks(){try{tasks=JSON.parse(localStorage.getItem(LS_TASKS))||[];}catch(e){tasks=[];}renderTasks();}
 function renderTasks(){
   const pend=tasks.filter(t=>!t.feita).length;$('taskCnt').textContent=`${pend} de ${tasks.length} pendentes`;
@@ -2282,7 +2430,7 @@ function saveNota(){localStorage.setItem(LS_NOTA,$('notaArea').value);$('notaTs'
 
 // MODAL
 function closeOverlay(id,e){if(e&&e.target!==$(id))return;closeModal(id);}
-function closeModal(id){$(id).classList.remove('on');if(id==='evModal')curEvIdx=null;if(id==='orcModal')curOrcId=null;}
+function closeModal(id){$(id).classList.remove('on');if(id==='evModal')curEvIdx=null;if(id==='orcModal')curOrcId=null;if(id==='pedModal')curPedId=null;}
 
 // TOAST
 function showToast(msg){const c=$('toastCont'),t=document.createElement('div');t.className='toast';t.innerHTML=`<span>${esc(msg)}</span><button class="tc" onclick="this.closest('.toast').remove()">✕</button>`;c.appendChild(t);setTimeout(()=>t.remove(),5000);}
