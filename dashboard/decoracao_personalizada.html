@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Decoração Personalizada · Cosmopolitan Party</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,500&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --cream:#ECE6DE; --paper:#F7F1EC; --coral:#EE9C8F; --rose:#C0496A;
+  --rose2:#D4537E; --ink:#5e524f; --ink2:#6E5A55; --line:#E2C9D0; --soft:#8a7470;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+body{margin:0;background:var(--coral);font-family:'Montserrat',sans-serif;color:var(--ink);
+  font-size:15px;line-height:1.55;padding:18px;}
+.wrap{max-width:620px;margin:0 auto;background:var(--cream);border-radius:18px;overflow:hidden;}
+.hero{background:var(--paper);padding:34px 30px 26px;text-align:center;border-bottom:1px solid var(--line);}
+.hero .over{font-weight:600;font-size:13px;letter-spacing:5px;color:var(--rose);}
+.hero h1{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:46px;line-height:1.02;
+  color:var(--ink2);margin:8px 0 4px;}
+.hero p{font-size:14.5px;color:var(--soft);margin:6px auto 0;max-width:420px;}
+form{padding:26px 30px 30px;}
+.sect{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:26px;color:var(--rose);
+  margin:26px 0 12px;}
+.sect:first-child{margin-top:4px;}
+label{display:block;font-size:12px;letter-spacing:.4px;font-weight:600;color:var(--ink2);
+  text-transform:uppercase;margin:0 0 6px;}
+.req:after{content:" *";color:var(--rose2);}
+input,select,textarea{width:100%;background:#fff;border:1px solid var(--line);border-radius:11px;
+  padding:13px 14px;font-size:15px;font-family:inherit;color:var(--ink);margin-bottom:16px;}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--rose2);}
+textarea{min-height:90px;resize:vertical;}
+.two{display:flex;gap:14px;}
+.two>div{flex:1;}
+.chips{display:flex;flex-wrap:wrap;gap:9px;margin-bottom:16px;}
+.chip{position:relative;}
+.chip input{position:absolute;opacity:0;width:0;height:0;}
+.chip span{display:block;padding:10px 14px;border:1px solid var(--line);border-radius:22px;
+  background:#fff;font-size:13.5px;color:var(--ink);cursor:pointer;transition:.15s;}
+.chip input:checked + span{background:var(--rose2);color:#fff;border-color:var(--rose2);}
+.radios{display:flex;gap:10px;margin-bottom:16px;}
+.radios .chip span{padding:11px 22px;}
+.hint{font-size:12.5px;color:var(--soft);margin:-10px 0 16px;}
+.hidden{display:none;}
+button{width:100%;background:var(--rose2);color:#fff;border:none;border-radius:13px;
+  padding:16px;font-size:16px;font-weight:600;letter-spacing:.4px;cursor:pointer;margin-top:8px;
+  font-family:inherit;}
+button:disabled{opacity:.6;}
+.thanks{display:none;padding:50px 30px;text-align:center;}
+.thanks h2{font-family:'Cormorant Garamond',serif;font-size:38px;color:var(--rose);margin:0 0 10px;}
+.thanks p{color:var(--ink);font-size:15px;}
+.foot{text-align:center;font-family:'Cormorant Garamond',serif;font-style:italic;
+  font-size:22px;color:var(--rose2);padding:0 0 26px;}
+.err{color:#b3261e;font-size:13px;margin:-8px 0 14px;display:none;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hero">
+    <div class="over">COSMOPOLITAN PARTY</div>
+    <h1>Decoração Personalizada</h1>
+    <p>Conta-nos a tua visão e desenhamos uma experiência à tua medida. Demora 2 minutos.</p>
+  </div>
+
+  <form name="decoracao-personalizada" method="POST" data-netlify="true"
+        netlify-honeypot="bot-field" enctype="multipart/form-data" id="form">
+    <input type="hidden" name="form-name" value="decoracao-personalizada">
+    <input type="hidden" name="subject" value="Novo pedido de decoração personalizada · Cosmopolitan Party">
+    <p class="hidden"><label>Não preencher: <input name="bot-field"></label></p>
+
+    <div class="sect">Os teus dados</div>
+    <label class="req">Nome</label>
+    <input type="text" name="nome" required>
+    <div class="two">
+      <div><label class="req">Contacto / WhatsApp</label><input type="tel" name="contacto" required></div>
+      <div><label>Email</label><input type="email" name="email"></div>
+    </div>
+
+    <div class="sect">A festa</div>
+    <div class="two">
+      <div>
+        <label class="req">Tipo de celebração</label>
+        <select name="tipo_evento" required>
+          <option value="">Escolhe…</option>
+          <option>Aniversário</option>
+          <option>Batizado</option>
+          <option>Festa temática</option>
+          <option>Casamento íntimo</option>
+          <option>Outro</option>
+        </select>
+      </div>
+      <div><label class="req">Data do evento</label><input type="date" name="data_evento" required></div>
+    </div>
+    <div class="two">
+      <div><label>Nº de convidados (aprox.)</label><input type="number" name="num_convidados" min="1"></div>
+      <div><label>Para quem é a festa</label><input type="text" name="para_quem" placeholder="ex: a Maria faz 30"></div>
+    </div>
+
+    <div class="sect">O estilo</div>
+    <label>Há um tema?</label>
+    <input type="text" name="tema" placeholder="ex: jardim encantado, futebol, dourado e branco…">
+    <label>Cores / paleta preferida</label>
+    <input type="text" name="cores" placeholder="ex: rosa velho, dourado e creme">
+    <label>Que ambiente imaginas?</label>
+    <div class="chips">
+      <label class="chip"><input type="checkbox" name="estilo" value="Elegante"><span>Elegante</span></label>
+      <label class="chip"><input type="checkbox" name="estilo" value="Luxuoso"><span>Luxuoso</span></label>
+      <label class="chip"><input type="checkbox" name="estilo" value="Minimalista"><span>Minimalista</span></label>
+      <label class="chip"><input type="checkbox" name="estilo" value="Divertido / colorido"><span>Divertido</span></label>
+      <label class="chip"><input type="checkbox" name="estilo" value="Romântico"><span>Romântico</span></label>
+      <label class="chip"><input type="checkbox" name="estilo" value="Natural / orgânico"><span>Natural</span></label>
+    </div>
+
+    <div class="sect">A decoração</div>
+    <label>Que elementos gostavas de ter?</label>
+    <div class="chips">
+      <label class="chip"><input type="checkbox" name="elementos" value="Painel / backdrop"><span>Painel / backdrop</span></label>
+      <label class="chip"><input type="checkbox" name="elementos" value="Arco de balões"><span>Arco de balões</span></label>
+      <label class="chip"><input type="checkbox" name="elementos" value="Número / letras LED"><span>Número / letras LED</span></label>
+      <label class="chip"><input type="checkbox" name="elementos" value="Mesa de bolo / doces"><span>Mesa de doces</span></label>
+      <label class="chip"><input type="checkbox" name="elementos" value="Flores naturais"><span>Flores naturais</span></label>
+      <label class="chip"><input type="checkbox" name="elementos" value="Centros de mesa"><span>Centros de mesa</span></label>
+      <label class="chip"><input type="checkbox" name="elementos" value="Mesa posta completa"><span>Mesa posta</span></label>
+      <label class="chip"><input type="checkbox" name="elementos" value="Zona lounge"><span>Zona lounge</span></label>
+      <label class="chip"><input type="checkbox" name="elementos" value="Iluminação ambiente"><span>Iluminação</span></label>
+      <label class="chip"><input type="checkbox" name="elementos" value="Welcome sign / sinalética"><span>Welcome sign</span></label>
+    </div>
+
+    <label>Queres mesa posta?</label>
+    <div class="radios">
+      <label class="chip"><input type="radio" name="mesa_posta" value="Sim" id="mpsim"><span>Sim</span></label>
+      <label class="chip"><input type="radio" name="mesa_posta" value="Não" checked><span>Não</span></label>
+    </div>
+    <div id="lugaresBox" class="hidden">
+      <label>Para quantos lugares?</label>
+      <input type="number" name="lugares_mesa" min="1">
+    </div>
+
+    <label>Faixa de orçamento (opcional)</label>
+    <select name="orcamento">
+      <option value="">Prefiro falar convosco</option>
+      <option>Até 500€</option>
+      <option>500€ – 1000€</option>
+      <option>1000€ – 2000€</option>
+      <option>Acima de 2000€</option>
+    </select>
+
+    <div class="sect">Inspiração</div>
+    <label>Tens referências? (Pinterest, Instagram…)</label>
+    <input type="url" name="referencias" placeholder="cola aqui um link">
+    <label>Ou envia imagens de inspiração</label>
+    <input type="file" name="inspiracao" accept="image/*" multiple>
+
+    <label>Mais alguma coisa que queiras que saibamos?</label>
+    <textarea name="notas" placeholder="pormenores, pedidos especiais…"></textarea>
+
+    <div class="err" id="err">Algo correu mal ao enviar. Tenta de novo ou fala connosco.</div>
+    <button type="submit" id="btn">Enviar a minha visão</button>
+  </form>
+
+  <div class="thanks" id="thanks">
+    <h2>Recebido!</h2>
+    <p>Obrigada por partilhares a tua visão. A nossa equipa entra em contacto em breve para desenhar a tua experiência.</p>
+  </div>
+
+  <div class="foot">Cosmopolitan Party</div>
+</div>
+
+<script>
+// mostrar campo de lugares quando "mesa posta = Sim"
+document.querySelectorAll('input[name="mesa_posta"]').forEach(r=>{
+  r.addEventListener('change',()=>{
+    document.getElementById('lugaresBox').classList.toggle('hidden',
+      document.getElementById('mpsim').checked===false);
+  });
+});
+
+const form=document.getElementById('form');
+form.addEventListener('submit',async(e)=>{
+  e.preventDefault();
+  const btn=document.getElementById('btn');
+  document.getElementById('err').style.display='none';
+  btn.disabled=true; btn.textContent='A enviar…';
+  try{
+    const fd=new FormData(form);
+    const res=await fetch('/',{method:'POST',body:fd});
+    if(!res.ok) throw new Error('net');
+    form.style.display='none';
+    document.getElementById('thanks').style.display='block';
+    document.querySelector('.thanks').scrollIntoView({behavior:'smooth'});
+  }catch(err){
+    document.getElementById('err').style.display='block';
+    btn.disabled=false; btn.textContent='Enviar a minha visão';
+  }
+});
+</script>
+</body>
+</html>
