@@ -191,6 +191,22 @@ header{background:linear-gradient(135deg,var(--dark),var(--dark2));padding:0 20p
 .tool-name{font-size:13px;font-weight:700;color:var(--text)}
 .tool-desc{font-size:11px;color:var(--muted);line-height:1.45}
 .tool-badge{font-family:var(--mono);font-size:9px;background:var(--pink3);color:var(--pink);padding:2px 8px;border-radius:20px;align-self:flex-start}
+/* MENSAGENS — templates */
+.msg-intro{font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:14px}
+.msg-intro strong{color:var(--text)}
+.msg-card{border:1px solid var(--border);border-radius:12px;padding:13px 14px;margin-bottom:12px;background:var(--card)}
+.msg-card-hdr{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px}
+.msg-card-title{font-size:13px;font-weight:700;color:var(--text);line-height:1.3}
+.msg-card-sub{font-size:11px;color:var(--muted);margin-top:2px;font-style:italic}
+.msg-card-num{font-family:var(--mono);font-size:9px;letter-spacing:1.5px;background:var(--pink3);color:var(--pink);padding:3px 8px;border-radius:20px;flex-shrink:0;font-weight:700}
+.msg-body{background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:11px 13px;font-size:12.5px;line-height:1.55;color:var(--text);white-space:pre-wrap;font-family:var(--font);max-height:240px;overflow-y:auto}
+.msg-body strong{color:var(--pink)}
+.msg-actions{display:flex;gap:6px;margin-top:9px;flex-wrap:wrap}
+.msg-btn{flex:1;min-height:36px;border:1px solid var(--border);background:var(--card);border-radius:8px;font-family:var(--font);font-size:12px;font-weight:600;color:var(--text);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:5px;transition:all .15s;padding:0 10px}
+.msg-btn:hover{border-color:var(--pink);color:var(--pink);background:var(--pink3)}
+.msg-btn.copy.done{border-color:var(--green);color:var(--green);background:#ecfdf5}
+.msg-note{background:#fff8e1;border:1px solid #f0d97a;border-radius:9px;padding:10px 12px;font-size:11.5px;line-height:1.55;color:var(--amber);margin-top:6px}
+.msg-note strong{color:var(--amber)}
 /* CHECKLIST */
 .ck-hdr{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
 .ck-ev-sel{border:1px solid var(--border);border-radius:9px;padding:10px 12px;font-family:var(--font);font-size:13px;outline:none;background:var(--card);flex:1;min-height:var(--tap)}
@@ -628,6 +644,7 @@ header{background:linear-gradient(135deg,var(--dark),var(--dark2));padding:0 20p
       <a href="https://docs.google.com/forms/d/e/1FAIpQLSdXojeBZeEKgUr05bGWwHYFrVypFL0XuQvnrWBYLw-KowfBLQ/viewform" target="_blank" class="tool-card"><div class="tool-icon">📝</div><div class="tool-badge">CONTRATOS</div><div class="tool-name">Registo de Contrato</div><div class="tool-desc">Formulário de registo. Gera contrato e envia ao cliente.</div></a>
       <a href="https://docs.google.com/forms/d/e/1FAIpQLSdwM0jlmYR8gWiFBlusZlzjIaV8lWaj85L3--sZaKURL3012Q/viewform" target="_blank" class="tool-card"><div class="tool-icon">🎉</div><div class="tool-badge">REGISTO</div><div class="tool-name">Registo de Festa</div><div class="tool-desc">Formulário de registo inicial da festa.</div></a>
       <a href="/decoracao_personalizada.html" target="_blank" class="tool-card"><div class="tool-icon">🎨</div><div class="tool-badge">DECORAÇÃO</div><div class="tool-name">Pedido de Decoração</div><div class="tool-desc">Formulário público para clientes pedirem decoração personalizada. Respostas por email.</div></a>
+      <div class="tool-card" onclick="abrirMensagens()"><div class="tool-icon">💬</div><div class="tool-badge">MENSAGENS</div><div class="tool-name">Templates WhatsApp</div><div class="tool-desc">Mensagens prontas a copiar: pedido de dados, envio de contrato, follow-up, confirmação e proposta de catering/decoração.</div></div>
       <a href="https://mail.google.com/mail/u/0/#inbox" target="_blank" class="tool-card"><div class="tool-icon">✉️</div><div class="tool-badge">EMAIL</div><div class="tool-name">Caixa de Entrada</div><div class="tool-desc">cosmopolitanparty.loures@gmail.com — caixa de operações.</div></a>
       <a href="https://calendar.google.com/calendar/r?cid=cosmopolitanparty.loures@gmail.com" target="_blank" class="tool-card"><div class="tool-icon">📅</div><div class="tool-badge">CALENDÁRIO</div><div class="tool-name">Calendário de Festas</div><div class="tool-desc">Calendário Google sincronizado com todos os eventos.</div></a>
       <a href="https://docs.google.com/spreadsheets/d/1d4g95miZ9LFgvakB4nsJs8QHCY5O-0xWJOa5FcpekPQ" target="_blank" class="tool-card"><div class="tool-icon">📊</div><div class="tool-badge">SHEET</div><div class="tool-name">Base de Dados de Festas</div><div class="tool-desc">Google Sheet com registos, contratos e pagamentos.</div></a>
@@ -906,6 +923,26 @@ header{background:linear-gradient(135deg,var(--dark),var(--dark2));padding:0 20p
   </div>
 </div>
 
+<!-- MODAL MENSAGENS / TEMPLATES WHATSAPP -->
+<div class="overlay" id="msgModal" onclick="closeOverlay('msgModal',event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="drag-bar" onclick="closeModal('msgModal')"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <h2 style="margin:0">💬 Mensagens para WhatsApp</h2>
+    </div>
+    <div class="msg-intro">
+      Mensagens prontas a copiar, em tom caloroso. Os campos entre <strong>[ ]</strong> são para preencher antes de enviar (ex: <strong>[Nome]</strong>, <strong>[Data]</strong>, <strong>[Érica/Andreia]</strong>).
+    </div>
+    <div id="msgList"></div>
+    <div class="msg-note">
+      <strong>Notas:</strong> a mensagem <strong>3</strong> mantém só a referência de 25€/pessoa (do menu) e deixa a decoração sem preços — para fechar valores conforme cada evento. No fecho do pedido de dados (mensagem <strong>1</strong>) troca <strong>[Érica/Andreia]</strong> pela pessoa que assina.
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-g" onclick="closeModal('msgModal')" style="flex:1">Fechar</button>
+    </div>
+  </div>
+</div>
+
 <div id="toastCont"></div>
 <div id="exportImg" style="position:fixed;left:-99999px;top:0;width:560px;background:#fff;font-family:'DM Sans',system-ui,sans-serif"></div>
 <script>
@@ -1145,6 +1182,106 @@ function initDriveInput(){
 function updateDriveCard(url){
   const d=$('driveLinkDesc');
   if(d) d.textContent=url?'📂 Link configurado — clica para abrir':'Contratos, PDFs e ficheiros do espaço.';
+}
+
+// ─── MENSAGENS / TEMPLATES WHATSAPP ───
+const MSG_TEMPLATES=[
+  {
+    titulo:'Pedido de dados para o contrato',
+    sub:'Primeiro contacto, depois de o Ivo confirmar a reserva.',
+    corpo:`Olá [Nome], tudo bem?
+Sou a [Érica/Andreia] da Cosmopolitan Party. A festa de [Data] está confirmada connosco e vou ajudar a tratar de tudo daqui para a frente.
+
+Para fazermos o contrato preciso só destes dados:
+• Nome completo do responsável
+• Tipo de evento (aniversário, batizado, etc.)
+• Nº de convidados aproximado
+• Horas de início e fim
+• Se quiser fatura com NIF: NIF e morada
+
+Mal me envie isto, mando-lhe o contrato.
+Cosmopolitan Party`
+  },
+  {
+    titulo:'Envio do contrato (assinatura digital)',
+    sub:'Quando o contrato está pronto para enviar.',
+    corpo:`Olá [Nome],
+Em anexo o contrato da festa de [Data].
+
+É tudo digital — basta abrir o PDF e clicar no link de confirmação no final (Cláusula 7). Esse clique fica registado com data e hora e vale como aceitação.
+
+A reserva fica garantida quando recebermos a confirmação e o sinal. Qualquer dúvida, diga.
+Cosmopolitan Party`
+  },
+  {
+    titulo:'Apresentação de catering e decoração',
+    sub:'Para quem reservou só o espaço com o Ivo.',
+    corpo:`Olá [Nome],
+Como o espaço já está reservado para [Data], queria deixar-lhe a nota de que também tratamos do catering e da decoração — se quiser chegar e ter tudo pronto.
+
+• Catering: kits de finger food ou menu completo a partir de 25€/pessoa
+• Decoração: do mais simples ao mais elaborado, à medida da festa
+
+Quer que prepare uma proposta?
+Cosmopolitan Party`
+  },
+  {
+    titulo:'Follow-up — sem resposta ao pedido de dados',
+    sub:'Lembrete simpático passados uns dias.',
+    corpo:`Olá [Nome],
+Passo só para confirmar se recebeu a minha mensagem sobre os dados para o contrato da festa de [Data]. Sem pressa, quando puder responder eu trato do resto.
+Cosmopolitan Party`
+  },
+  {
+    titulo:'Confirmação após assinatura',
+    sub:'Quando o cliente confirma o contrato pelo link.',
+    corpo:`[Nome], está confirmado.
+O contrato ficou registado e a festa de [Data] está garantida. Vou-lhe avisando dos próximos passos. Se entretanto quiser juntar catering ou decoração, é só dizer.
+Cosmopolitan Party`
+  }
+];
+function abrirMensagens(){
+  renderMensagens();
+  $('msgModal').classList.add('on');
+}
+function renderMensagens(){
+  $('msgList').innerHTML=MSG_TEMPLATES.map((m,i)=>`
+    <div class="msg-card">
+      <div class="msg-card-hdr">
+        <div>
+          <div class="msg-card-title">${m.titulo}</div>
+          <div class="msg-card-sub">${m.sub}</div>
+        </div>
+        <span class="msg-card-num">#${i+1}</span>
+      </div>
+      <div class="msg-body" id="msgBody-${i}">${escapeHtml(m.corpo)}</div>
+      <div class="msg-actions">
+        <button class="msg-btn copy" id="msgCopy-${i}" onclick="copiarMensagem(${i})">📋 Copiar</button>
+      </div>
+    </div>
+  `).join('');
+}
+function escapeHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+async function copiarMensagem(i){
+  const txt=MSG_TEMPLATES[i]?.corpo||'';
+  try{
+    await navigator.clipboard.writeText(txt);
+  }catch(e){
+    // fallback para browsers antigos
+    const ta=document.createElement('textarea');
+    ta.value=txt;ta.style.position='fixed';ta.style.left='-9999px';
+    document.body.appendChild(ta);ta.select();
+    try{document.execCommand('copy');}catch(_){}
+    document.body.removeChild(ta);
+  }
+  const btn=$('msgCopy-'+i);
+  if(btn){
+    const orig=btn.innerHTML;
+    btn.classList.add('done');
+    btn.innerHTML='✓ Copiado';
+    setTimeout(()=>{btn.classList.remove('done');btn.innerHTML=orig;},1800);
+  }
+  showToast('📋 Mensagem copiada');
 }
 
 // ─── HORAS ERICA ───
