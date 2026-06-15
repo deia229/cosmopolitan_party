@@ -1633,7 +1633,7 @@ function loadEventos(){
     if(!Array.isArray(data)){syncSt('err','Erro script');renderEventos([]);return;}
     eventos=data.map(normalizeEvento);syncSt('ok','Sincronizado');invalidateFinCache();renderEventos(eventos);renderNextEvent();renderPulse();renderFin();renderCkSel();
     if($('calGrid'))renderCalendar();
-    loadPagSupabase().then(()=>{renderEventos(eventos);renderPulse();renderFin();renderCkSel();});
+    loadPagSupabase().then(()=>{renderEventos(eventos);renderPulse();renderFin();renderCkSel();renderNextEvent();if($('calGrid'))renderCalendar();});
   };
   const s=document.createElement('script');s.id='_evs';s.src=`${SCRIPT_URL}?page=dados&callback=${cb}`;
   s.onerror=()=>{delete window[cb];syncSt('err','Erro');renderEventos([]);};
@@ -2693,7 +2693,7 @@ async function guardarDadosCliente(){
   ev.telefone=telefone_override||ev._origTelefone||'';
   ev.email=email_override||ev._origEmail||'';
   renderCkSel();
-  renderEventos(eventos);renderNextEvent();
+  renderEventos(eventos);renderNextEvent();if($('calGrid'))renderCalendar();
   // Actualizar a vista do modal sem fechar
   if($('evModalTitle'))$('evModalTitle').textContent=ev.cliente||'Evento';
   if($('dispCliente'))$('dispCliente').textContent=ev.cliente||'—';
