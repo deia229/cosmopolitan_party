@@ -754,14 +754,16 @@ header{background:linear-gradient(135deg,var(--dark),var(--dark2));padding:0 20p
       <div id="evInfoEdit" style="display:none;margin-top:14px;border-top:1px solid var(--border);padding-top:14px">
         <div style="font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--pink);margin-bottom:10px">Editar dados do cliente</div>
         <div style="display:grid;gap:8px">
+          <input id="editCliente" placeholder="Nome do cliente" style="border:1px solid var(--border);border-radius:9px;padding:9px 12px;font-size:13px;font-family:var(--font);outline:none;min-height:42px"/>
           <input id="editTelefone" placeholder="Telefone" style="border:1px solid var(--border);border-radius:9px;padding:9px 12px;font-size:13px;font-family:var(--font);outline:none;min-height:42px"/>
           <input id="editEmail" placeholder="Email" style="border:1px solid var(--border);border-radius:9px;padding:9px 12px;font-size:13px;font-family:var(--font);outline:none;min-height:42px"/>
           <input id="editObs" placeholder="Observações" style="border:1px solid var(--border);border-radius:9px;padding:9px 12px;font-size:13px;font-family:var(--font);outline:none;min-height:42px"/>
+          <div id="editOrigHint" style="font-size:11px;color:var(--muted);display:none;background:#fff8e1;border:1px solid #f0d97a;border-radius:8px;padding:8px 10px"></div>
           <div style="display:flex;gap:8px;margin-top:4px">
             <button class="btn btn-p" onclick="guardarDadosCliente()" style="flex:1">💾 Guardar</button>
             <button class="btn btn-g" onclick="$('evInfoEdit').style.display='none'">Cancelar</button>
           </div>
-          <div style="font-size:11px;color:var(--muted)">⚠️ Estes dados são guardados no Supabase. O registo original na Google Sheet não é alterado.</div>
+          <div style="font-size:11px;color:var(--muted)">⚠️ Estes dados são guardados no Supabase como override. O registo original na Google Sheet não é alterado.</div>
         </div>
       </div>
     </div>
@@ -1024,11 +1026,20 @@ async function loadPagSupabase(){
   if(!sb||!eventos.length){pagSupabaseByKey={};pagamentosByKey={};extrasByKey={};return;}
   try{
     const keys=eventos.map(evKey);
-    const{data}=await sb.from('cp_event_costs').select('event_key,pagamentos,extras').in('event_key',keys);
+    const{data}=await sb.from('cp_event_costs').select('event_key,pagamentos,extras,cliente_override,telefone_override,email_override').in('event_key',keys);
     pagSupabaseByKey={};pagamentosByKey={};extrasByKey={};
+    // Reset valores ao original antes de reaplicar overrides (caso tenham sido limpos)
+    eventos.forEach(e=>{e.cliente=e._origCliente||e.cliente;e.telefone=e._origTelefone||'';e.email=e._origEmail||'';});
     (data||[]).forEach(r=>{
       try{const ps=JSON.parse(r.pagamentos||'[]');if(Array.isArray(ps)&&ps.length){pagamentosByKey[r.event_key]=ps;const sum=ps.reduce((s,p)=>s+(+p.valor||0),0);if(sum)pagSupabaseByKey[r.event_key]=sum;}}catch(e){}
       try{const ex=JSON.parse(r.extras||'{}');if(ex&&typeof ex==='object')extrasByKey[r.event_key]={espaco:[],decoracao:[],catering:[],outros:[],...ex};}catch(e){}
+      // Aplicar overrides ao ev correspondente (chave estável por _key)
+      const ev=eventos.find(e=>e._key===r.event_key);
+      if(ev){
+        if(r.cliente_override)ev.cliente=r.cliente_override;
+        if(r.telefone_override)ev.telefone=r.telefone_override;
+        if(r.email_override)ev.email=r.email_override;
+      }
     });
   }catch(e){pagSupabaseByKey={};pagamentosByKey={};extrasByKey={};}
 }
@@ -1070,7 +1081,7 @@ const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>
 const fmtD=v=>{if(!v)return'—';try{return new Intl.DateTimeFormat('pt-PT').format(new Date(v+'T00:00:00'));}catch(e){return v;}};
 function getMes(){const n=new Date(),m=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];return m[n.getMonth()]+' '+n.getFullYear();}
 function getDateStr(){const n=new Date(),d=['DOM','SEG','TER','QUA','QUI','SEX','SÁB'],m=['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];return`${d[n.getDay()]} ${n.getDate()} ${m[n.getMonth()]}`;}
-function evKey(ev){return(ev.dataFesta||'')+'__'+(ev.cliente||'');}
+function evKey(ev){return ev._key||((ev.dataFesta||'')+'__'+(ev.cliente||''));}
 function syncSt(s,l){$('syncDot').className='sdot '+(s==='ok'?'ok':s==='loading'?'load':'');$('syncLbl').textContent=l;}
 const MESES_PT=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 function parseMes(str){if(!str)return null;const p=str.split(' ');const idx=MESES_PT.indexOf(p[0]);if(idx<0)return null;const y=parseInt(p[1]);if(isNaN(y))return null;return{month:idx,year:y};}
@@ -1605,7 +1616,15 @@ function normEvDate(s){
   if(m)return`${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
   return s; // formato desconhecido — devolver tal e qual para não esconder
 }
-function normalizeEvento(ev){return{...ev,dataFesta:normEvDate(ev.dataFesta)};}
+// Guarda o original do Sheet e fixa _key para sobreviver a overrides de cliente
+function normalizeEvento(ev){
+  const out={...ev,dataFesta:normEvDate(ev.dataFesta)};
+  out._origCliente=out.cliente||'';
+  out._origTelefone=out.telefone||'';
+  out._origEmail=out.email||'';
+  out._key=(out.dataFesta||'')+'__'+out._origCliente;
+  return out;
+}
 function loadEventos(){
   if(!SCRIPT_URL){$('evBody').innerHTML='<tr><td colspan="7" class="empty-row">Configura o URL do script em Ferramentas.</td></tr>';return;}
   syncSt('loading','A carregar…');
@@ -1626,6 +1645,7 @@ function renderEventos(evs){
   const matchSearch=ev=>{
     if(!q)return true;
     if((ev.cliente||'').toLowerCase().includes(q))return true;
+    if((ev._origCliente||'').toLowerCase().includes(q))return true; // pesquisa também pelo original
     if((ev.dataFesta||'').toLowerCase().includes(q))return true;
     if(fmtD(ev.dataFesta).toLowerCase().includes(q))return true;
     return false;
@@ -1714,15 +1734,29 @@ async function openEvModal(idx){
   const pago=paidTotal(ev);const falta=Math.max(0,total-pago);
   $('evModalTitle').textContent=ev.cliente||'Evento';
   $('evInfoEdit').style.display='none'; // fechar painel de edição
-  // Preencher campos de edição com dados actuais
+  // Preencher campos de edição com dados actuais (já com override aplicado)
+  $('editCliente').value=ev.cliente||'';
   $('editTelefone').value=ev.telefone||'';
   $('editEmail').value=ev.email||'';
   $('editObs').value=ev.observacoes||'';
+  // Mostrar hint do original se houver override aplicado
+  const diffs=[];
+  if(ev._origCliente&&ev._origCliente!==ev.cliente)diffs.push(`Nome: <strong>${esc(ev._origCliente)}</strong>`);
+  if(ev._origTelefone&&ev._origTelefone!==ev.telefone)diffs.push(`Telefone: <strong>${esc(ev._origTelefone)}</strong>`);
+  if(ev._origEmail&&ev._origEmail!==ev.email)diffs.push(`Email: <strong>${esc(ev._origEmail)}</strong>`);
+  const hint=$('editOrigHint');
+  if(hint){
+    if(diffs.length){hint.innerHTML='📝 Registo original do Sheet — '+diffs.join(' · ');hint.style.display='block';}
+    else{hint.style.display='none';}
+  }
+  // Mostrar "(original: X)" ao lado dos campos no modo leitura quando difere
+  const origNote=(orig,cur)=>(orig&&orig!==cur)?` <span style="font-size:10px;color:var(--muted);font-style:italic">(original: ${esc(orig)})</span>`:'';
   $('evInfo').innerHTML=`
     <div><div class="det-lbl">Data</div><div class="det-val">${fmtD(ev.dataFesta)}</div></div>
     <div><div class="det-lbl">Horário</div><div class="det-val">${esc(ev.horaInicio||'—')} – ${esc(ev.horaFim||'—')}</div></div>
-    <div><div class="det-lbl">Telefone</div><div class="det-val" id="dispTelefone">${esc(ev.telefone||'—')}</div></div>
-    <div><div class="det-lbl">Email</div><div class="det-val" id="dispEmail">${esc(ev.email||'—')}</div></div>
+    <div><div class="det-lbl">Cliente</div><div class="det-val" id="dispCliente">${esc(ev.cliente||'—')}${origNote(ev._origCliente,ev.cliente)}</div></div>
+    <div><div class="det-lbl">Telefone</div><div class="det-val" id="dispTelefone">${esc(ev.telefone||'—')}${origNote(ev._origTelefone,ev.telefone)}</div></div>
+    <div><div class="det-lbl">Email</div><div class="det-val" id="dispEmail">${esc(ev.email||'—')}${origNote(ev._origEmail,ev.email)}</div></div>
     <div><div class="det-lbl">Observações</div><div class="det-val" id="dispObs" style="font-size:12px">${esc(ev.observacoes||'—')}</div></div>`;
   $('evPag').innerHTML=`
     <div><div class="det-lbl">Total</div><div class="det-val big">${eur(total)}</div></div>
@@ -1839,7 +1873,7 @@ async function saveEvExtras(silencioso=false){
   const ev=eventos.find(e=>e.rowIndex===curEvIdx);if(!ev||!sb)return;
   if(!silencioso){const btn=document.querySelector('[onclick="saveEvExtras()"]');if(btn){btn.textContent='A guardar…';btn.disabled=true;setTimeout(()=>{btn.textContent='💾 Guardar serviços';btn.disabled=false;},1500);}}
   const{error}=await sb.from('cp_event_costs').upsert({
-    event_key:evKey(ev),event_cliente:ev.cliente||'',event_data:ev.dataFesta||'',
+    event_key:evKey(ev),event_cliente:ev._origCliente||ev.cliente||'',event_data:ev.dataFesta||'',
     extras:JSON.stringify(curEvExtras),updated_at:new Date().toISOString()
   },{onConflict:'event_key'});
   if(error){showToast('Erro: '+error.message);return;}
@@ -2614,7 +2648,7 @@ async function savePagamentos(){
   const ev=eventos.find(e=>e.rowIndex===curEvIdx);if(!ev||!sb)return;
   const key=evKey(ev);
   await sb.from('cp_event_costs').upsert({
-    event_key:key,event_cliente:ev.cliente||'',event_data:ev.dataFesta||'',
+    event_key:key,event_cliente:ev._origCliente||ev.cliente||'',event_data:ev.dataFesta||'',
     pagamentos:JSON.stringify(curPagamentos),updated_at:new Date().toISOString()
   },{onConflict:'event_key'});
   // Atualizar cache global de pagamentos Supabase
@@ -2637,19 +2671,34 @@ function toggleEditDados(){
 }
 async function guardarDadosCliente(){
   const ev=eventos.find(e=>e.rowIndex===curEvIdx);if(!ev||!sb)return;
+  const cliente=$('editCliente').value.trim();
   const tel=$('editTelefone').value.trim();
   const email=$('editEmail').value.trim();
   const obs=$('editObs').value.trim();
   const key=evKey(ev);
+  // Só guarda como override se difere do original — caso contrário guarda null (limpa)
+  const cliente_override=(cliente&&cliente!==(ev._origCliente||''))?cliente:null;
+  const telefone_override=(tel&&tel!==(ev._origTelefone||''))?tel:null;
+  const email_override=(email&&email!==(ev._origEmail||''))?email:null;
   const{error}=await sb.from('cp_event_costs').upsert({
-    event_key:key,event_cliente:ev.cliente||'',event_data:ev.dataFesta||'',
-    extras:JSON.stringify(curEvExtras),notas:obs,updated_at:new Date().toISOString()
+    event_key:key,event_cliente:ev._origCliente||ev.cliente||'',event_data:ev.dataFesta||'',
+    extras:JSON.stringify(curEvExtras),notas:obs,
+    cliente_override,telefone_override,email_override,
+    updated_at:new Date().toISOString()
   },{onConflict:'event_key'});
   if(error){showToast('Erro: '+error.message);return;}
   extrasByKey[key]={espaco:[],decoracao:[],catering:[],outros:[],...curEvExtras};
+  // Aplicar override local (ou voltar ao original se foi limpo)
+  ev.cliente=cliente_override||ev._origCliente||'';
+  ev.telefone=telefone_override||ev._origTelefone||'';
+  ev.email=email_override||ev._origEmail||'';
   renderCkSel();
-  if($('dispTelefone'))$('dispTelefone').textContent=tel||ev.telefone||'—';
-  if($('dispEmail'))$('dispEmail').textContent=email||'—';
+  renderEventos(eventos);renderNextEvent();
+  // Actualizar a vista do modal sem fechar
+  if($('evModalTitle'))$('evModalTitle').textContent=ev.cliente||'Evento';
+  if($('dispCliente'))$('dispCliente').textContent=ev.cliente||'—';
+  if($('dispTelefone'))$('dispTelefone').textContent=ev.telefone||'—';
+  if($('dispEmail'))$('dispEmail').textContent=ev.email||'—';
   if($('dispObs'))$('dispObs').textContent=obs||'—';
   $('evInfoEdit').style.display='none';
   showToast('✓ Dados guardados');
