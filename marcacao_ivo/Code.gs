@@ -49,11 +49,76 @@ function doGet(e) {
   if (param === 'visitas-admin')           return vst_jsonp_(e, vst_admin(e.parameter.token));
 
   if (param === 'dados') return doGetDashboard(e);
+  if (param === 'updateCal') return updateCalEvento_(e);
 
   // Por defeito → página de disponibilidade
   return HtmlService.createHtmlOutputFromFile('index')
     .setTitle('Disponibilidade de Festas')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
+
+/***** UPDATE CAL — atualiza nome/telefone/observações no evento do Google Calendar
+ *     Chamado pelo dashboard quando o utilizador edita os dados de uma festa.
+ *     Parâmetros (GET):
+ *       link   — URL do evento (campo Link Calendário (Festas) ou (Andreia))
+ *       nome   — novo nome (opcional)
+ *       tel    — novo telefone (opcional)
+ *       obs    — novas observações (opcional)
+ *     Devolve JSON ou JSONP {ok: bool, err?: string}
+ *****/
+function updateCalEvento_(e) {
+  const callback = e && e.parameter && e.parameter.callback;
+  const send = obj => {
+    const json = JSON.stringify(obj);
+    return ContentService
+      .createTextOutput(callback ? `${callback}(${json})` : json)
+      .setMimeType(callback ? ContentService.MimeType.JAVASCRIPT : ContentService.MimeType.JSON);
+  };
+  try {
+    const link = (e && e.parameter && e.parameter.link || '').toString().trim();
+    if (!link) return send({ ok: false, err: 'Falta link do evento.' });
+    // Extrair eid (base64 do realId + " " + calendar id) do link ?eid=…
+    const m = link.match(/[?&]eid=([^&]+)/);
+    if (!m) return send({ ok: false, err: 'Link inválido (sem eid).' });
+    let eid = decodeURIComponent(m[1]);
+    while (eid.length % 4 !== 0) eid += '=';
+    let realId;
+    try {
+      const decoded = Utilities.newBlob(Utilities.base64Decode(eid)).getDataAsString();
+      realId = decoded.split(' ')[0]; // "REAL_ID calendar_id"
+    } catch (err) {
+      return send({ ok: false, err: 'Falha ao descodificar eid.' });
+    }
+    const cal = CalendarApp.getCalendarById(CAL_ID);
+    if (!cal) return send({ ok: false, err: 'Calendário não acessível.' });
+    const ev = cal.getEventById(realId);
+    if (!ev) return send({ ok: false, err: 'Evento não encontrado.' });
+
+    const nome = (e.parameter.nome || '').toString();
+    const tel  = (e.parameter.tel  || '').toString();
+    const obs  = (e.parameter.obs  || '').toString();
+
+    if (nome) ev.setTitle(`Festa — ${nome} (Flamenga)`);
+
+    // Atualizar a descrição preservando a estrutura existente
+    let desc = ev.getDescription() || '';
+    if (nome) desc = desc.replace(/(👤 Cliente:\s*).*/m, `$1${nome}`);
+    if (tel)  desc = desc.replace(/(📞 Telefone:\s*).*/m, `$1${tel}`);
+    if (obs)  {
+      // Substitui tudo depois de "📝 Observações:" até ao fim
+      if (/📝 Observações:/.test(desc)) {
+        desc = desc.replace(/(📝 Observações:\s*\n?)[\s\S]*$/, `$1${obs}`);
+      } else {
+        desc = desc + `\n\n📝 Observações:\n${obs}`;
+      }
+    }
+    ev.setDescription(desc);
+
+    return send({ ok: true });
+  } catch (err) {
+    return send({ ok: false, err: String(err && err.message || err) });
+  }
 }
 
 
@@ -116,6 +181,7 @@ function doGetDashboard(e) {
         observacoes: col(HDR_OBS),
         quemLimpa:   col(HDR_QUEM_LIMPA),
         sync:        col(HDR_SYNC),
+        linkCalendar: col(HDR_LINK_F),
       };
     });
 

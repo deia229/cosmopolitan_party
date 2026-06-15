@@ -2669,6 +2669,26 @@ function toggleEditDados(){
   panel.style.display=vis?'none':'block';
   if(!vis){swET('et-info',document.querySelector('.et-btn'));panel.scrollIntoView({behavior:'smooth',block:'nearest'});}
 }
+// Sincroniza nome/tel/obs com o evento no Google Calendar via Apps Script.
+// Silencioso em caso de sucesso; mostra toast só em erro relevante.
+function pushCalendarUpdate(ev,nome,tel,obs){
+  if(!SCRIPT_URL||!ev||!ev.linkCalendar)return;
+  const cb='upcal_'+Date.now();
+  document.getElementById('_upcal')?.remove();
+  let done=false;
+  const timer=setTimeout(()=>{if(done)return;done=true;delete window[cb];document.getElementById('_upcal')?.remove();},15000);
+  window[cb]=res=>{if(done)return;done=true;clearTimeout(timer);delete window[cb];document.getElementById('_upcal')?.remove();
+    if(res&&res.ok){showToast('✓ Google Calendar atualizado');}
+    else if(res&&res.err){showToast('⚠ Calendar: '+res.err);}
+  };
+  const params=new URLSearchParams({page:'updateCal',link:ev.linkCalendar,callback:cb});
+  if(nome)params.set('nome',nome);
+  if(tel) params.set('tel',tel);
+  if(obs) params.set('obs',obs);
+  const s=document.createElement('script');s.id='_upcal';s.src=SCRIPT_URL+'?'+params.toString();
+  s.onerror=()=>{if(done)return;done=true;clearTimeout(timer);delete window[cb];};
+  document.head.appendChild(s);
+}
 async function guardarDadosCliente(){
   const ev=eventos.find(e=>e.rowIndex===curEvIdx);if(!ev||!sb)return;
   const cliente=$('editCliente').value.trim();
@@ -2694,6 +2714,8 @@ async function guardarDadosCliente(){
   ev.email=email_override||ev._origEmail||'';
   renderCkSel();
   renderEventos(eventos);renderNextEvent();if($('calGrid'))renderCalendar();
+  // Sincronizar Google Calendar (nome/tel/obs) — falha não bloqueia o save
+  pushCalendarUpdate(ev,ev.cliente,ev.telefone,obs);
   // Actualizar a vista do modal sem fechar
   if($('evModalTitle'))$('evModalTitle').textContent=ev.cliente||'Evento';
   if($('dispCliente'))$('dispCliente').textContent=ev.cliente||'—';
