@@ -272,9 +272,74 @@ ${obs || ''}`.trim();
   sh.getRange(row, cols[HDR_LINK_A]).setValue(linkEvento);
   sh.getRange(row, cols[HDR_SYNC]).setValue('OK');
 
+  // ─── Pedido de dados ao cliente — link WhatsApp 1-clique ───
+  const dataPt = formatarDataPt_(dataFesta);
+  const primeiroNome = String(nome || '').trim().split(/\s+/)[0] || 'cliente';
+  const msgPedido =
+`Olá ${primeiroNome}, tudo bem?
+Sou a Andreia da Cosmopolitan Party. A festa de ${dataPt} está confirmada connosco e vou ajudar a tratar de tudo daqui para a frente.
+
+Para fazermos o contrato preciso só destes dados:
+• Nome completo do responsável
+• Tipo de evento (aniversário, batizado, etc.)
+• Nº de convidados aproximado
+• Horas de início e fim
+• Se quiser fatura com NIF: NIF e morada
+
+Mal me envie isto, mando-lhe o contrato.
+Cosmopolitan Party`;
+  const telNorm = normalizePtPhone_(tel);
+  const waLink = telNorm ? `https://wa.me/${telNorm}?text=${encodeURIComponent(msgPedido)}` : '';
+
   const subj = `✅ Festa criada no calendário: ${titulo}`;
-  const body = `${descricao}\n\n🔗 Link do evento: ${linkEvento}`;
-  EMAIL_TO.forEach(to => { if (to) GmailApp.sendEmail(to, subj, body); });
+  const bodyText = `${descricao}\n\n🔗 Link do evento: ${linkEvento}` +
+    (waLink ? `\n\n💬 Pedido de dados ao cliente (1 clique):\n${waLink}` : '\n\n⚠️ Sem telefone válido — pedido de dados não pode ser enviado.');
+
+  // Email HTML com botão "Pedir dados ao cliente" bem visível
+  const htmlBody =
+    '<div style="font-family:Arial,sans-serif;max-width:560px;color:#1a0010">' +
+      '<div style="background:linear-gradient(135deg,#e0187a,#ff4da6);padding:20px;border-radius:12px 12px 0 0;color:#fff">' +
+        '<div style="font-size:11px;letter-spacing:3px;text-transform:uppercase;opacity:.85">Cosmopolitan Party</div>' +
+        `<div style="font-size:20px;font-weight:700;margin-top:6px">✅ Festa criada</div>` +
+        `<div style="font-size:13px;opacity:.9;margin-top:4px">${escapeHtml_(nome || 'Cliente')} · ${escapeHtml_(dataPt)}</div>` +
+      '</div>' +
+      '<div style="border:1px solid #f0c8dc;border-top:none;border-radius:0 0 12px 12px;padding:20px">' +
+        `<pre style="font-family:Arial,sans-serif;white-space:pre-wrap;font-size:13px;margin:0 0 16px;color:#333">${escapeHtml_(descricao)}</pre>` +
+        `<p style="margin:0 0 10px;font-size:13px"><a href="${linkEvento}" style="color:#e0187a;text-decoration:none;font-weight:600">📅 Abrir no Google Calendar</a></p>` +
+        (waLink
+          ? `<div style="margin-top:18px;padding-top:14px;border-top:1px solid #f0c8dc"><p style="margin:0 0 8px;font-size:12px;color:#8a5a70">Próximo passo — pedido de dados ao cliente:</p><a href="${waLink}" style="display:inline-block;background:#25D366;color:#fff;text-decoration:none;padding:11px 18px;border-radius:9px;font-weight:600;font-size:13px">💬 Enviar WhatsApp (mensagem pronta)</a></div>`
+          : '<p style="margin-top:14px;color:#c0143c;font-size:12px">⚠️ Sem telefone válido — pedido de dados tem de ser enviado manualmente.</p>') +
+      '</div>' +
+    '</div>';
+
+  EMAIL_TO.forEach(to => { if (to) GmailApp.sendEmail({ to: to, subject: subj, body: bodyText, htmlBody: htmlBody, name: 'Cosmopolitan Party' }); });
+}
+
+// ─── Helpers para o pedido de dados ───
+function normalizePtPhone_(raw) {
+  const digits = String(raw || '').replace(/\D/g, '');
+  if (!digits) return '';
+  if (digits.startsWith('351') && digits.length >= 12) return digits.slice(0, 12);
+  if (digits.length === 9) return '351' + digits;
+  return digits;
+}
+function formatarDataPt_(v) {
+  if (v instanceof Date && !isNaN(v.getTime())) {
+    return Utilities.formatDate(v, TZ, 'dd/MM/yyyy');
+  }
+  const s = String(v).trim();
+  const m1 = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (m1) return `${m1[3].padStart(2,'0')}/${m1[2].padStart(2,'0')}/${m1[1]}`;
+  const m2 = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (m2) return `${m2[1].padStart(2,'0')}/${m2[2].padStart(2,'0')}/${m2[3]}`;
+  return s;
+}
+function escapeHtml_(s) {
+  return String(s || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
 
