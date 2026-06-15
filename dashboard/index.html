@@ -1125,19 +1125,31 @@ async function doLogin(e){
 async function doLogout(){await sb.auth.signOut();location.reload();}
 
 // ─── CONTRATOS PENDENTES ───
-let contratosPend=[],contratosAll=[],contratoByKey={};
-// Chave de cruzamento festa↔contrato: cliente normalizado + data ISO
-function contratoKey(cli,data){return(String(cli||'').trim().toLowerCase())+'|'+normEvDate(String(data||''));}
+let contratosPend=[],contratosAll=[],contratoByPhone={},contratoByNameDate={};
+// Telefone normalizado: apenas dígitos, últimos 9 (PT mobile = 9 dígitos, ignora prefixo 351)
+function normPhone9(p){const d=String(p||'').replace(/\D/g,'');return d.length>=9?d.slice(-9):d;}
+// Nome normalizado: sem acentos, minúsculas, espaços colapsados
+function normName(s){return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim().replace(/\s+/g,' ');}
 function buildContratoIndex(){
-  contratoByKey={};
+  contratoByPhone={};contratoByNameDate={};
   contratosAll.forEach(c=>{
-    const k=contratoKey(c.cliente,c.dataEvento);if(!k.startsWith('|'))contratoByKey[k]=c;
+    const ph=normPhone9(c.telefone);if(ph)contratoByPhone[ph]=c;
+    const nm=normName(c.cliente),dt=normEvDate(c.dataEvento);
+    if(nm&&dt)contratoByNameDate[nm+'|'+dt]=c;
   });
 }
-// Status do contrato para uma festa: 'ok' (confirmado) | 'pend' (criado, por assinar) | 'none' (sem contrato)
+// Match festa↔contrato: telefone primeiro (estável); nome+data como fallback
+function findContrato(ev){
+  if(!ev)return null;
+  const ph=normPhone9(ev.telefone);
+  if(ph&&contratoByPhone[ph])return contratoByPhone[ph];
+  const nm=normName(ev.cliente),dt=normEvDate(ev.dataFesta);
+  if(nm&&dt)return contratoByNameDate[nm+'|'+dt]||null;
+  return null;
+}
+// Status do contrato: 'ok' (confirmado) | 'pend' (criado, por assinar) | 'none' (sem contrato)
 function getContratoStatus(ev){
-  if(!ev||!ev.cliente||!ev.dataFesta)return 'none';
-  const c=contratoByKey[contratoKey(ev.cliente,ev.dataFesta)];
+  const c=findContrato(ev);
   if(!c)return 'none';
   return c.confirmado?'ok':'pend';
 }
