@@ -703,6 +703,7 @@ header{background:linear-gradient(135deg,var(--dark),var(--dark2));padding:0 20p
       <a href="https://docs.google.com/forms/d/e/1FAIpQLSdwM0jlmYR8gWiFBlusZlzjIaV8lWaj85L3--sZaKURL3012Q/viewform" target="_blank" class="tool-card"><div class="tool-icon">🎉</div><div class="tool-badge">REGISTO</div><div class="tool-name">Registo de Festa</div><div class="tool-desc">Formulário de registo inicial da festa.</div></a>
       <a href="/decoracao_personalizada.html" target="_blank" class="tool-card"><div class="tool-icon">🎨</div><div class="tool-badge">DECORAÇÃO</div><div class="tool-name">Pedido de Decoração</div><div class="tool-desc">Formulário público para clientes pedirem decoração personalizada. Respostas por email.</div></a>
       <div class="tool-card" onclick="abrirMensagens()"><div class="tool-icon">💬</div><div class="tool-badge">MENSAGENS</div><div class="tool-name">Templates WhatsApp</div><div class="tool-desc">Mensagens prontas a copiar: pedido de dados, envio de contrato, follow-up, confirmação e proposta de catering/decoração.</div></div>
+      <div class="tool-card" id="syncCalCard" onclick="sincronizarTodosCalendar()"><div class="tool-icon">🔄</div><div class="tool-badge">CALENDÁRIO</div><div class="tool-name">Sincronizar Google Calendar</div><div class="tool-desc" id="syncCalDesc">Aplica overrides (nome/tel/obs) a todos os eventos do Calendar de festas já editadas.</div></div>
       <a href="https://mail.google.com/mail/u/0/#inbox" target="_blank" class="tool-card"><div class="tool-icon">✉️</div><div class="tool-badge">EMAIL</div><div class="tool-name">Caixa de Entrada</div><div class="tool-desc">cosmopolitanparty.loures@gmail.com — caixa de operações.</div></a>
       <a href="https://calendar.google.com/calendar/r?cid=cosmopolitanparty.loures@gmail.com" target="_blank" class="tool-card"><div class="tool-icon">📅</div><div class="tool-badge">CALENDÁRIO</div><div class="tool-name">Calendário de Festas</div><div class="tool-desc">Calendário Google sincronizado com todos os eventos.</div></a>
       <a href="https://docs.google.com/spreadsheets/d/1d4g95miZ9LFgvakB4nsJs8QHCY5O-0xWJOa5FcpekPQ" target="_blank" class="tool-card"><div class="tool-icon">📊</div><div class="tool-badge">SHEET</div><div class="tool-name">Base de Dados de Festas</div><div class="tool-desc">Google Sheet com registos, contratos e pagamentos.</div></a>
@@ -2669,25 +2670,65 @@ function toggleEditDados(){
   panel.style.display=vis?'none':'block';
   if(!vis){swET('et-info',document.querySelector('.et-btn'));panel.scrollIntoView({behavior:'smooth',block:'nearest'});}
 }
-// Sincroniza nome/tel/obs com o evento no Google Calendar via Apps Script.
-// Silencioso em caso de sucesso; mostra toast só em erro relevante.
+// Sincroniza nome/tel/obs com o evento no Google Calendar via Apps Script (JSONP).
+// Devolve uma Promise que resolve com {ok, err?}. Não mostra toasts.
+function pushCalendarUpdateAsync(ev,nome,tel,obs){
+  return new Promise(resolve=>{
+    if(!SCRIPT_URL||!ev||!ev.linkCalendar){resolve({ok:false,err:'sem link'});return;}
+    const cb='upcal_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
+    let done=false;
+    const cleanup=()=>{delete window[cb];document.getElementById('_'+cb)?.remove();};
+    const timer=setTimeout(()=>{if(done)return;done=true;cleanup();resolve({ok:false,err:'timeout'});},15000);
+    window[cb]=res=>{if(done)return;done=true;clearTimeout(timer);cleanup();resolve(res||{ok:false,err:'sem resposta'});};
+    const params=new URLSearchParams({page:'updateCal',link:ev.linkCalendar,callback:cb});
+    if(nome)params.set('nome',nome);
+    if(tel) params.set('tel',tel);
+    if(obs) params.set('obs',obs);
+    const s=document.createElement('script');s.id='_'+cb;s.src=SCRIPT_URL+'?'+params.toString();
+    s.onerror=()=>{if(done)return;done=true;clearTimeout(timer);cleanup();resolve({ok:false,err:'network'});};
+    document.head.appendChild(s);
+  });
+}
+// Wrapper com toasts para o caso single-save (modal "Editar dados")
 function pushCalendarUpdate(ev,nome,tel,obs){
-  if(!SCRIPT_URL||!ev||!ev.linkCalendar)return;
-  const cb='upcal_'+Date.now();
-  document.getElementById('_upcal')?.remove();
-  let done=false;
-  const timer=setTimeout(()=>{if(done)return;done=true;delete window[cb];document.getElementById('_upcal')?.remove();},15000);
-  window[cb]=res=>{if(done)return;done=true;clearTimeout(timer);delete window[cb];document.getElementById('_upcal')?.remove();
-    if(res&&res.ok){showToast('✓ Google Calendar atualizado');}
-    else if(res&&res.err){showToast('⚠ Calendar: '+res.err);}
-  };
-  const params=new URLSearchParams({page:'updateCal',link:ev.linkCalendar,callback:cb});
-  if(nome)params.set('nome',nome);
-  if(tel) params.set('tel',tel);
-  if(obs) params.set('obs',obs);
-  const s=document.createElement('script');s.id='_upcal';s.src=SCRIPT_URL+'?'+params.toString();
-  s.onerror=()=>{if(done)return;done=true;clearTimeout(timer);delete window[cb];};
-  document.head.appendChild(s);
+  pushCalendarUpdateAsync(ev,nome,tel,obs).then(res=>{
+    if(res&&res.ok)showToast('✓ Google Calendar atualizado');
+    else if(res&&res.err&&res.err!=='sem link')showToast('⚠ Calendar: '+res.err);
+  });
+}
+// Sincroniza Google Calendar para TODAS as festas com overrides no Supabase.
+// Pergunta antes; mostra progresso; throttled para não martelar o Apps Script.
+let _syncCalInProgress=false;
+async function sincronizarTodosCalendar(){
+  if(_syncCalInProgress){showToast('Já está a sincronizar…');return;}
+  if(!sb){showToast('Supabase não disponível');return;}
+  if(!eventos||!eventos.length){showToast('Eventos ainda a carregar — tenta daqui a uns segundos.');return;}
+  if(!confirm('Sincronizar Google Calendar com TODAS as festas que tenham nome/tel/obs editado?\n\nIsto vai atualizar título e descrição dos eventos correspondentes.'))return;
+  _syncCalInProgress=true;
+  const card=$('syncCalDesc');const orig=card?card.textContent:'';
+  if(card)card.textContent='A procurar festas com overrides…';
+  const{data,error}=await sb.from('cp_event_costs')
+    .select('event_key,cliente_override,telefone_override,email_override')
+    .or('cliente_override.not.is.null,telefone_override.not.is.null,email_override.not.is.null');
+  if(error){if(card)card.textContent=orig;_syncCalInProgress=false;showToast('Erro: '+error.message);return;}
+  const toSync=(data||[]).filter(r=>r.cliente_override||r.telefone_override||r.email_override);
+  if(!toSync.length){if(card)card.textContent=orig;_syncCalInProgress=false;showToast('Nenhuma festa com edições.');return;}
+  let ok=0,fail=0,skipped=0;
+  for(let i=0;i<toSync.length;i++){
+    const r=toSync[i];
+    const ev=eventos.find(e=>e._key===r.event_key);
+    if(card)card.textContent=`A sincronizar ${i+1}/${toSync.length}…`;
+    if(!ev||!ev.linkCalendar){skipped++;continue;}
+    const res=await pushCalendarUpdateAsync(ev,ev.cliente,ev.telefone,ev.observacoes);
+    if(res&&res.ok)ok++;else fail++;
+    await new Promise(rs=>setTimeout(rs,400)); // throttle
+  }
+  if(card)card.textContent=orig;
+  _syncCalInProgress=false;
+  const parts=[`✓ ${ok} sincronizadas`];
+  if(fail)parts.push(`${fail} falharam`);
+  if(skipped)parts.push(`${skipped} sem link Calendar`);
+  showToast(parts.join(' · '));
 }
 async function guardarDadosCliente(){
   const ev=eventos.find(e=>e.rowIndex===curEvIdx);if(!ev||!sb)return;
