@@ -589,18 +589,29 @@ header{background:linear-gradient(135deg,var(--dark),var(--dark2));padding:0 20p
     <div id="ckContent" style="display:none">
       <!-- TABS CHECKLIST -->
       <div class="et-tabs" style="margin-bottom:16px">
-        <button class="et-btn on" onclick="swCk('ck-tarefas',this)">📋 Tarefas</button>
+        <button class="et-btn on" id="ck-tab-geral-btn" onclick="swCk('ck-geral',this)">📋 Geral</button>
+        <button class="et-btn" id="ck-tab-deccat-btn" onclick="swCk('ck-deccat',this)" style="display:none">🎨 Decor/Catering</button>
         <button class="et-btn" onclick="swCk('ck-custos',this)">💶 Custos</button>
       </div>
 
-      <!-- TAREFAS -->
-      <div class="et-panel on" id="ck-tarefas">
+      <!-- GERAL (todas as festas) -->
+      <div class="et-panel on" id="ck-geral">
         <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
-          <button class="btn btn-g" style="font-size:11px" onclick="aplicarModelo()">📥 Aplicar modelo</button>
-          <button class="btn btn-g" style="font-size:11px" onclick="addTarefa()">+ Tarefa</button>
-          <span style="font-size:11px;color:var(--muted)" id="ckTarefasProgress"></span>
+          <button class="btn btn-g" style="font-size:11px" onclick="aplicarModeloGeralAtual()">📥 Aplicar modelo geral</button>
+          <button class="btn btn-g" style="font-size:11px" onclick="addTarefa('geral')">+ Tarefa</button>
+          <span style="font-size:11px;color:var(--muted)" id="ckGeralProgress"></span>
         </div>
-        <div id="ckTarefasList"></div>
+        <div id="ckGeralList"></div>
+      </div>
+
+      <!-- DECOR/CATERING (só se a festa tiver esses extras) -->
+      <div class="et-panel" id="ck-deccat">
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
+          <button class="btn btn-g" style="font-size:11px" onclick="aplicarModeloDecCatAtual()">📥 Aplicar modelo decor/catering</button>
+          <button class="btn btn-g" style="font-size:11px" onclick="addTarefa('deccat')">+ Tarefa</button>
+          <span style="font-size:11px;color:var(--muted)" id="ckDecCatProgress"></span>
+        </div>
+        <div id="ckDecCatList"></div>
       </div>
 
       <!-- CUSTOS -->
@@ -1038,17 +1049,19 @@ let curPagamentos=[];
 let pagSupabaseByKey={};
 let pagamentosByKey={}; // {event_key: [{categoria,valor,...}]}
 let extrasByKey={}; // {event_key: {espaco:[],decoracao:[],catering:[],outros:[]}}
+let tarefasByKey={}; // {event_key: [tarefas]}  — necessário para alertas
 async function loadPagSupabase(){
-  if(!sb||!eventos.length){pagSupabaseByKey={};pagamentosByKey={};extrasByKey={};return;}
+  if(!sb||!eventos.length){pagSupabaseByKey={};pagamentosByKey={};extrasByKey={};tarefasByKey={};return;}
   try{
     const keys=eventos.map(evKey);
-    const{data}=await sb.from('cp_event_costs').select('event_key,pagamentos,extras,cliente_override,telefone_override,email_override').in('event_key',keys);
-    pagSupabaseByKey={};pagamentosByKey={};extrasByKey={};
+    const{data}=await sb.from('cp_event_costs').select('event_key,pagamentos,extras,pack_items,cliente_override,telefone_override,email_override').in('event_key',keys);
+    pagSupabaseByKey={};pagamentosByKey={};extrasByKey={};tarefasByKey={};
     // Reset valores ao original antes de reaplicar overrides (caso tenham sido limpos)
     eventos.forEach(e=>{e.cliente=e._origCliente||e.cliente;e.telefone=e._origTelefone||'';e.email=e._origEmail||'';});
     (data||[]).forEach(r=>{
       try{const ps=JSON.parse(r.pagamentos||'[]');if(Array.isArray(ps)&&ps.length){pagamentosByKey[r.event_key]=ps;const sum=ps.reduce((s,p)=>s+(+p.valor||0),0);if(sum)pagSupabaseByKey[r.event_key]=sum;}}catch(e){}
       try{const ex=JSON.parse(r.extras||'{}');if(ex&&typeof ex==='object')extrasByKey[r.event_key]={espaco:[],decoracao:[],catering:[],outros:[],...ex};}catch(e){}
+      try{const tk=JSON.parse(r.pack_items||'[]');if(Array.isArray(tk)&&tk.length)tarefasByKey[r.event_key]=tk;}catch(e){}
       // Aplicar overrides ao ev correspondente (chave estável por _key)
       const ev=eventos.find(e=>e._key===r.event_key);
       if(ev){
@@ -1057,7 +1070,7 @@ async function loadPagSupabase(){
         if(r.email_override)ev.email=r.email_override;
       }
     });
-  }catch(e){pagSupabaseByKey={};pagamentosByKey={};extrasByKey={};}
+  }catch(e){pagSupabaseByKey={};pagamentosByKey={};extrasByKey={};tarefasByKey={};}
 }
 function paidTotal(ev){return(ev.valorPago||0)+(ev.pagoExtra||0)+(pagSupabaseByKey[evKey(ev)]||0);}
 function evHasCateringOuDecoracao(ev){const ex=extrasByKey[evKey(ev)];if(!ex)return false;return(ex.decoracao||[]).length>0||(ex.catering||[]).length>0;}
@@ -1915,27 +1928,50 @@ function irCkFromEv(){
 
 // CHECKLIST
 // CHECKLIST — MODEL DE TAREFAS
-const MODELO_TAREFAS=[
-  // fase, categoria, tarefa
-  {fase:'1 mês antes',cat:'Organização',emoji:'📋',tarefa:'Confirmar data e horário com o cliente'},
-  {fase:'1 mês antes',cat:'Decoração',emoji:'🎨',tarefa:'Fechar e encomendar a decoração'},
-  {fase:'1 mês antes',cat:'Catering',emoji:'🍽️',tarefa:'Fechar o menu de catering'},
-  {fase:'1 mês antes',cat:'Organização',emoji:'📋',tarefa:'Confirmar número de convidados'},
-  {fase:'2 semanas antes',cat:'Catering',emoji:'🍽️',tarefa:'Encomendar o catering'},
-  {fase:'2 semanas antes',cat:'Decoração',emoji:'🎨',tarefa:'Confirmar entrega de materiais de decoração'},
-  {fase:'2 semanas antes',cat:'Organização',emoji:'📋',tarefa:'Enviar confirmação final ao cliente'},
-  {fase:'2 dias antes',cat:'Decoração',emoji:'🎨',tarefa:'Fazer compras de decoração'},
-  {fase:'2 dias antes',cat:'Espaço',emoji:'🏠',tarefa:'Verificar estado do espaço'},
-  {fase:'2 dias antes',cat:'Catering',emoji:'🍽️',tarefa:'Confirmar entrega do catering'},
-  {fase:'dia do evento',cat:'Espaço',emoji:'🏠',tarefa:'Montagem e decoração do espaço'},
-  {fase:'dia do evento',cat:'Catering',emoji:'🍽️',tarefa:'Receber e organizar catering'},
-  {fase:'dia do evento',cat:'Organização',emoji:'📋',tarefa:'Receber cliente e convidados'},
-  {fase:'dia do evento',cat:'Organização',emoji:'📋',tarefa:'Fotografar o evento'},
-  {fase:'dia do evento',cat:'Espaço',emoji:'🏠',tarefa:'Limpeza e fecho do espaço'},
+// ─── MODELOS DE TAREFAS ────────────────────────────────────────────────
+// `ref`: 'criacao' (carimbo da Sheet) ou 'evento' (dataFesta)
+// `offset`: dias signed (positivo = depois, negativo = antes)
+const MODELO_GERAL=[
+  {tipo:'geral',ref:'criacao',offset:0,  cat:'Contrato',     emoji:'📄', urgencia:'alta',  tarefa:'Enviar contrato ao cliente (ASAP)'},
+  {tipo:'geral',ref:'criacao',offset:5,  cat:'Contrato',     emoji:'✍️', urgencia:'alta',  tarefa:'Confirmar assinatura do contrato'},
+  {tipo:'geral',ref:'evento', offset:-14,cat:'Cliente',      emoji:'📞', urgencia:'media', tarefa:'Enviar confirmação final + nº convidados'},
+  {tipo:'geral',ref:'evento', offset:-7, cat:'Pagamento',    emoji:'💶', urgencia:'alta',  tarefa:'Confirmar pagamento do sinal'},
+  {tipo:'geral',ref:'evento', offset:-7, cat:'Cliente',      emoji:'📞', urgencia:'media', tarefa:'Recordar regras e horário'},
+  {tipo:'geral',ref:'evento', offset:-2, cat:'Espaço',       emoji:'🏠', urgencia:'media', tarefa:'Verificar estado do espaço'},
+  {tipo:'geral',ref:'evento', offset:0,  cat:'Dia do evento',emoji:'🎉', urgencia:'alta',  tarefa:'Receber cliente'},
+  {tipo:'geral',ref:'evento', offset:0,  cat:'Dia do evento',emoji:'🧹', urgencia:'media', tarefa:'Limpeza e fecho do espaço'},
+  {tipo:'geral',ref:'evento', offset:2,  cat:'Pagamento',    emoji:'💶', urgencia:'media', tarefa:'Devolver caução'},
+];
+const MODELO_DECCAT=[
+  {tipo:'deccat',ref:'evento',offset:-30,fase:'1 mês antes',     cat:'Decoração',emoji:'🎨', urgencia:'alta',  tarefa:'Fechar e encomendar a decoração'},
+  {tipo:'deccat',ref:'evento',offset:-30,fase:'1 mês antes',     cat:'Catering', emoji:'🍽️', urgencia:'alta',  tarefa:'Fechar o menu de catering'},
+  {tipo:'deccat',ref:'evento',offset:-14,fase:'2 semanas antes', cat:'Catering', emoji:'🍽️', urgencia:'alta',  tarefa:'Encomendar o catering'},
+  {tipo:'deccat',ref:'evento',offset:-14,fase:'2 semanas antes', cat:'Decoração',emoji:'🎨', urgencia:'media', tarefa:'Confirmar entrega de materiais de decoração'},
+  {tipo:'deccat',ref:'evento',offset:-2, fase:'2 dias antes',    cat:'Decoração',emoji:'🎨', urgencia:'media', tarefa:'Fazer compras de decoração'},
+  {tipo:'deccat',ref:'evento',offset:-2, fase:'2 dias antes',    cat:'Catering', emoji:'🍽️', urgencia:'alta',  tarefa:'Confirmar entrega do catering'},
+  {tipo:'deccat',ref:'evento',offset:0,  fase:'dia do evento',   cat:'Decoração',emoji:'🎨', urgencia:'alta',  tarefa:'Montagem e decoração do espaço'},
+  {tipo:'deccat',ref:'evento',offset:0,  fase:'dia do evento',   cat:'Catering', emoji:'🍽️', urgencia:'alta',  tarefa:'Receber e organizar catering'},
 ];
 const FASES=['1 mês antes','2 semanas antes','2 dias antes','dia do evento'];
-const FASE_COR={  '1 mês antes':'#f3e8d0','2 semanas antes':'#d9f0e8','2 dias antes':'#fdf0c4','dia do evento':'#fce4ec'};
+const FASE_COR={'1 mês antes':'#f3e8d0','2 semanas antes':'#d9f0e8','2 dias antes':'#fdf0c4','dia do evento':'#fce4ec'};
 const FASE_COR_TEXTO={'1 mês antes':'#7a5000','2 semanas antes':'#1a5c3a','2 dias antes':'#7a6000','dia do evento':'#8c1a4a'};
+
+// Calcula a data limite (ISO yyyy-MM-dd) de uma tarefa do modelo, baseado no evento
+function computeDataTarefa(t,ev){
+  if(!ev||!t)return '';
+  const base=t.ref==='criacao'?(ev.carimbo||ev.dataFesta):ev.dataFesta;
+  if(!base)return '';
+  const d=new Date(String(base).slice(0,10)+'T00:00:00');
+  if(isNaN(d.getTime()))return '';
+  d.setDate(d.getDate()+(+t.offset||0));
+  const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${dd}`;
+}
+function instanciarTarefa(t,ev){
+  return{tipo:t.tipo,cat:t.cat,emoji:t.emoji,urgencia:t.urgencia||'media',tarefa:t.tarefa,feito:false,data:computeDataTarefa(t,ev),fase:t.fase||'',ref:t.ref,offset:t.offset};
+}
+function aplicarModeloGeralEv(ev){return MODELO_GERAL.map(t=>instanciarTarefa(t,ev));}
+function aplicarModeloDecCatEv(ev){return MODELO_DECCAT.map(t=>instanciarTarefa(t,ev));}
 
 function swCk(panel,btn){
   document.querySelectorAll('#ckContent .et-panel').forEach(p=>p.classList.remove('on'));
@@ -1946,16 +1982,17 @@ function swCk(panel,btn){
 function renderCkSel(){
   const sel=$('ckEvSel');const prev=sel.value;
   sel.innerHTML='<option value="">Selecionar evento…</option>';
-  const filtrados=[...eventos].filter(evHasCateringOuDecoracao).sort((a,b)=>(b.dataFesta||'').localeCompare(a.dataFesta||''));
+  // Agora lista TODAS as festas (não só com catering/decoração) — modelo Geral aplica-se a todas
+  const filtrados=[...eventos].filter(ev=>!isArchived(ev)).sort((a,b)=>(a.dataFesta||'').localeCompare(b.dataFesta||''));
   if(!filtrados.length){
     const o=document.createElement('option');o.value='';o.disabled=true;
-    o.textContent='— Sem eventos com Decoração ou Catering —';sel.appendChild(o);
+    o.textContent='— Sem eventos —';sel.appendChild(o);
   }
   filtrados.forEach(ev=>{
     const ex=extrasByKey[evKey(ev)]||{};
     const tags=[];if((ex.decoracao||[]).length)tags.push('🎨');if((ex.catering||[]).length)tags.push('🍽️');
     const o=document.createElement('option');o.value=evKey(ev);
-    o.textContent=`${tags.join(' ')} ${ev.cliente||'—'} — ${fmtD(ev.dataFesta)}`;sel.appendChild(o);
+    o.textContent=`${tags.join(' ')} ${ev.cliente||'—'} — ${fmtD(ev.dataFesta)}`.trim();sel.appendChild(o);
   });
   if(prev&&filtrados.some(e=>evKey(e)===prev))sel.value=prev;
 }
@@ -1970,94 +2007,173 @@ async function loadCkEvento(){
     const{data}=await sb.from('cp_event_costs').select('*').eq('event_key',key).maybeSingle();
     if(data){
       try{ckData.tarefas=JSON.parse(data.pack_items||'[]');}catch(e){}
-      // Migração: se pack_items tem formato antigo (com .nome e .custo), converter para tarefas
+      // Migração antiga 1: pack_items com .nome/.custo → tarefas
       if(ckData.tarefas.length&&ckData.tarefas[0].nome!==undefined){
-        ckData.tarefas=ckData.tarefas.map(t=>({fase:'dia do evento',cat:'Organização',emoji:'📋',tarefa:t.nome||'',feito:t.incluido||false,custo:t.custo||0}));
+        ckData.tarefas=ckData.tarefas.map(t=>({fase:'dia do evento',cat:'Organização',emoji:'📋',tarefa:t.nome||'',feito:t.incluido||false,custo:t.custo||0,tipo:'deccat'}));
       }
+      // Migração nova: tasks sem `tipo` — categoriza por cat (Organização → geral, resto → deccat)
+      ckData.tarefas=ckData.tarefas.map(t=>{
+        if(t.tipo)return t;
+        const tipo=(t.cat==='Organização')?'geral':'deccat';
+        return{...t,tipo};
+      });
       try{ckData.custos=JSON.parse(data.custos||'[]');}catch(e){}
       try{ckData.extras=JSON.parse(data.extras||'{}');}catch(e){}
       ckData.notas=data.notas||'';
     }
   }
-  renderCkTarefas();
+  // AUTO-APLICAR modelos se ainda não existem (silencioso, gravando)
+  const temGeral=ckData.tarefas.some(t=>t.tipo==='geral');
+  const temDecCat=ckData.tarefas.some(t=>t.tipo==='deccat');
+  const evHasDecCat=ev?evHasCateringOuDecoracao(ev):false;
+  let auto=false;
+  if(!temGeral&&ev){ckData.tarefas=[...ckData.tarefas,...aplicarModeloGeralEv(ev)];auto=true;}
+  if(evHasDecCat&&!temDecCat&&ev){ckData.tarefas=[...ckData.tarefas,...aplicarModeloDecCatEv(ev)];auto=true;}
+  // Atualizar a UI das tabs (mostrar/esconder Decor/Catering)
+  const btnDC=$('ck-tab-deccat-btn');
+  if(btnDC)btnDC.style.display=evHasDecCat?'inline-flex':'none';
+  renderCkTarefasGeral();
+  renderCkTarefasDecCat();
   renderCkCustos();
+  if(auto){
+    // Persiste em background — não bloqueia a UI
+    saveCkEvento(true);
+    showToast('✓ Modelos de tarefas aplicados');
+  }
 }
 
-function renderCkTarefas(){
+// Helper genérico para renderizar uma linha de tarefa
+function renderTarefaItem(t,globalIdx){
+  const urgCor={alta:'#fce4ec',media:'#fff8e1',baixa:'#e8f5e9'}[t.urgencia||'media']||'#fff8e1';
+  const urgLabel={alta:'🔴',media:'🟡',baixa:'🟢'}[t.urgencia||'media']||'🟡';
+  const dataStr=t.data?new Date(t.data+'T00:00:00').toLocaleDateString('pt-PT',{day:'2-digit',month:'2-digit'}):'';
+  const hoje=new Date();hoje.setHours(0,0,0,0);
+  const atrasada=t.data&&!t.feito&&new Date(t.data+'T00:00:00')<hoje;
+  const bg=t.feito?'#f1f8e9':(atrasada?'#fef2f2':'var(--card)');
+  const bd=t.feito?'#c8e6c9':(atrasada?'#fcd9df':'var(--border)');
+  return `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid ${bd};border-radius:9px;margin-bottom:6px;background:${bg}">
+    <div class="ck-chk ${t.feito?'done':''}" onclick="togTarefa(${globalIdx})" style="flex-shrink:0">${t.feito?'✓':''}</div>
+    <div style="flex:1;min-width:0">
+      <div style="font-size:13px;${t.feito?'text-decoration:line-through;color:var(--muted)':''}">${esc(t.tarefa)}</div>
+      <div style="font-size:10px;color:var(--muted);margin-top:2px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <span>${t.emoji||'📋'} ${esc(t.cat||'')}</span>
+        <span style="background:${urgCor};border-radius:4px;padding:1px 6px;font-size:10px">${urgLabel} ${t.urgencia||'média'}</span>
+        ${dataStr?`<span style="color:${atrasada?'var(--red)':'var(--muted)'};font-weight:${atrasada?'600':'400'}">📅 ${dataStr}${atrasada?' · ATRASADA':''}</span>`:''}
+      </div>
+    </div>
+    <button class="btn-ic" onclick="delTarefa(${globalIdx})">✕</button>
+  </div>`;
+}
+
+// Tarefas Geral — sempre. Agrupadas por estado (atrasada / próximas / mais tarde / concluídas)
+function renderCkTarefasGeral(){
   if(!ckData)return;
-  const tarefas=ckData.tarefas||[];
-  const total=tarefas.length;
-  const feitas=tarefas.filter(t=>t.feito).length;
-  const prog=$('ckTarefasProgress');
-  if(prog)prog.textContent=total?`${feitas} de ${total} concluídas`:'';
-
-  // Agrupar por fase
-  const porFase={};
-  tarefas.forEach((t,i)=>{
-    const f=t.fase||'dia do evento';
-    if(!porFase[f])porFase[f]=[];
-    porFase[f].push({...t,_i:i});
+  const all=ckData.tarefas||[];
+  const geral=all.map((t,i)=>({...t,_i:i})).filter(t=>t.tipo==='geral');
+  const total=geral.length;
+  const feitas=geral.filter(t=>t.feito).length;
+  const prog=$('ckGeralProgress');if(prog)prog.textContent=total?`${feitas} de ${total} concluídas`:'';
+  if(!total){
+    $('ckGeralList').innerHTML='<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">Sem tarefas gerais.<br><button class="btn btn-p" style="margin-top:10px;font-size:12px" onclick="aplicarModeloGeralAtual()">📥 Aplicar modelo geral</button></div>';return;
+  }
+  const hoje=new Date();hoje.setHours(0,0,0,0);
+  const buckets={atrasada:[],proxima:[],mais:[],feita:[]};
+  geral.forEach(t=>{
+    if(t.feito){buckets.feita.push(t);return;}
+    if(!t.data){buckets.mais.push(t);return;}
+    const d=new Date(t.data+'T00:00:00');
+    const diff=Math.ceil((d-hoje)/86400000);
+    if(diff<0)buckets.atrasada.push(t);
+    else if(diff<=7)buckets.proxima.push(t);
+    else buckets.mais.push(t);
   });
+  const sortByDate=(a,b)=>(a.data||'9999').localeCompare(b.data||'9999');
+  Object.keys(buckets).forEach(k=>buckets[k].sort(sortByDate));
+  const sec=(titulo,bg,cor,arr)=>{
+    if(!arr.length)return '';
+    let h=`<div style="margin-bottom:14px"><div style="display:flex;align-items:center;gap:8px;padding:7px 12px;border-radius:10px;background:${bg};margin-bottom:8px"><span style="font-size:12px;font-weight:700;color:${cor}">${titulo}</span><span style="font-size:11px;color:${cor};opacity:.8">${arr.length}</span></div>`;
+    arr.forEach(t=>{h+=renderTarefaItem(t,t._i);});
+    h+='</div>';return h;
+  };
+  $('ckGeralList').innerHTML=
+    sec('⚠️ Atrasadas','#fef2f2','var(--red)',buckets.atrasada)+
+    sec('📌 Próximos 7 dias','#fff8e1','var(--amber)',buckets.proxima)+
+    sec('📅 Mais tarde','#f3f4f6','#555',buckets.mais)+
+    sec('✓ Concluídas','#ecfdf5','var(--green)',buckets.feita);
+}
 
+// Tarefas Decor/Catering — só se festa tiver esses extras. Agrupadas por fase.
+function renderCkTarefasDecCat(){
+  if(!ckData)return;
+  const all=ckData.tarefas||[];
+  const dc=all.map((t,i)=>({...t,_i:i})).filter(t=>t.tipo==='deccat');
+  const total=dc.length;
+  const feitas=dc.filter(t=>t.feito).length;
+  const prog=$('ckDecCatProgress');if(prog)prog.textContent=total?`${feitas} de ${total} concluídas`:'';
+  if(!total){
+    $('ckDecCatList').innerHTML='<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">Sem tarefas de decoração/catering.<br><button class="btn btn-p" style="margin-top:10px;font-size:12px" onclick="aplicarModeloDecCatAtual()">📥 Aplicar modelo decor/catering</button></div>';return;
+  }
+  const porFase={};
+  dc.forEach(t=>{const f=t.fase||'dia do evento';if(!porFase[f])porFase[f]=[];porFase[f].push(t);});
   let html='';
   FASES.forEach(fase=>{
-    const itens=porFase[fase]||[];
-    if(!itens.length)return;
+    const itens=porFase[fase]||[];if(!itens.length)return;
     const feitasFase=itens.filter(t=>t.feito).length;
-    html+=`<div style="margin-bottom:16px">
-      <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:${FASE_COR[fase]||'#f5f5f5'};margin-bottom:8px">
-        <span style="font-size:12px;font-weight:700;color:${FASE_COR_TEXTO[fase]||'#333'}">${fase}</span>
-        <span style="font-size:11px;color:${FASE_COR_TEXTO[fase]||'#666'}">${feitasFase}/${itens.length}</span>
-      </div>`;
-    itens.forEach(t=>{
-      const urgCor={alta:'#fce4ec',media:'#fff8e1',baixa:'#e8f5e9'}[t.urgencia||'media']||'#fff8e1';
-      const urgLabel={alta:'🔴',media:'🟡',baixa:'🟢'}[t.urgencia||'media']||'🟡';
-      const dataStr=t.data?new Date(t.data+'T00:00:00').toLocaleDateString('pt-PT',{day:'2-digit',month:'2-digit'}):'';
-      html+=`<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid ${t.feito?'#c8e6c9':'var(--border)'};border-radius:9px;margin-bottom:6px;background:${t.feito?'#f1f8e9':'var(--card)'}">
-        <div class="ck-chk ${t.feito?'done':''}" onclick="togTarefa(${t._i})" style="flex-shrink:0">${t.feito?'✓':''}</div>
-        <div style="flex:1;min-width:0">
-          <div style="font-size:13px;${t.feito?'text-decoration:line-through;color:var(--muted)':''}">${esc(t.tarefa)}</div>
-          <div style="font-size:10px;color:var(--muted);margin-top:2px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <span>${t.emoji||'📋'} ${esc(t.cat||'')}</span>
-            <span style="background:${urgCor};border-radius:4px;padding:1px 6px;font-size:10px">${urgLabel} ${t.urgencia||'média'}</span>
-            ${dataStr?`<span>📅 ${dataStr}</span>`:''}
-          </div>
-        </div>
-        <button class="btn-ic" onclick="delTarefa(${t._i})">✕</button>
-      </div>`;
-    });
+    html+=`<div style="margin-bottom:16px"><div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:${FASE_COR[fase]||'#f5f5f5'};margin-bottom:8px"><span style="font-size:12px;font-weight:700;color:${FASE_COR_TEXTO[fase]||'#333'}">${fase}</span><span style="font-size:11px;color:${FASE_COR_TEXTO[fase]||'#666'}">${feitasFase}/${itens.length}</span></div>`;
+    itens.forEach(t=>{html+=renderTarefaItem(t,t._i);});
     html+='</div>';
   });
-  if(!tarefas.length){
-    html='<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">Sem tarefas.<br><button class="btn btn-p" style="margin-top:10px;font-size:12px" onclick="aplicarModelo()">📥 Aplicar modelo padrão</button></div>';
-  }
-  $('ckTarefasList').innerHTML=html;
+  $('ckDecCatList').innerHTML=html;
+}
+
+// Compat: alguns sítios chamam ainda renderCkTarefas. Mantém-se a chamar ambas.
+function renderCkTarefas(){renderCkTarefasGeral();renderCkTarefasDecCat();}
+// Aplicar modelos manualmente (botões dentro de cada tab)
+function aplicarModeloGeralAtual(){
+  const key=$('ckEvSel').value;const ev=eventos.find(e=>evKey(e)===key);if(!ev||!ckData)return;
+  ckData.tarefas=[...ckData.tarefas,...aplicarModeloGeralEv(ev)];
+  renderCkTarefasGeral();showToast('✓ Modelo geral aplicado');
+}
+function aplicarModeloDecCatAtual(){
+  const key=$('ckEvSel').value;const ev=eventos.find(e=>evKey(e)===key);if(!ev||!ckData)return;
+  ckData.tarefas=[...ckData.tarefas,...aplicarModeloDecCatEv(ev)];
+  renderCkTarefasDecCat();showToast('✓ Modelo decor/catering aplicado');
 }
 
 function togTarefa(i){ckData.tarefas[i].feito=!ckData.tarefas[i].feito;renderCkTarefas();}
 function delTarefa(i){ckData.tarefas.splice(i,1);renderCkTarefas();}
 
+// Legacy — botão "Aplicar modelo" na barra de tarefas, agora reaplica AMBOS os modelos relevantes
 function aplicarModelo(){
-  if(ckData.tarefas.length&&!confirm('Substituir tarefas actuais pelo modelo padrão?'))return;
-  ckData.tarefas=MODELO_TAREFAS.map(t=>({...t,feito:false,custo:0,data:'',urgencia:'media'}));
+  const key=$('ckEvSel').value;const ev=eventos.find(e=>evKey(e)===key);if(!ev||!ckData)return;
+  const temGeral=ckData.tarefas.some(t=>t.tipo==='geral');
+  const evHasDecCat=evHasCateringOuDecoracao(ev);
+  const temDecCat=ckData.tarefas.some(t=>t.tipo==='deccat');
+  let added=0;
+  if(!temGeral){ckData.tarefas=[...ckData.tarefas,...aplicarModeloGeralEv(ev)];added+=MODELO_GERAL.length;}
+  if(evHasDecCat&&!temDecCat){ckData.tarefas=[...ckData.tarefas,...aplicarModeloDecCatEv(ev)];added+=MODELO_DECCAT.length;}
   renderCkTarefas();
-  showToast('✓ Modelo aplicado — '+ckData.tarefas.length+' tarefas');
+  if(added)showToast(`✓ ${added} tarefas aplicadas`);
+  else showToast('Modelos já estão aplicados.');
 }
 
-function addTarefa(){
-  // Usar modal inline em vez de prompts
+let _addTarefaTipo='geral';
+function addTarefa(tipo){
+  _addTarefaTipo=tipo||'geral';
+  const isGeral=_addTarefaTipo==='geral';
+  // Modal inline — adapta options ao tipo
   const html=`<div id="novaTarefaForm" style="background:var(--pink3);border-radius:12px;padding:14px;margin-bottom:14px">
-    <div style="font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--pink);margin-bottom:10px">Nova tarefa</div>
+    <div style="font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--pink);margin-bottom:10px">Nova tarefa — ${isGeral?'Geral':'Decor/Catering'}</div>
     <div style="display:grid;gap:8px">
       <input id="ntTarefa" placeholder="Descrição da tarefa" style="border:1px solid var(--border);border-radius:9px;padding:9px 12px;font-size:13px;font-family:var(--font);outline:none;min-height:42px"/>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        <select id="ntFase" style="border:1px solid var(--border);border-radius:9px;padding:9px 10px;font-size:12px;font-family:var(--font);outline:none;min-height:42px">
+        ${isGeral?'':`<select id="ntFase" style="border:1px solid var(--border);border-radius:9px;padding:9px 10px;font-size:12px;font-family:var(--font);outline:none;min-height:42px">
           <option value="1 mês antes">1 mês antes</option>
           <option value="2 semanas antes">2 semanas antes</option>
           <option value="2 dias antes">2 dias antes</option>
           <option value="dia do evento" selected>Dia do evento</option>
-        </select>
-        <select id="ntUrgencia" style="border:1px solid var(--border);border-radius:9px;padding:9px 10px;font-size:12px;font-family:var(--font);outline:none;min-height:42px">
+        </select>`}
+        <select id="ntUrgencia" style="border:1px solid var(--border);border-radius:9px;padding:9px 10px;font-size:12px;font-family:var(--font);outline:none;min-height:42px${isGeral?';grid-column:span 2':''}">
           <option value="baixa">🟢 Baixa</option>
           <option value="media" selected>🟡 Média</option>
           <option value="alta">🔴 Alta</option>
@@ -2065,10 +2181,19 @@ function addTarefa(){
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
         <select id="ntCat" style="border:1px solid var(--border);border-radius:9px;padding:9px 10px;font-size:12px;font-family:var(--font);outline:none;min-height:42px">
+          ${isGeral?`
+          <option value="Contrato">📄 Contrato</option>
+          <option value="Cliente">📞 Cliente</option>
+          <option value="Pagamento">💶 Pagamento</option>
+          <option value="Espaço">🏠 Espaço</option>
+          <option value="Dia do evento">🎉 Dia do evento</option>
           <option value="Organização">📋 Organização</option>
+          `:`
           <option value="Decoração">🎨 Decoração</option>
           <option value="Catering">🍽️ Catering</option>
           <option value="Espaço">🏠 Espaço</option>
+          <option value="Organização">📋 Organização</option>
+          `}
         </select>
         <input id="ntData" type="date" style="border:1px solid var(--border);border-radius:9px;padding:9px 12px;font-size:13px;font-family:var(--font);outline:none;min-height:42px"/>
       </div>
@@ -2078,7 +2203,7 @@ function addTarefa(){
       </div>
     </div>
   </div>`;
-  const list=$('ckTarefasList');
+  const list=isGeral?$('ckGeralList'):$('ckDecCatList');
   if($('novaTarefaForm')){$('novaTarefaForm').remove();return;}
   list.insertAdjacentHTML('afterbegin',html);
   $('ntTarefa').focus();
@@ -2086,8 +2211,12 @@ function addTarefa(){
 function cancelarNovaTarefa(){const f=$('novaTarefaForm');if(f)f.remove();}
 function confirmarNovaTarefa(){
   const tarefa=($('ntTarefa')?.value||'').trim();if(!tarefa){showToast('Escreve a descrição.');return;}
+  const isGeral=_addTarefaTipo==='geral';
   ckData.tarefas.push({
-    fase:$('ntFase').value,cat:$('ntCat').value,emoji:'📋',
+    tipo:_addTarefaTipo,
+    fase:isGeral?'':($('ntFase')?.value||''),
+    cat:$('ntCat').value,
+    emoji:'📋',
     tarefa,feito:false,custo:0,
     urgencia:$('ntUrgencia').value,
     data:$('ntData').value||''
@@ -2150,19 +2279,21 @@ function calcCkTot(){
   $('ckRec').textContent=eur(rec);$('ckCus').textContent=eur(cus);
   $('ckMar').textContent=eur(mar);$('ckMar').className='ck-tot-val '+(mar>=0?'pos':'neg');
 }
-async function saveCkEvento(){
-  const key=$('ckEvSel').value;if(!key||!sb||!ckData){showToast('Seleciona um evento.');return;}
+async function saveCkEvento(silent){
+  const key=$('ckEvSel').value;if(!key||!sb||!ckData){if(!silent)showToast('Seleciona um evento.');return;}
   const ev=eventos.find(e=>evKey(e)===key);
   const{error}=await sb.from('cp_event_costs').upsert({
-    event_key:key,event_cliente:ev?.cliente||'',event_data:ev?.dataFesta||'',
+    event_key:key,event_cliente:ev?._origCliente||ev?.cliente||'',event_data:ev?.dataFesta||'',
     pack_items:JSON.stringify(ckData.tarefas),
     custos:JSON.stringify(ckData.custos),
     notas:ckData.notas||'',
     updated_at:new Date().toISOString()
   },{onConflict:'event_key'});
-  if(error){showToast('Erro: '+error.message);return;}
-  $('ckSaveMsg').textContent='✓ '+new Date().toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'});
-  showToast('✓ Checklist guardada!');
+  if(error){if(!silent)showToast('Erro: '+error.message);return;}
+  // Actualiza cache local de tarefas para alertas funcionarem sem precisar de reload
+  tarefasByKey[key]=ckData.tarefas;
+  renderAlertas();
+  if(!silent){$('ckSaveMsg').textContent='✓ '+new Date().toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'});showToast('✓ Checklist guardada!');}
 }
 function clearCk(){if(!confirm('Limpar custos?'))return;ckData.custos=[];renderCkCustos();}
 
@@ -2348,11 +2479,11 @@ function renderNextEvent(){
 }
 
 // ─── ALERTAS (tira no topo da Visão Geral) ───
-// Regras: 30d sem contrato · 14d por assinar · 14d sem sinal · pedidos 'novo' > 2d
+// Regras: 30d sem contrato · 14d por assinar · 7d sem sinal · pedidos 'novo' > 2d · tarefas Geral atrasadas
 function computeAlertas(){
   const today=new Date();today.setHours(0,0,0,0);
   const inDays=ev=>{if(!ev.dataFesta)return Infinity;const d=new Date(ev.dataFesta+'T00:00:00');return Math.ceil((d-today)/86400000);};
-  let semContrato=0,porAssinar=0,semSinal=0,pedidosNovos=0;
+  let semContrato=0,porAssinar=0,semSinal=0,pedidosNovos=0,tarefasAtrasadas=0;
   (eventos||[]).forEach(ev=>{
     if(isArchived(ev))return;
     const diff=inDays(ev);
@@ -2360,7 +2491,14 @@ function computeAlertas(){
     const st=getContratoStatus(ev);
     if(diff<=30&&st==='none')semContrato++;
     if(diff<=14&&st==='pend')porAssinar++;
-    if(diff<=14&&paidTotal(ev)===0)semSinal++;
+    if(diff<=7&&paidTotal(ev)===0)semSinal++;
+    // Tarefas Geral atrasadas (data < hoje && !feito)
+    const tarefas=tarefasByKey[evKey(ev)]||[];
+    tarefas.forEach(t=>{
+      if(t.tipo!=='geral'||t.feito||!t.data)return;
+      const td=new Date(t.data+'T00:00:00');
+      if(!isNaN(td.getTime())&&td<today)tarefasAtrasadas++;
+    });
   });
   const limiteDt=Date.now()-2*86400000;
   (pedidos||[]).forEach(p=>{
@@ -2368,22 +2506,24 @@ function computeAlertas(){
     const cre=p.created_at?new Date(p.created_at).getTime():0;
     if(cre&&cre<=limiteDt)pedidosNovos++;
   });
-  return{semContrato,porAssinar,semSinal,pedidosNovos};
+  return{semContrato,porAssinar,semSinal,pedidosNovos,tarefasAtrasadas};
 }
 function renderAlertas(){
   const strip=$('alertStrip');if(!strip)return;
   const a=computeAlertas();
-  const total=a.semContrato+a.porAssinar+a.semSinal+a.pedidosNovos;
+  const total=a.semContrato+a.porAssinar+a.semSinal+a.pedidosNovos+a.tarefasAtrasadas;
   if(total===0){strip.className='alert-strip alert-ok';strip.innerHTML='<div class="alert-empty">✓ Tudo em dia</div>';return;}
   strip.className='alert-strip';
   const chip=(cls,ic,lbl,n,onclick,title)=>`<div class="alert-chip ${cls}" onclick="${onclick}" title="${title}"><span class="a-ic">${ic}</span><span>${lbl}</span><span class="a-num">${n}</span></div>`;
   const chips=[];
   if(a.semContrato)chips.push(chip('red','🔴','Sem contrato',a.semContrato,'goAlertaEventos()','Festas a ≤30 dias sem contrato criado'));
   if(a.porAssinar)chips.push(chip('amber','🟡','Por assinar',a.porAssinar,'goAlertaContratos()','Contratos criados mas não assinados (festas a ≤14 dias)'));
-  if(a.semSinal)chips.push(chip('pink','💶','Sinal em falta',a.semSinal,'goAlertaEventos()','Festas a ≤14 dias sem qualquer pagamento'));
+  if(a.semSinal)chips.push(chip('pink','💶','Sinal em falta',a.semSinal,'goAlertaEventos()','Festas a ≤7 dias sem qualquer pagamento'));
+  if(a.tarefasAtrasadas)chips.push(chip('red','📋','Tarefas atrasadas',a.tarefasAtrasadas,'goAlertaChecklist()','Tarefas do modelo Geral com data ultrapassada'));
   if(a.pedidosNovos)chips.push(chip('blue','📬','Pedidos novos',a.pedidosNovos,'goAlertaPedidos()','Pedidos de decoração "novo" há >2 dias sem resposta'));
   strip.innerHTML=chips.join('');
 }
+function goAlertaChecklist(){const btn=Array.from(document.querySelectorAll('.tab-btn')).find(b=>(b.getAttribute('onclick')||'').includes("'checklist'"));showTab('checklist',btn);}
 function goAlertaEventos(){const btn=Array.from(document.querySelectorAll('.tab-btn')).find(b=>(b.getAttribute('onclick')||'').includes("'eventos'"));showTab('eventos',btn);}
 function goAlertaContratos(){const cp=$('cpBox');if(cp){const tabBtn=Array.from(document.querySelectorAll('.tab-btn')).find(b=>(b.getAttribute('onclick')||'').includes("'visao'"));if(tabBtn)showTab('visao',tabBtn);setTimeout(()=>cp.scrollIntoView({behavior:'smooth',block:'center'}),100);}}
 function goAlertaPedidos(){const btn=Array.from(document.querySelectorAll('.tab-btn')).find(b=>(b.getAttribute('onclick')||'').includes("'pedidos'"));showTab('pedidos',btn);}
