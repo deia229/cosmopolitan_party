@@ -472,6 +472,7 @@ function doGet(e) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function servirContratosPendentes_(e) {
+  var all = (e.parameter.all || '').toString().trim() === '1';
   var sh = getSheet_();
   var lastRow = sh.getLastRow();
   var contratos = [];
@@ -480,7 +481,6 @@ function servirContratosPendentes_(e) {
     var n = lastRow - 1;
     var startRow = 2;
 
-    // Carregar todas as colunas necessárias de uma só vez
     var nomeArr     = sh.getRange(startRow, CONFIG.COLS.nome,           n, 1).getDisplayValues();
     var telArr      = sh.getRange(startRow, CONFIG.COLS.telefone,       n, 1).getDisplayValues();
     var dataArr     = sh.getRange(startRow, CONFIG.COLS.dataEvento,     n, 1).getDisplayValues();
@@ -492,7 +492,6 @@ function servirContratosPendentes_(e) {
     var pdfArr      = sh.getRange(startRow, CONFIG.COLS.linkPDF,        n, 1).getDisplayValues();
     var waArr       = sh.getRange(startRow, CONFIG.COLS.whatsappCliente,n, 1).getDisplayValues();
 
-    // 1ª passagem — coletar confirmados por chave (cliente|data) para detetar duplicados
     var confirmadosPorChave = {};
     for (var i = 0; i < n; i++) {
       var est = (estadoArr[i][0] || '').toString().trim();
@@ -503,14 +502,14 @@ function servirContratosPendentes_(e) {
       }
     }
 
-    // 2ª passagem — coletar pendentes
     for (var j = 0; j < n; j++) {
       var estado = (estadoArr[j][0] || '').toString().trim();
       var dataConf = (dataConfArr[j][0] || '').toString().trim();
       var idC = (idArr[j][0] || '').toString().trim();
       if (!idC) continue;
-      // Pendente = tem ID, NÃO está Confirmado, NÃO tem data de confirmação
-      if (estado === 'Confirmado' || dataConf) continue;
+      var confirmado = (estado === 'Confirmado' || !!dataConf);
+      // Por defeito (sem all=1) só devolve pendentes — mantém compatibilidade
+      if (!all && confirmado) continue;
 
       var nome = (nomeArr[j][0] || '').toString().trim();
       var dataEv = (dataArr[j][0] || '').toString().trim();
@@ -525,9 +524,11 @@ function servirContratosPendentes_(e) {
         horaInicio:     (horaIniArr[j][0]  || '').toString().trim(),
         horaFim:        (horaFimArr[j][0]  || '').toString().trim(),
         estado:         estado,
+        dataConfirmacao: dataConf,
+        confirmado:     confirmado,
         linkPDF:        (pdfArr[j][0]      || '').toString().trim(),
         waLink:         (waArr[j][0]       || '').toString().trim(),
-        substituidoPor: substituidoPor,  // ID do contrato confirmado para mesmo cliente+data, se houver
+        substituidoPor: substituidoPor,
         row:            j + 2
       });
     }

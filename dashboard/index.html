@@ -69,6 +69,12 @@ header{background:linear-gradient(135deg,var(--dark),var(--dark2));padding:0 20p
 .bst.rascunho{background:#f3f4f6;color:#6b7280}.bst.cancelado{background:#fce4ec;color:var(--red)}
 .bst.arquivado{background:#ececec;color:#666;border:1px solid #d8d8d8}
 .ev-archived td{opacity:.55}
+/* Badge de estado de contrato (cruzamento festa↔contrato) */
+.cnt-badge{display:inline-block;font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;font-family:var(--mono);letter-spacing:.5px;text-transform:uppercase;border:1px solid transparent;vertical-align:middle;white-space:nowrap}
+.cnt-badge.ok{background:#e8f5e9;color:var(--green);border-color:#cdebd9}
+.cnt-badge.pend{background:#fff8e1;color:var(--amber);border-color:#f0d97a}
+.cnt-badge.none{background:#fef2f2;color:var(--red);border-color:#fcd9df}
+@media(max-width:767px){.cnt-badge{font-size:10px;padding:3px 9px}}
 .fin-mes-picker{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .fin-mes-picker select{border:1px solid var(--border);border-radius:9px;padding:9px 12px;font-family:var(--font);font-size:13px;outline:none;background:var(--card);min-height:var(--tap);min-width:170px}
 .cat-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px;gap:10px}
@@ -258,8 +264,60 @@ header{background:linear-gradient(135deg,var(--dark),var(--dark2));padding:0 20p
 .toast .tc{background:none;border:none;color:rgba(255,255,255,.4);cursor:pointer;font-size:15px;min-height:var(--tap);display:flex;align-items:center}
 @keyframes sld{from{transform:translateY(14px);opacity:0}to{transform:translateY(0);opacity:1}}
 @media(min-width:768px){.overlay{align-items:center}.modal{border-radius:18px;max-width:600px}.drag-bar{display:none}.page{padding:22px 20px}}
-@media(max-width:767px){.pulse{grid-template-columns:repeat(2,1fr)}.g2,.g3{grid-template-columns:1fr}.span2{grid-column:span 1}.tools-grid{grid-template-columns:1fr 1fr}.tbl th:nth-child(n+5),.tbl td:nth-child(n+5){display:none}.ck-totals{grid-template-columns:1fr}.date-chip{display:none}}
-@media(max-width:480px){.tools-grid{grid-template-columns:1fr}.p-val{font-size:20px}}
+/* iPad portrait — k5 (5 KPIs) fica 4+1 (margem em linha própria) */
+@media(max-width:1024px){.kpi-grid.k5{grid-template-columns:repeat(4,1fr)}.kpi-grid.k5 .kpi.margem{grid-column:span 4}}
+@media(max-width:767px){
+  .pulse{grid-template-columns:repeat(2,1fr)}
+  .g2,.g3{grid-template-columns:1fr}.span2{grid-column:span 1}
+  .tools-grid{grid-template-columns:1fr 1fr}
+  .ck-totals{grid-template-columns:1fr}
+  .date-chip{display:none}
+  .card{padding:15px 14px}
+  .card-title{font-size:16px}
+  /* Tabelas → cards no telefone (Eventos, Pedidos, Orçamentos) */
+  .tbl,.tbl tbody,.tbl tr,.tbl td{display:block;width:auto}
+  .tbl thead{display:none}
+  .tbl tbody tr{border:1px solid var(--border);border-radius:12px;background:var(--card);padding:12px 14px;margin-bottom:10px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+  .tbl tbody tr:hover td{background:transparent}
+  .tbl tbody tr.ev-archived{opacity:.6}
+  .tbl tbody tr.ev-archived td{opacity:1}
+  .tbl td{border:none;padding:7px 0;display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:13.5px;border-bottom:1px dashed var(--border)}
+  .tbl td:last-child{border-bottom:none}
+  .tbl td:before{content:attr(data-lbl);font-family:var(--mono);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);flex-shrink:0;font-weight:600}
+  .tbl td[data-lbl=""]:before{display:none}
+  .tbl td[data-lbl=""]{justify-content:flex-end}
+  /* Cliente é a "cabeçalho" do card — full-width, sem label */
+  .tbl td[data-lbl="Cliente"]{display:block;padding:0 0 10px;border-bottom:1px solid var(--border);margin-bottom:4px;font-size:15px}
+  .tbl td[data-lbl="Cliente"]:before{display:none}
+  .tbl td.td-act{justify-content:flex-end;padding-top:8px;font-size:16px}
+  .tbl td.td-act .btn-ic{min-height:40px;padding:6px 12px}
+  .empty-row{padding:24px;display:block!important;text-align:center;border:none!important}
+  .empty-row:before{display:none!important}
+  /* Modal — full-screen sheet com mais respiração */
+  .modal{padding:20px 16px}
+  .modal h2{font-size:18px}
+  .det-grid{grid-template-columns:1fr 1fr;gap:12px}
+  /* Header — encolhe brand-sub para libertar espaço */
+  .brand-sub{display:none}
+  header{padding:0 14px}
+  /* KPI mais legíveis no telefone */
+  .kpi-val{font-size:19px}
+  .kpi-sub{font-size:11px}
+}
+@media(max-width:480px){
+  .tools-grid{grid-template-columns:1fr}
+  .p-val{font-size:20px}
+  .pulse{grid-template-columns:1fr 1fr}
+  .pc{padding:14px 14px}
+  .page{padding:14px 10px}
+  .card{padding:14px 12px}
+  /* k5 do Financeiro vira 2x2 + margem fullwidth */
+  .kpi-grid.k5{grid-template-columns:repeat(2,1fr)}
+  .kpi-grid.k5 .kpi.margem{grid-column:span 2}
+  .kpi-grid.k5 .kpi:nth-child(4){grid-column:span 1}
+  /* Botões da toolbar do card mais altos */
+  .btn{min-height:40px;padding:0 14px;font-size:13px}
+}
 .lo-ov{display:none;position:fixed;inset:0;background:linear-gradient(135deg,#fdf2f8,#fce7f3);z-index:9999;align-items:center;justify-content:center;padding:20px}
 .lo-ov.on{display:flex}
 /* CALENDÁRIO */
@@ -1067,7 +1125,27 @@ async function doLogin(e){
 async function doLogout(){await sb.auth.signOut();location.reload();}
 
 // ─── CONTRATOS PENDENTES ───
-let contratosPend=[];
+let contratosPend=[],contratosAll=[],contratoByKey={};
+// Chave de cruzamento festa↔contrato: cliente normalizado + data ISO
+function contratoKey(cli,data){return(String(cli||'').trim().toLowerCase())+'|'+normEvDate(String(data||''));}
+function buildContratoIndex(){
+  contratoByKey={};
+  contratosAll.forEach(c=>{
+    const k=contratoKey(c.cliente,c.dataEvento);if(!k.startsWith('|'))contratoByKey[k]=c;
+  });
+}
+// Status do contrato para uma festa: 'ok' (confirmado) | 'pend' (criado, por assinar) | 'none' (sem contrato)
+function getContratoStatus(ev){
+  if(!ev||!ev.cliente||!ev.dataFesta)return 'none';
+  const c=contratoByKey[contratoKey(ev.cliente,ev.dataFesta)];
+  if(!c)return 'none';
+  return c.confirmado?'ok':'pend';
+}
+function contratoBadgeHtml(ev){
+  const st=getContratoStatus(ev);
+  const lbl={ok:'Contrato OK',pend:'Por assinar',none:'Sem contrato'}[st];
+  return `<span class="cnt-badge ${st}" title="${lbl}">${lbl}</span>`;
+}
 function saveContratosUrl(){
   const v=$('contratosUrlInput').value.trim();if(!v)return;
   CONTRATOS_URL=v;localStorage.setItem(LS_CURL,v);
@@ -1084,9 +1162,13 @@ function loadContratosPendentes(){
   let done=false;
   const timer=setTimeout(()=>{if(!done){done=true;delete window[cb];document.getElementById('_cpcontr')?.remove();renderContratosWidget(true);}},10000);
   window[cb]=data=>{if(done)return;done=true;clearTimeout(timer);delete window[cb];document.getElementById('_cpcontr')?.remove();
-    contratosPend=Array.isArray(data)?data:[];renderContratosWidget(false);
+    contratosAll=Array.isArray(data)?data:[];
+    contratosPend=contratosAll.filter(c=>!c.confirmado);
+    buildContratoIndex();
+    renderContratosWidget(false);
+    if(Array.isArray(eventos)&&eventos.length){renderEventos(eventos);renderNextEvent();}
   };
-  const s=document.createElement('script');s.id='_cpcontr';s.src=CONTRATOS_URL+'?page=contratos&callback='+cb;
+  const s=document.createElement('script');s.id='_cpcontr';s.src=CONTRATOS_URL+'?page=contratos&all=1&callback='+cb;
   s.onerror=()=>{if(done)return;done=true;clearTimeout(timer);delete window[cb];renderContratosWidget(true);};
   document.head.appendChild(s);
 }
@@ -1550,13 +1632,13 @@ function renderEventos(evs){
     const arch=isArchived(ev);
     const past=isPastMonth(ev)&&!arch;
     return`<tr class="${arch||past?'ev-archived':''}" onclick="openEvModal(${ev.rowIndex})">
-      <td><strong>${esc(ev.cliente||'—')}</strong>${arch?' <span class="bst arquivado">arquivado</span>':past?' <span class="bst arquivado" style="background:#fff8e1;color:var(--amber);border-color:#f0d97a">antigo</span>':''}<br><span style="font-size:10px;color:var(--muted)">${esc(ev.telefone||'')}</span></td>
-      <td style="font-family:var(--mono);font-size:11px">${fmtD(ev.dataFesta)}</td>
-      <td style="font-size:11px;color:var(--muted)">${esc(ev.horaInicio||'—')}–${esc(ev.horaFim||'—')}</td>
-      <td style="font-family:var(--mono);font-size:12px;font-weight:600;color:var(--pink)">${eur(total)}</td>
-      <td style="font-family:var(--mono);font-size:12px;font-weight:600;color:var(--${fc})">${eur(falta)}</td>
-      <td><span style="font-size:10px;color:var(--muted)" id="ev-srv-${ev.rowIndex}">…</span></td>
-      <td style="text-align:right;white-space:nowrap"><button class="btn-ic" title="Registar pagamento" onclick="event.stopPropagation();openEvPagamento(${ev.rowIndex})" style="color:var(--pink);font-size:18px">💶</button></td>
+      <td data-lbl="Cliente"><strong>${esc(ev.cliente||'—')}</strong> ${contratoBadgeHtml(ev)}${arch?' <span class="bst arquivado">arquivado</span>':past?' <span class="bst arquivado" style="background:#fff8e1;color:var(--amber);border-color:#f0d97a">antigo</span>':''}<br><span style="font-size:11px;color:var(--muted)">${esc(ev.telefone||'')}</span></td>
+      <td data-lbl="Data" style="font-family:var(--mono);font-size:12px">${fmtD(ev.dataFesta)}</td>
+      <td data-lbl="Horário" style="font-size:12px;color:var(--muted)">${esc(ev.horaInicio||'—')}–${esc(ev.horaFim||'—')}</td>
+      <td data-lbl="Total" style="font-family:var(--mono);font-size:13px;font-weight:600;color:var(--pink)">${eur(total)}</td>
+      <td data-lbl="Em falta" style="font-family:var(--mono);font-size:13px;font-weight:600;color:var(--${fc})">${eur(falta)}</td>
+      <td data-lbl="Serviços"><span style="font-size:11px;color:var(--muted)" id="ev-srv-${ev.rowIndex}">…</span></td>
+      <td data-lbl="" class="td-act"><button class="btn-ic" title="Registar pagamento" onclick="event.stopPropagation();openEvPagamento(${ev.rowIndex})" style="color:var(--pink);font-size:20px">💶</button></td>
     </tr>`;
   }).join(''):'<tr><td colspan="7" class="empty-row">Sem eventos.</td></tr>';
   // Carregar indicadores de serviços
@@ -2036,13 +2118,13 @@ function filterOrcamentos(){
   orcamentos=q?orcFull.filter(d=>(d.client_name||'').toLowerCase().includes(q)||(d.document_number||'').toLowerCase().includes(q)):orcFull;
   $('orcBody').innerHTML=orcamentos.length?orcamentos.map(d=>`
     <tr onclick="openOrcModal('${d.id}')">
-      <td style="font-family:var(--mono);font-size:11px;font-weight:700">${esc(d.document_number||'—')}</td>
-      <td style="font-weight:500">${esc(d.client_name||'—')}</td>
-      <td style="font-size:11px;color:var(--muted)">${esc(d.event_type||'—')}</td>
-      <td style="font-family:var(--mono);font-size:11px;color:var(--muted)">${fmtD(d.event_date)}</td>
-      <td style="font-family:var(--mono);font-size:12px;font-weight:600;color:var(--pink)">${eur(d.total)}</td>
-      <td><span class="bst ${d.status||'rascunho'}">${d.status||'rascunho'}</span></td>
-      <td style="color:var(--pink)">→</td>
+      <td data-lbl="Nº" style="font-family:var(--mono);font-size:12px;font-weight:700">${esc(d.document_number||'—')}</td>
+      <td data-lbl="Cliente" style="font-weight:500">${esc(d.client_name||'—')}</td>
+      <td data-lbl="Evento" style="font-size:12px;color:var(--muted)">${esc(d.event_type||'—')}</td>
+      <td data-lbl="Data" style="font-family:var(--mono);font-size:12px;color:var(--muted)">${fmtD(d.event_date)}</td>
+      <td data-lbl="Total" style="font-family:var(--mono);font-size:13px;font-weight:600;color:var(--pink)">${eur(d.total)}</td>
+      <td data-lbl="Estado"><span class="bst ${d.status||'rascunho'}">${d.status||'rascunho'}</span></td>
+      <td data-lbl="" class="td-act" style="color:var(--pink)">→</td>
     </tr>`).join(''):'<tr><td colspan="7" class="empty-row">Sem documentos.</td></tr>';
 }
 function renderOrcRec(docs){
@@ -2198,8 +2280,8 @@ function renderNextEvent(){
   if(!future.length){box.innerHTML='<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">Sem eventos futuros.</div>';$('pND').textContent='–';$('pNN').textContent='sem eventos';return;}
   const next=future[0];const diff=Math.ceil((new Date(next.dataFesta+'T00:00:00')-today)/86400000);
   $('pND').textContent=diff===0?'Hoje':diff;$('pNN').textContent=diff===0?next.cliente:diff+'d — '+(next.cliente||'');
-  box.innerHTML=`<div class="nex-box"><div class="nex-lbl">Próximo evento</div><div class="nex-nome">${esc(next.cliente||'—')}</div><div class="nex-meta">${fmtD(next.dataFesta)} · ${esc(next.horaInicio||'')}–${esc(next.horaFim||'')}</div><div class="nex-cd">${diff===0?'🎉 Hoje!':diff===1?'Amanhã':diff+' dias'}</div></div>
-  ${future.slice(1,4).map(e=>{const d=Math.ceil((new Date(e.dataFesta+'T00:00:00')-today)/86400000);return`<div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border);font-size:12.5px"><span style="font-weight:500">${esc(e.cliente||'—')}</span><span style="font-family:var(--mono);font-size:11px;color:var(--muted)">${fmtD(e.dataFesta)} · ${d}d</span></div>`;}).join('')}`;
+  box.innerHTML=`<div class="nex-box"><div class="nex-lbl">Próximo evento</div><div class="nex-nome">${esc(next.cliente||'—')} ${contratoBadgeHtml(next)}</div><div class="nex-meta">${fmtD(next.dataFesta)} · ${esc(next.horaInicio||'')}–${esc(next.horaFim||'')}</div><div class="nex-cd">${diff===0?'🎉 Hoje!':diff===1?'Amanhã':diff+' dias'}</div></div>
+  ${future.slice(1,4).map(e=>{const d=Math.ceil((new Date(e.dataFesta+'T00:00:00')-today)/86400000);return`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);font-size:12.5px;gap:10px"><span style="font-weight:500;display:flex;align-items:center;gap:6px;flex-wrap:wrap">${esc(e.cliente||'—')} ${contratoBadgeHtml(e)}</span><span style="font-family:var(--mono);font-size:11px;color:var(--muted);white-space:nowrap">${fmtD(e.dataFesta)} · ${d}d</span></div>`;}).join('')}`;
 }
 
 // FINANCEIRO
@@ -2749,13 +2831,13 @@ function renderPedidos(){
     const dt=p.created_at?new Date(p.created_at).toLocaleDateString('pt-PT'):'—';
     const dataEv=p.data_evento?fmtD(p.data_evento):'—';
     return`<tr onclick="openPedModal('${p.id}')">
-      <td style="font-family:var(--mono);font-size:11px">${dt}</td>
-      <td><strong>${esc(p.nome||'—')}</strong><br><span style="font-size:10px;color:var(--muted)">${esc(p.contacto||p.email||'')}</span></td>
-      <td style="font-size:12px">${esc(p.tipo_evento||'—')}</td>
-      <td style="font-family:var(--mono);font-size:11px">${dataEv}</td>
-      <td style="font-family:var(--mono);font-size:12px">${p.num_convidados||'—'}</td>
-      <td><span class="bst ${PED_ST_CLS[p.status]||'rascunho'}">${PED_ST_LBL[p.status]||p.status}</span></td>
-      <td style="color:var(--pink)">→</td>
+      <td data-lbl="Recebido" style="font-family:var(--mono);font-size:12px">${dt}</td>
+      <td data-lbl="Cliente"><strong>${esc(p.nome||'—')}</strong><br><span style="font-size:11px;color:var(--muted)">${esc(p.contacto||p.email||'')}</span></td>
+      <td data-lbl="Evento" style="font-size:12px">${esc(p.tipo_evento||'—')}</td>
+      <td data-lbl="Data" style="font-family:var(--mono);font-size:12px">${dataEv}</td>
+      <td data-lbl="Pax" style="font-family:var(--mono);font-size:13px">${p.num_convidados||'—'}</td>
+      <td data-lbl="Estado"><span class="bst ${PED_ST_CLS[p.status]||'rascunho'}">${PED_ST_LBL[p.status]||p.status}</span></td>
+      <td data-lbl="" class="td-act" style="color:var(--pink)">→</td>
     </tr>`;
   }).join(''):'<tr><td colspan="7" class="empty-row">Sem pedidos.</td></tr>';
 }
