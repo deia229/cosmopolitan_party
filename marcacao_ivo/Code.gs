@@ -276,18 +276,17 @@ ${obs || ''}`.trim();
   const dataPt = formatarDataPt_(dataFesta);
   const primeiroNome = String(nome || '').trim().split(/\s+/)[0] || 'cliente';
   const msgPedido =
-`Olá ${primeiroNome}, tudo bem?
-Sou a Andreia da Cosmopolitan Party. A festa de ${dataPt} está confirmada connosco e vou ajudar a tratar de tudo daqui para a frente.
+`Olá ${primeiroNome} 👋
+Aqui Andreia da Cosmopolitan Party. A sua festa de ${dataPt} está confirmada 🎉
 
-Para fazermos o contrato preciso só destes dados:
-• Nome completo do responsável
-• Tipo de evento (aniversário, batizado, etc.)
-• Nº de convidados aproximado
-• Horas de início e fim
-• Se quiser fatura com NIF: NIF e morada
+Falta só preencher o contrato — preciso de:
+• Nome completo
+• Nº de documento (CC ou passaporte)
+• NIF
+• Morada
 
-Mal me envie isto, mando-lhe o contrato.
-Cosmopolitan Party`;
+Mal me envie, mando o contrato para assinatura.
+Qualquer dúvida é só dizer 🙌`;
   const telNorm = normalizePtPhone_(tel);
   const waLink = telNorm ? `https://wa.me/${telNorm}?text=${encodeURIComponent(msgPedido)}` : '';
 
