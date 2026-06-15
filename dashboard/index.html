@@ -582,6 +582,7 @@ header{background:linear-gradient(135deg,var(--dark),var(--dark2));padding:0 20p
   <div class="card" style="margin-bottom:16px">
     <div class="ck-hdr">
       <span class="card-title">Checklist</span>
+      <input id="ckEvSearch" placeholder="Pesquisar festa antiga…" style="border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:12px;font-family:var(--font);outline:none;width:170px;min-height:36px" oninput="renderCkSel()"/>
       <select class="ck-ev-sel" id="ckEvSel" onchange="loadCkEvento()"><option value="">Selecionar evento…</option></select>
       <button class="btn btn-g" onclick="saveCkEvento()">💾 Guardar</button>
     </div>
@@ -1981,12 +1982,28 @@ function swCk(panel,btn){
 
 function renderCkSel(){
   const sel=$('ckEvSel');const prev=sel.value;
+  const q=($('ckEvSearch')?.value||'').trim().toLowerCase();
   sel.innerHTML='<option value="">Selecionar evento…</option>';
-  // Agora lista TODAS as festas (não só com catering/decoração) — modelo Geral aplica-se a todas
-  const filtrados=[...eventos].filter(ev=>!isArchived(ev)).sort((a,b)=>(a.dataFesta||'').localeCompare(b.dataFesta||''));
+  const today=new Date();today.setHours(0,0,0,0);
+  // Por defeito: só festas de hoje em diante (não arquivadas).
+  // Se houver pesquisa, mostra TUDO (passado + futuro) que coincida com o nome ou data.
+  const filtrados=[...eventos].filter(ev=>{
+    if(isArchived(ev))return false;
+    if(q){
+      const nm=(ev.cliente||'').toLowerCase();
+      const nmOrig=(ev._origCliente||'').toLowerCase();
+      const dt=fmtD(ev.dataFesta).toLowerCase();
+      const dtIso=(ev.dataFesta||'').toLowerCase();
+      return nm.includes(q)||nmOrig.includes(q)||dt.includes(q)||dtIso.includes(q);
+    }
+    // Sem pesquisa: só futuro/hoje
+    if(!ev.dataFesta)return false;
+    const d=new Date(ev.dataFesta+'T00:00:00');
+    return d>=today;
+  }).sort((a,b)=>(a.dataFesta||'').localeCompare(b.dataFesta||''));
   if(!filtrados.length){
     const o=document.createElement('option');o.value='';o.disabled=true;
-    o.textContent='— Sem eventos —';sel.appendChild(o);
+    o.textContent=q?'— Sem resultados —':'— Sem eventos futuros — pesquisa para ver antigos —';sel.appendChild(o);
   }
   filtrados.forEach(ev=>{
     const ex=extrasByKey[evKey(ev)]||{};
