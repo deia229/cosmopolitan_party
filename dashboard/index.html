@@ -2955,14 +2955,17 @@ async function guardarDadosCliente(){
   const cliente_override=(cliente&&cliente!==(ev._origCliente||''))?cliente:null;
   const telefone_override=(tel&&tel!==(ev._origTelefone||''))?tel:null;
   const email_override=(email&&email!==(ev._origEmail||''))?email:null;
-  const{error}=await sb.from('cp_event_costs').upsert({
+  // Payload mínimo: só override + notas. Não toca em custos, pack_items, extras, pagamentos.
+  // (extras tem o seu próprio save em saveEvExtras; misturar aqui podia sobrescrever)
+  const payload={
     event_key:key,event_cliente:ev._origCliente||ev.cliente||'',event_data:ev.dataFesta||'',
-    extras:JSON.stringify(curEvExtras),notas:obs,
     cliente_override,telefone_override,email_override,
     updated_at:new Date().toISOString()
-  },{onConflict:'event_key'});
+  };
+  // Só inclui notas se o utilizador realmente escreveu algo
+  if(obs!==(ev.observacoes||''))payload.notas=obs;
+  const{error}=await sb.from('cp_event_costs').upsert(payload,{onConflict:'event_key'});
   if(error){showToast('Erro: '+error.message);return;}
-  extrasByKey[key]={espaco:[],decoracao:[],catering:[],outros:[],...curEvExtras};
   // Aplicar override local (ou voltar ao original se foi limpo)
   ev.cliente=cliente_override||ev._origCliente||'';
   ev.telefone=telefone_override||ev._origTelefone||'';
