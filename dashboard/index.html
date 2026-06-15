@@ -69,6 +69,19 @@ header{background:linear-gradient(135deg,var(--dark),var(--dark2));padding:0 20p
 .bst.rascunho{background:#f3f4f6;color:#6b7280}.bst.cancelado{background:#fce4ec;color:var(--red)}
 .bst.arquivado{background:#ececec;color:#666;border:1px solid #d8d8d8}
 .ev-archived td{opacity:.55}
+/* Tira de alertas no topo da Visão Geral */
+.alert-strip{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 14px;margin-bottom:16px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.alert-strip.alert-ok{background:#ecfdf5;border-color:#cdebd9}
+.alert-empty{color:var(--green);font-size:13px;font-weight:600;padding:4px 6px}
+.alert-chip{display:inline-flex;align-items:center;gap:7px;padding:7px 12px;border-radius:20px;font-size:12.5px;font-weight:600;cursor:pointer;border:1px solid transparent;transition:transform .1s,box-shadow .15s;min-height:36px;background:var(--card);user-select:none}
+.alert-chip:hover{transform:translateY(-1px);box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.alert-chip .a-ic{font-size:14px}
+.alert-chip .a-num{font-family:var(--mono);font-weight:700;font-size:13px;padding:1px 7px;border-radius:12px;background:#fff;border:1px solid currentColor}
+.alert-chip.red{background:#fef2f2;color:var(--red);border-color:#fcd9df}
+.alert-chip.amber{background:#fff8e1;color:var(--amber);border-color:#f0d97a}
+.alert-chip.pink{background:#fdf2f8;color:var(--pink);border-color:#f5d4e4}
+.alert-chip.blue{background:#eff6ff;color:#1e5fcc;border-color:#cbdcf6}
+@media(max-width:480px){.alert-chip{font-size:12px;padding:6px 10px}}
 /* Badge de estado de contrato (cruzamento festa↔contrato) */
 .cnt-badge{display:inline-block;font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;font-family:var(--mono);letter-spacing:.5px;text-transform:uppercase;border:1px solid transparent;vertical-align:middle;white-space:nowrap}
 .cnt-badge.ok{background:#e8f5e9;color:var(--green);border-color:#cdebd9}
@@ -413,6 +426,8 @@ header{background:linear-gradient(135deg,var(--dark),var(--dark2));padding:0 20p
 
 <!-- VISÃO GERAL -->
 <div class="page on" id="tab-visao">
+  <!-- ALERTAS — coisas que precisam de atenção -->
+  <div id="alertStrip" class="alert-strip alert-ok"><div class="alert-empty">✓ Tudo em dia</div></div>
   <div class="pulse">
     <div class="pc"><div class="p-lbl">Próximo evento</div><div class="p-val c" id="pND">–</div><div class="p-sub" id="pNN">–</div></div>
     <div class="pc"><div class="p-lbl">A receber (mês)</div><div class="p-val" id="pRec">–</div><div class="p-sub" id="pRecM">–</div></div>
@@ -1191,6 +1206,7 @@ function loadContratosPendentes(){
     buildContratoIndex();
     renderContratosWidget(false);
     if(Array.isArray(eventos)&&eventos.length){renderEventos(eventos);renderNextEvent();}
+    renderAlertas();
   };
   const s=document.createElement('script');s.id='_cpcontr';s.src=CONTRATOS_URL+'?page=contratos&all=1&callback='+cb;
   s.onerror=()=>{if(done)return;done=true;clearTimeout(timer);delete window[cb];renderContratosWidget(true);};
@@ -1632,9 +1648,9 @@ function loadEventos(){
   const cb='cpev_'+Date.now();
   window[cb]=data=>{delete window[cb];$('_evs')?.remove();
     if(!Array.isArray(data)){syncSt('err','Erro script');renderEventos([]);return;}
-    eventos=data.map(normalizeEvento);syncSt('ok','Sincronizado');invalidateFinCache();renderEventos(eventos);renderNextEvent();renderPulse();renderFin();renderCkSel();
+    eventos=data.map(normalizeEvento);syncSt('ok','Sincronizado');invalidateFinCache();renderEventos(eventos);renderNextEvent();renderPulse();renderFin();renderCkSel();renderAlertas();
     if($('calGrid'))renderCalendar();
-    loadPagSupabase().then(()=>{renderEventos(eventos);renderPulse();renderFin();renderCkSel();renderNextEvent();if($('calGrid'))renderCalendar();});
+    loadPagSupabase().then(()=>{renderEventos(eventos);renderPulse();renderFin();renderCkSel();renderNextEvent();if($('calGrid'))renderCalendar();renderAlertas();});
   };
   const s=document.createElement('script');s.id='_evs';s.src=`${SCRIPT_URL}?page=dados&callback=${cb}`;
   s.onerror=()=>{delete window[cb];syncSt('err','Erro');renderEventos([]);};
@@ -2331,6 +2347,47 @@ function renderNextEvent(){
   ${future.slice(1,4).map(e=>{const d=Math.ceil((new Date(e.dataFesta+'T00:00:00')-today)/86400000);return`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);font-size:12.5px;gap:10px"><span style="font-weight:500;display:flex;align-items:center;gap:6px;flex-wrap:wrap">${esc(e.cliente||'—')} ${contratoBadgeHtml(e)}</span><span style="font-family:var(--mono);font-size:11px;color:var(--muted);white-space:nowrap">${fmtD(e.dataFesta)} · ${d}d</span></div>`;}).join('')}`;
 }
 
+// ─── ALERTAS (tira no topo da Visão Geral) ───
+// Regras: 30d sem contrato · 14d por assinar · 14d sem sinal · pedidos 'novo' > 2d
+function computeAlertas(){
+  const today=new Date();today.setHours(0,0,0,0);
+  const inDays=ev=>{if(!ev.dataFesta)return Infinity;const d=new Date(ev.dataFesta+'T00:00:00');return Math.ceil((d-today)/86400000);};
+  let semContrato=0,porAssinar=0,semSinal=0,pedidosNovos=0;
+  (eventos||[]).forEach(ev=>{
+    if(isArchived(ev))return;
+    const diff=inDays(ev);
+    if(diff<0)return; // só futuro/hoje
+    const st=getContratoStatus(ev);
+    if(diff<=30&&st==='none')semContrato++;
+    if(diff<=14&&st==='pend')porAssinar++;
+    if(diff<=14&&paidTotal(ev)===0)semSinal++;
+  });
+  const limiteDt=Date.now()-2*86400000;
+  (pedidos||[]).forEach(p=>{
+    if((p.status||'').toLowerCase()!=='novo')return;
+    const cre=p.created_at?new Date(p.created_at).getTime():0;
+    if(cre&&cre<=limiteDt)pedidosNovos++;
+  });
+  return{semContrato,porAssinar,semSinal,pedidosNovos};
+}
+function renderAlertas(){
+  const strip=$('alertStrip');if(!strip)return;
+  const a=computeAlertas();
+  const total=a.semContrato+a.porAssinar+a.semSinal+a.pedidosNovos;
+  if(total===0){strip.className='alert-strip alert-ok';strip.innerHTML='<div class="alert-empty">✓ Tudo em dia</div>';return;}
+  strip.className='alert-strip';
+  const chip=(cls,ic,lbl,n,onclick,title)=>`<div class="alert-chip ${cls}" onclick="${onclick}" title="${title}"><span class="a-ic">${ic}</span><span>${lbl}</span><span class="a-num">${n}</span></div>`;
+  const chips=[];
+  if(a.semContrato)chips.push(chip('red','🔴','Sem contrato',a.semContrato,'goAlertaEventos()','Festas a ≤30 dias sem contrato criado'));
+  if(a.porAssinar)chips.push(chip('amber','🟡','Por assinar',a.porAssinar,'goAlertaContratos()','Contratos criados mas não assinados (festas a ≤14 dias)'));
+  if(a.semSinal)chips.push(chip('pink','💶','Sinal em falta',a.semSinal,'goAlertaEventos()','Festas a ≤14 dias sem qualquer pagamento'));
+  if(a.pedidosNovos)chips.push(chip('blue','📬','Pedidos novos',a.pedidosNovos,'goAlertaPedidos()','Pedidos de decoração "novo" há >2 dias sem resposta'));
+  strip.innerHTML=chips.join('');
+}
+function goAlertaEventos(){const btn=Array.from(document.querySelectorAll('.tab-btn')).find(b=>(b.getAttribute('onclick')||'').includes("'eventos'"));showTab('eventos',btn);}
+function goAlertaContratos(){const cp=$('cpBox');if(cp){const tabBtn=Array.from(document.querySelectorAll('.tab-btn')).find(b=>(b.getAttribute('onclick')||'').includes("'visao'"));if(tabBtn)showTab('visao',tabBtn);setTimeout(()=>cp.scrollIntoView({behavior:'smooth',block:'center'}),100);}}
+function goAlertaPedidos(){const btn=Array.from(document.querySelectorAll('.tab-btn')).find(b=>(b.getAttribute('onclick')||'').includes("'pedidos'"));showTab('pedidos',btn);}
+
 // FINANCEIRO
 function loadFinFromLS(){
   try{const r=localStorage.getItem(LS_FIN);if(r){const f=JSON.parse(r);fin={...fin,...f};}}catch(e){}
@@ -2754,7 +2811,7 @@ async function guardarDadosCliente(){
   ev.telefone=telefone_override||ev._origTelefone||'';
   ev.email=email_override||ev._origEmail||'';
   renderCkSel();
-  renderEventos(eventos);renderNextEvent();if($('calGrid'))renderCalendar();
+  renderEventos(eventos);renderNextEvent();if($('calGrid'))renderCalendar();renderAlertas();
   // Sincronizar Google Calendar (nome/tel/obs) — falha não bloqueia o save
   pushCalendarUpdate(ev,ev.cliente,ev.telefone,obs);
   // Actualizar a vista do modal sem fechar
@@ -2947,6 +3004,7 @@ function filterPedidos(){
       ||(p.email||'').toLowerCase().includes(q);
   });
   renderPedidos();
+  renderAlertas();
 }
 const PED_ST_LBL={novo:'Novo',conversa:'Em conversa',orcado:'Orçado',fechado:'Fechado',descartado:'Descartado'};
 const PED_ST_CLS={novo:'pendente',conversa:'enviado',orcado:'enviado',fechado:'confirmado',descartado:'cancelado'};
