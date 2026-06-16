@@ -101,16 +101,16 @@ function updateCalEvento_(e) {
 
     if (nome) ev.setTitle(`Festa — ${nome} (Flamenga)`);
 
-    // Atualizar a descrição preservando a estrutura existente
+    // Atualizar a descrição. Regex tolerantes — apanham com ou sem emoji prefixado
+    // (compatibilidade com eventos antigos que ainda têm emojis).
     let desc = ev.getDescription() || '';
-    if (nome) desc = desc.replace(/(👤 Cliente:\s*).*/m, `$1${nome}`);
-    if (tel)  desc = desc.replace(/(📞 Telefone:\s*).*/m, `$1${tel}`);
+    if (nome) desc = desc.replace(/^.*Cliente:\s*.*$/m, `Cliente: ${nome}`);
+    if (tel)  desc = desc.replace(/^.*Telefone:\s*.*$/m, `Telefone: ${tel}`);
     if (obs)  {
-      // Substitui tudo depois de "📝 Observações:" até ao fim
-      if (/📝 Observações:/.test(desc)) {
-        desc = desc.replace(/(📝 Observações:\s*\n?)[\s\S]*$/, `$1${obs}`);
+      if (/Observações:/.test(desc)) {
+        desc = desc.replace(/(^.*Observações:\s*\n?)[\s\S]*$/m, `Observações:\n${obs}`);
       } else {
-        desc = desc + `\n\n📝 Observações:\n${obs}`;
+        desc = desc + `\n\nObservações:\n${obs}`;
       }
     }
     ev.setDescription(desc);
@@ -254,31 +254,7 @@ function onFormSubmit(e) {
     ? `${Math.floor(duracaoMin / 60)}h${duracaoMin % 60 ? String(duracaoMin % 60).padStart(2,'0') : ''}`
     : `${duracaoMin}min`;
 
-  // Versão para o evento do Google Calendar (renderiza emojis bem)
   const descricao =
-`🎉 COSMOPOLITAN PARTY — Detalhes da Festa
-
-📅 Data: ${dataLbl}
-🕐 Horário: ${horaIniLbl} – ${horaFimLbl} (${duracaoLbl})
-
-👤 Cliente: ${nome || '—'}
-📞 Telefone: ${tel || '—'}
-
-💰 Valores
-- Festa: ${fmtMoney_(valor)}
-- Caução: ${fmtMoney_(cau)}
-- Limpeza: ${fmtMoney_(limp)}
-- Pago: ${fmtMoney_(pago)}
-- Em falta: ${fmtMoney_((+valor || 0) - (+pago || 0))}
-
-🧹 Limpeza: ${quemLimpa || '—'}
-
-📝 Observações:
-${obs || '—'}`.trim();
-
-  // Versão sem emojis para o corpo plain-text do email (alguns clientes tipo Outlook
-  // não conseguem renderizar emojis em texto puro e mostram tudo como ������)
-  const descricaoPlain =
 `COSMOPOLITAN PARTY — Detalhes da Festa
 
 Data: ${dataLbl}
@@ -318,8 +294,7 @@ ${obs || '-'}`.trim();
   const dataPt = formatarDataPt_(dataFesta);
   const primeiroNome = String(nome || '').trim().split(/\s+/)[0] || 'cliente';
   const msgPedido =
-`Olá ${primeiroNome} 👋
-Aqui Andreia da Cosmopolitan Party. A sua festa de ${dataPt} ficou reservada 🎉
+`Olá ${primeiroNome}, aqui Andreia da Cosmopolitan Party. A sua festa de ${dataPt} ficou reservada.
 
 Para confirmar a reserva falta só o contrato — preciso de:
 • Nome completo
@@ -327,29 +302,28 @@ Para confirmar a reserva falta só o contrato — preciso de:
 • NIF
 • Morada
 
-Mal me envie, mando o contrato. A assinatura é online — em 1 minuto está feito ✍️
-Qualquer dúvida é só dizer 🙌`;
+Mal me envie, mando o contrato. A assinatura é online — em 1 minuto está feito.
+Qualquer dúvida é só dizer.`;
   const telNorm = normalizePtPhone_(tel);
   const waLink = telNorm ? `https://wa.me/${telNorm}?text=${encodeURIComponent(msgPedido)}` : '';
 
   const subj = `Festa criada no calendário: ${titulo}`;
-  const bodyText = `${descricaoPlain}\n\nLink do evento: ${linkEvento}` +
+  const bodyText = `${descricao}\n\nLink do evento: ${linkEvento}` +
     (waLink ? `\n\nPedido de dados ao cliente (1 clique):\n${waLink}` : '\n\nSem telefone válido — pedido de dados tem de ser enviado manualmente.');
 
-  // Email HTML com botão "Pedir dados ao cliente" bem visível
   const htmlBody =
     '<div style="font-family:Arial,sans-serif;max-width:560px;color:#1a0010">' +
       '<div style="background:linear-gradient(135deg,#e0187a,#ff4da6);padding:20px;border-radius:12px 12px 0 0;color:#fff">' +
         '<div style="font-size:11px;letter-spacing:3px;text-transform:uppercase;opacity:.85">Cosmopolitan Party</div>' +
-        `<div style="font-size:20px;font-weight:700;margin-top:6px">✅ Festa criada</div>` +
+        `<div style="font-size:20px;font-weight:700;margin-top:6px">Festa criada</div>` +
         `<div style="font-size:13px;opacity:.9;margin-top:4px">${escapeHtml_(nome || 'Cliente')} · ${escapeHtml_(dataPt)}</div>` +
       '</div>' +
       '<div style="border:1px solid #f0c8dc;border-top:none;border-radius:0 0 12px 12px;padding:20px">' +
         `<pre style="font-family:Arial,sans-serif;white-space:pre-wrap;font-size:13px;margin:0 0 16px;color:#333">${escapeHtml_(descricao)}</pre>` +
-        `<p style="margin:0 0 10px;font-size:13px"><a href="${linkEvento}" style="color:#e0187a;text-decoration:none;font-weight:600">📅 Abrir no Google Calendar</a></p>` +
+        `<p style="margin:0 0 10px;font-size:13px"><a href="${linkEvento}" style="color:#e0187a;text-decoration:none;font-weight:600">Abrir no Google Calendar</a></p>` +
         (waLink
-          ? `<div style="margin-top:18px;padding-top:14px;border-top:1px solid #f0c8dc"><p style="margin:0 0 8px;font-size:12px;color:#8a5a70">Próximo passo — pedido de dados ao cliente:</p><a href="${waLink}" style="display:inline-block;background:#25D366;color:#fff;text-decoration:none;padding:11px 18px;border-radius:9px;font-weight:600;font-size:13px">💬 Enviar WhatsApp (mensagem pronta)</a></div>`
-          : '<p style="margin-top:14px;color:#c0143c;font-size:12px">⚠️ Sem telefone válido — pedido de dados tem de ser enviado manualmente.</p>') +
+          ? `<div style="margin-top:18px;padding-top:14px;border-top:1px solid #f0c8dc"><p style="margin:0 0 8px;font-size:12px;color:#8a5a70">Próximo passo — pedido de dados ao cliente:</p><a href="${waLink}" style="display:inline-block;background:#25D366;color:#fff;text-decoration:none;padding:11px 18px;border-radius:9px;font-weight:600;font-size:13px">Enviar WhatsApp (mensagem pronta)</a></div>`
+          : '<p style="margin-top:14px;color:#c0143c;font-size:12px">Sem telefone válido — pedido de dados tem de ser enviado manualmente.</p>') +
       '</div>' +
     '</div>';
 
