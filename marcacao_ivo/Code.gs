@@ -208,6 +208,7 @@ function onFormSubmit(e) {
   const cols = getCols_(sh, [
     HDR_DATA, HDR_INICIO, HDR_FIM,
     HDR_NOME, HDR_TEL, HDR_VALOR, HDR_CAUCAO, HDR_LIMPEZA, HDR_PAGO, HDR_OBS,
+    HDR_QUEM_LIMPA,
     HDR_LINK_A, HDR_LINK_F, HDR_SYNC
   ]);
 
@@ -239,23 +240,39 @@ function onFormSubmit(e) {
   const limp  = sh.getRange(row, cols[HDR_LIMPEZA]).getValue();
   const pago  = sh.getRange(row, cols[HDR_PAGO]).getValue();
   const obs   = sh.getRange(row, cols[HDR_OBS]).getValue();
+  const quemLimpa = sh.getRange(row, cols[HDR_QUEM_LIMPA]).getValue();
 
   const titulo = `Festa — ${nome || 'Cliente'} (Flamenga)`;
+
+  // Formatos legíveis (start/end são Date com fuso correcto)
+  const dataLbl = Utilities.formatDate(start, TZ, 'EEEE, dd/MM/yyyy');
+  const horaIniLbl = Utilities.formatDate(start, TZ, 'HH:mm');
+  const horaFimLbl = Utilities.formatDate(end, TZ, 'HH:mm');
+  const duracaoMin = Math.round((end.getTime() - start.getTime()) / 60000);
+  const duracaoLbl = duracaoMin >= 60
+    ? `${Math.floor(duracaoMin / 60)}h${duracaoMin % 60 ? String(duracaoMin % 60).padStart(2,'0') : ''}`
+    : `${duracaoMin}min`;
 
   const descricao =
 `🎉 COSMOPOLITAN PARTY — Detalhes da Festa
 
-👤 Cliente: ${nome || ''}
-📞 Telefone: ${tel || ''}
+📅 Data: ${dataLbl}
+🕐 Horário: ${horaIniLbl} – ${horaFimLbl} (${duracaoLbl})
+
+👤 Cliente: ${nome || '—'}
+📞 Telefone: ${tel || '—'}
 
 💰 Valores
 - Festa: ${fmtMoney_(valor)}
 - Caução: ${fmtMoney_(cau)}
 - Limpeza: ${fmtMoney_(limp)}
 - Pago: ${fmtMoney_(pago)}
+- Em falta: ${fmtMoney_((+valor || 0) - (+pago || 0))}
+
+🧹 Limpeza: ${quemLimpa || '—'}
 
 📝 Observações:
-${obs || ''}`.trim();
+${obs || '—'}`.trim();
 
   const cal = CalendarApp.getCalendarById(CAL_ID);
   if (!cal) throw new Error(`Não consegui aceder ao calendário: ${CAL_ID}`);
@@ -281,7 +298,7 @@ Aqui Andreia da Cosmopolitan Party. A sua festa de ${dataPt} está confirmada �
 
 Falta só preencher o contrato — preciso de:
 • Nome completo
-• Nº de documento (CC ou passaporte)
+• Foto/cópia do documento (CC ou passaporte)
 • NIF
 • Morada
 
