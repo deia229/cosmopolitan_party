@@ -329,7 +329,11 @@ Qualquer dúvida é só dizer 🙌`;
       '</div>' +
     '</div>';
 
-  EMAIL_TO.forEach(to => { if (to) GmailApp.sendEmail({ to: to, subject: subj, body: bodyText, htmlBody: htmlBody, name: 'Cosmopolitan Party' }); });
+  EMAIL_TO.forEach(to => {
+    if (!to) return;
+    // GmailApp.sendEmail só aceita assinatura posicional (recipient, subject, body, options)
+    GmailApp.sendEmail(to, subj, bodyText, { htmlBody: htmlBody, name: 'Cosmopolitan Party' });
+  });
 }
 
 // ─── Helpers para o pedido de dados ───
