@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gerador — Proposta de Decoração · Cosmopolitan Party</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,600&family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+/* ─── SHELL ─── */
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Montserrat',sans-serif;background:#f3eee9;color:#3a3330;-webkit-text-size-adjust:100%}
+.shell{display:grid;grid-template-columns:380px 1fr;min-height:100vh}
+.sidebar{background:#fff;border-right:1px solid #ddd2c8;padding:22px 22px 80px;overflow-y:auto;height:100vh;position:sticky;top:0}
+.main{padding:30px 20px;overflow-x:auto}
+
+.shdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.shdr h1{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:#3a3330}
+.shdr .back{font-size:12px;color:#8a7f78;text-decoration:none}
+.shdr .back:hover{color:#D4537E}
+
+.actions-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+.btn{background:#D4537E;color:#fff;border:none;border-radius:8px;padding:10px 14px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:opacity .15s}
+.btn:hover{opacity:.9}
+.btn.ghost{background:#fff;color:#D4537E;border:1px solid #D4537E}
+.btn.dark{background:#3a3330}
+
+.tabs{display:flex;gap:0;border-bottom:1px solid #ddd2c8;margin-bottom:16px}
+.tab{flex:1;padding:8px 6px;background:none;border:none;font-family:inherit;font-size:11px;font-weight:600;color:#8a7f78;cursor:pointer;border-bottom:2px solid transparent;letter-spacing:.5px;text-transform:uppercase}
+.tab.on{color:#D4537E;border-bottom-color:#D4537E}
+
+.tab-panel{display:none}
+.tab-panel.on{display:block}
+
+.field{margin-bottom:12px}
+.field label{display:block;font-size:10px;font-weight:600;color:#8a7f78;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:5px}
+.field input,.field textarea,.field select{width:100%;border:1px solid #ddd2c8;border-radius:6px;padding:9px 11px;font-family:inherit;font-size:13px;color:#3a3330;background:#fff;outline:none;transition:border-color .15s}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:#D4537E}
+.field textarea{resize:vertical;min-height:60px;font-family:inherit}
+.field .help{font-size:10px;color:#8a7f78;margin-top:4px;font-style:italic}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+
+.items-list{display:flex;flex-direction:column;gap:6px;margin-bottom:8px}
+.item-row{display:flex;gap:6px;align-items:center}
+.item-row input{flex:1}
+.item-row .del{background:#fff;border:1px solid #ddd2c8;color:#8a7f78;width:28px;height:32px;border-radius:6px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.item-row .del:hover{color:#c0143c;border-color:#c0143c}
+.add-item-btn{background:#fff;border:1px dashed #D4537E;color:#D4537E;border-radius:6px;padding:7px;font-family:inherit;font-size:11px;cursor:pointer;width:100%;font-weight:600}
+.add-item-btn:hover{background:#fdf2f8}
+
+.upload-zone{border:2px dashed #ddd2c8;border-radius:8px;padding:24px 16px;text-align:center;background:#fafafa;cursor:pointer;transition:border-color .15s;font-size:12px;color:#8a7f78}
+.upload-zone:hover{border-color:#D4537E}
+.upload-zone.has-img{padding:8px;background:#fff;text-align:left}
+.upload-preview{max-width:100%;max-height:180px;border-radius:4px;display:block;margin-bottom:8px}
+.upload-zone input{display:none}
+
+/* ─── PREVIEW (uses template styles, scaled) ─── */
+.preview-wrap{transform-origin:top left;background:transparent}
+@media(min-width:1500px){.preview-wrap{transform:scale(.65)}}
+@media(min-width:1300px) and (max-width:1499px){.preview-wrap{transform:scale(.55)}}
+@media(max-width:1299px){.preview-wrap{transform:scale(.45)}}
+
+/* Template styles — copiados do template_proposta_decoracao.html */
+.page{width:1080px;height:1528px;background:#EE9C8F;padding:30px;margin:0 0 30px;font-family:'Montserrat',sans-serif;color:#3a3330}
+.frame{background:#ECE6DE;width:100%;height:100%;padding:62px 70px;position:relative}
+.eyebrow{font-size:13px;letter-spacing:6px;color:#D4537E;font-weight:600;text-transform:uppercase;font-family:'Montserrat',sans-serif}
+.title{font-family:'Cormorant Garamond',serif;font-size:64px;font-weight:600;line-height:.98;color:#3a3330;margin-top:6px}
+.title em{font-style:italic;color:#b78a3c}
+.headrow{display:flex;justify-content:space-between;align-items:flex-start}
+.docbox{text-align:right;font-size:13px;color:#8a7f78;line-height:1.9;font-family:'Montserrat',sans-serif}
+.docbox b{color:#3a3330}
+.rule{height:2px;background:#EE9C8F;margin:34px 0 30px}
+.info{display:flex;gap:60px;margin-bottom:34px}
+.info .col{flex:1}
+.label-tmpl{font-size:11px;letter-spacing:4px;text-transform:uppercase;color:#D4537E;font-weight:600;margin-bottom:10px;font-family:'Montserrat',sans-serif}
+.kv{font-size:15px;line-height:2.1;font-family:'Montserrat',sans-serif}
+.kv span{display:inline-block;width:92px;color:#8a7f78}
+.kv b{color:#3a3330;font-weight:600}
+.lede{font-size:16px;line-height:1.85;color:#534a45;margin-bottom:30px;font-family:'Montserrat',sans-serif}
+.lede .serif{font-family:'Cormorant Garamond',serif;font-size:23px;font-style:italic;color:#b78a3c;display:block;margin-bottom:10px}
+.hero{width:100%;height:600px;border-radius:6px;object-fit:cover;display:block;box-shadow:0 10px 30px rgba(58,51,48,.18);background:#ddd2c8}
+.hero.placeholder{display:flex;align-items:center;justify-content:center;color:#8a7f78;font-style:italic;font-size:18px;font-family:'Cormorant Garamond',serif}
+.caption{font-size:12px;color:#8a7f78;font-style:italic;text-align:center;margin-top:14px;line-height:1.6}
+.sectitle{font-family:'Cormorant Garamond',serif;font-size:38px;font-weight:600;color:#3a3330;margin-bottom:6px}
+.sectitle em{font-style:italic;color:#b78a3c}
+.cols{display:flex;gap:46px;margin-top:26px}
+.card-tmpl{flex:1}
+.card-tmpl h3{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:600;color:#D4537E;margin-bottom:14px}
+.card-tmpl ul{list-style:none}
+.card-tmpl li{font-size:15px;line-height:1.5;padding:9px 0 9px 26px;position:relative;border-bottom:1px solid #ddd2c8;font-family:'Montserrat',sans-serif}
+.card-tmpl li:before{content:"✦";position:absolute;left:0;color:#b78a3c;font-size:12px;top:11px}
+.invest{margin-top:46px;background:#fff;border:1px solid #ddd2c8;border-radius:8px;padding:30px 38px;display:flex;justify-content:space-between;align-items:center}
+.invest .lbl{font-size:12px;letter-spacing:4px;text-transform:uppercase;color:#D4537E;font-weight:600;margin-bottom:6px;font-family:'Montserrat',sans-serif}
+.invest .desc{font-size:21px;font-weight:600;font-family:'Montserrat',sans-serif}
+.invest .desc small{display:block;font-size:13px;color:#8a7f78;font-weight:400;margin-top:4px}
+.invest .val{font-family:'Cormorant Garamond',serif;font-size:46px;font-weight:600;color:#D4537E}
+.note{margin-top:30px;font-size:12.5px;line-height:1.7;color:#8a7f78;font-style:italic;border-left:3px solid #EE9C8F;padding-left:16px;font-family:'Montserrat',sans-serif}
+.cond{margin-top:34px}
+.cond p{font-size:14px;line-height:1.9;color:#534a45;font-family:'Montserrat',sans-serif}
+.cond p b{color:#3a3330}
+.cond .ftext{margin-top:18px;font-style:italic;color:#b78a3c;font-family:'Cormorant Garamond',serif;font-size:20px}
+.footer-tmpl{position:absolute;bottom:46px;left:70px;right:70px;text-align:center;font-size:12px;color:#8a7f78;border-top:1px solid #ddd2c8;padding-top:18px;font-family:'Montserrat',sans-serif}
+.footer-tmpl .brand{font-family:'Cormorant Garamond',serif;font-size:18px;letter-spacing:2px;color:#3a3330}
+
+/* Mobile shell */
+@media(max-width:900px){
+  .shell{grid-template-columns:1fr}
+  .sidebar{height:auto;position:static;border-right:none;border-bottom:1px solid #ddd2c8}
+  .preview-wrap{transform:scale(.32)}
+}
+
+/* PRINT — só mostra as 2 páginas */
+@media print{
+  @page{size:1080px 1528px;margin:0}
+  body{background:transparent}
+  .sidebar,.shdr,.actions-bar{display:none!important}
+  .main{padding:0!important;overflow:visible!important}
+  .preview-wrap{transform:none!important}
+  .page{page-break-after:always;margin:0}
+  .page:last-of-type{page-break-after:auto}
+}
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <!-- ─── SIDEBAR — FORMULÁRIO ─── -->
+  <aside class="sidebar">
+    <div class="shdr">
+      <h1>Proposta de Decoração</h1>
+      <a href="/" class="back">← Dashboard</a>
+    </div>
+
+    <div class="actions-bar">
+      <button class="btn" onclick="window.print()">🖨 Imprimir / PDF</button>
+      <button class="btn ghost" onclick="resetForm()">Limpar</button>
+    </div>
+
+    <div class="tabs">
+      <button class="tab on" onclick="swT('t-dados',this)">Dados</button>
+      <button class="tab" onclick="swT('t-foto',this)">Foto</button>
+      <button class="tab" onclick="swT('t-itens',this)">Itens</button>
+      <button class="tab" onclick="swT('t-fim',this)">Fim</button>
+    </div>
+
+    <!-- TAB: Dados -->
+    <div class="tab-panel on" id="t-dados">
+      <div class="field"><label>Nº documento</label><input id="f_num" placeholder="ORC-DEC-2026-0040"></div>
+      <div class="row2">
+        <div class="field"><label>Emitido</label><input type="date" id="f_emitido"></div>
+        <div class="field"><label>Válido até</label><input type="date" id="f_validade"></div>
+      </div>
+      <div class="field"><label>Cliente — Nome</label><input id="f_cliente" placeholder="Isilda"></div>
+      <div class="field"><label>Evento — Ocasião</label><input id="f_ocasiao" placeholder="Festa de 40 Anos"></div>
+      <div class="row2">
+        <div class="field"><label>Data evento</label><input id="f_data_ev" placeholder="a confirmar"></div>
+        <div class="field"><label>Tema</label><input id="f_tema" placeholder="Preto · Dourado · Champanhe"></div>
+      </div>
+      <div class="field">
+        <label>Frase de abertura (itálico)</label>
+        <input id="f_lede_serif" placeholder="Uma noite elegante, intimista e cheia de brilho.">
+      </div>
+      <div class="field">
+        <label>Texto introdutório</label>
+        <textarea id="f_lede" rows="4" placeholder="Pensámos cada detalhe para transformar o espaço..."></textarea>
+      </div>
+    </div>
+
+    <!-- TAB: Foto -->
+    <div class="tab-panel" id="t-foto">
+      <div class="field">
+        <label>Foto principal (hero)</label>
+        <label class="upload-zone" id="dropZone">
+          <input type="file" id="f_foto" accept="image/*">
+          <div id="dropMsg">Clica ou arrasta uma imagem<br><span style="font-size:10px">(JPG/PNG, ideal 1080×600)</span></div>
+        </label>
+      </div>
+      <div class="field">
+        <label>Legenda da foto</label>
+        <textarea id="f_caption" rows="2" placeholder="Referência do conceito — ambiente final será ajustado..."></textarea>
+      </div>
+    </div>
+
+    <!-- TAB: Itens -->
+    <div class="tab-panel" id="t-itens">
+      <div class="field">
+        <label>Cenário / Palco — itens</label>
+        <div class="items-list" id="items_palco"></div>
+        <button class="add-item-btn" onclick="addItem('palco')">+ Adicionar item</button>
+      </div>
+      <div class="field" style="margin-top:18px">
+        <label>Mesa Posta — itens</label>
+        <div class="items-list" id="items_mesa"></div>
+        <button class="add-item-btn" onclick="addItem('mesa')">+ Adicionar item</button>
+      </div>
+    </div>
+
+    <!-- TAB: Fim (investimento + condições) -->
+    <div class="tab-panel" id="t-fim">
+      <div class="field">
+        <label>Investimento — Descrição</label>
+        <input id="f_inv_desc" placeholder="Decoração — Palco + Mesas">
+      </div>
+      <div class="field">
+        <label>Sub-descrição (cinzento)</label>
+        <input id="f_inv_sub" placeholder="Montagem, styling e desmontagem incluídos">
+      </div>
+      <div class="field"><label>Valor (€)</label><input id="f_inv_val" type="number" step="0.01" placeholder="1250"></div>
+      <div class="field">
+        <label>Nota (texto cinza após preço)</label>
+        <textarea id="f_nota" rows="3" placeholder="Catering, aluguer de espaço e limpeza são orçamentados à parte..."></textarea>
+      </div>
+      <div class="field">
+        <label>Condições (HTML simples, &lt;b&gt; permitido)</label>
+        <textarea id="f_cond" rows="6" placeholder="<b>Validade:</b> ..."></textarea>
+      </div>
+      <div class="field">
+        <label>Frase final (itálico dourado)</label>
+        <input id="f_ftext" placeholder="Tratamos de tudo. Só precisa de aparecer e celebrar.">
+      </div>
+    </div>
+  </aside>
+
+  <!-- ─── PREVIEW ─── -->
+  <main class="main">
+    <div class="preview-wrap">
+
+      <!-- PAGE 1 -->
+      <div class="page"><div class="frame">
+        <div class="headrow">
+          <div>
+            <div class="eyebrow">Cosmopolitan Party</div>
+            <div class="title">Proposta de <em>Decoração</em></div>
+          </div>
+          <div class="docbox">
+            Nº <b id="p_num">ORC-DEC-2026-0001</b><br>
+            Emitido <b id="p_emitido">—</b><br>
+            Válido até <b id="p_validade">—</b>
+          </div>
+        </div>
+        <div class="rule"></div>
+        <div class="info">
+          <div class="col">
+            <div class="label-tmpl">Cliente</div>
+            <div class="kv"><span>Nome</span><b id="p_cliente">—</b></div>
+          </div>
+          <div class="col">
+            <div class="label-tmpl">Evento</div>
+            <div class="kv"><span>Ocasião</span><b id="p_ocasiao">—</b></div>
+            <div class="kv"><span>Data</span><b id="p_data_ev">—</b></div>
+            <div class="kv"><span>Tema</span><b id="p_tema">—</b></div>
+          </div>
+        </div>
+        <div class="lede">
+          <span class="serif" id="p_lede_serif">—</span>
+          <span id="p_lede">—</span>
+        </div>
+        <img class="hero" id="p_hero" alt="" style="display:none">
+        <div class="hero placeholder" id="p_hero_placeholder">Foto principal — adicione na tab "Foto"</div>
+        <div class="caption" id="p_caption"></div>
+        <div class="footer-tmpl">
+          <div class="brand">Cosmopolitan Party</div>
+          cosmopolitanparty.loures@gmail.com · 926 720 762
+        </div>
+      </div></div>
+
+      <!-- PAGE 2 -->
+      <div class="page"><div class="frame">
+        <div class="eyebrow">O que está incluído</div>
+        <div class="sectitle">Palco &amp; <em>Mesa Posta</em></div>
+        <div class="cols">
+          <div class="card-tmpl">
+            <h3>Cenário / Palco</h3>
+            <ul id="p_palco"></ul>
+          </div>
+          <div class="card-tmpl">
+            <h3>Mesa Posta</h3>
+            <ul id="p_mesa"></ul>
+          </div>
+        </div>
+        <div class="invest">
+          <div>
+            <div class="lbl">Investimento</div>
+            <div class="desc" id="p_inv_desc">—
+              <small id="p_inv_sub"></small>
+            </div>
+          </div>
+          <div class="val" id="p_inv_val">—</div>
+        </div>
+        <div class="note" id="p_nota"></div>
+        <div class="cond">
+          <div class="label-tmpl" style="margin-bottom:14px">Condições &amp; Próximos passos</div>
+          <p id="p_cond"></p>
+          <p class="ftext" id="p_ftext"></p>
+        </div>
+        <div class="footer-tmpl">
+          <div class="brand">Cosmopolitan Party</div>
+          cosmopolitanparty.loures@gmail.com · 926 720 762
+        </div>
+      </div></div>
+
+    </div>
+  </main>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+
+// ─── DEFAULTS ───
+const DEFAULTS = {
+  num: gerarNumero(),
+  emitido: hojeISO(),
+  validade: maisDiasISO(15),
+  cliente: '',
+  ocasiao: '',
+  data_ev: 'a confirmar',
+  tema: '',
+  lede_serif: 'Uma proposta pensada para esta ocasião.',
+  lede: 'Pensámos cada detalhe para transformar o espaço numa atmosfera única e à medida da festa.',
+  caption: '',
+  palco: ['Cenário principal com lettering personalizado','Arco de balões','Iluminação ambiente'],
+  mesa: ['Mesas postas com toalha e centros','Velas e detalhes decorativos','Iluminação quente sobre a sala'],
+  inv_desc: 'Decoração — Palco + Mesas',
+  inv_sub: 'Montagem, styling e desmontagem incluídos',
+  inv_val: '',
+  nota: 'Catering, aluguer de espaço e limpeza são orçamentados à parte. Esta proposta refere-se exclusivamente ao serviço de decoração.',
+  cond: '<b>Validade:</b> proposta válida até à data indicada, sujeita à disponibilidade.<br><b>Reserva:</b> confirma-se após adjudicação e pagamento do sinal.<br><b>Pagamento:</b> 50% na adjudicação · 50% até 7 dias antes do evento.<br><b>Antecedência mínima:</b> 15 dias.',
+  ftext: 'Tratamos de tudo. Só precisa de aparecer e celebrar.'
+};
+
+function hojeISO(){const d=new Date();return d.toISOString().slice(0,10);}
+function maisDiasISO(n){const d=new Date();d.setDate(d.getDate()+n);return d.toISOString().slice(0,10);}
+function fmtPt(iso){if(!iso)return '—';const [y,m,d]=iso.split('-');return `${d}/${m}/${y}`;}
+function gerarNumero(){
+  const k='cp_orc_dec_seq_'+(new Date().getFullYear());
+  let n=parseInt(localStorage.getItem(k)||'1');
+  const ano=new Date().getFullYear();
+  return `ORC-DEC-${ano}-${String(n).padStart(4,'0')}`;
+}
+function consumirNumero(){
+  const k='cp_orc_dec_seq_'+(new Date().getFullYear());
+  let n=parseInt(localStorage.getItem(k)||'1');
+  localStorage.setItem(k,String(n+1));
+}
+
+// ─── TABS ───
+function swT(panel,btn){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('on'));
+  $(panel).classList.add('on');btn.classList.add('on');
+}
+
+// ─── ITENS DINÂMICOS ───
+function addItem(grupo,texto=''){
+  const list=$('items_'+grupo);
+  const row=document.createElement('div');
+  row.className='item-row';
+  row.innerHTML=`<input value="${texto.replace(/"/g,'&quot;')}" oninput="render()"><button class="del" onclick="this.parentElement.remove();render()">✕</button>`;
+  list.appendChild(row);
+}
+function getItens(grupo){
+  return Array.from($('items_'+grupo).querySelectorAll('input')).map(i=>i.value.trim()).filter(Boolean);
+}
+
+// ─── UPLOAD FOTO ───
+$('f_foto').addEventListener('change', e=>{
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    const url=ev.target.result;
+    const img=$('p_hero');img.src=url;img.style.display='block';
+    $('p_hero_placeholder').style.display='none';
+    $('dropZone').classList.add('has-img');
+    $('dropMsg').innerHTML=`<img class="upload-preview" src="${url}"><div style="font-size:11px;color:#D4537E;font-weight:600">Trocar foto</div>`;
+  };
+  r.readAsDataURL(f);
+});
+// Drag-drop
+const dz=$('dropZone');
+['dragenter','dragover'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.style.borderColor='#D4537E';}));
+['dragleave','drop'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.style.borderColor='';}));
+dz.addEventListener('drop',e=>{
+  e.preventDefault();
+  const f=e.dataTransfer.files[0];if(!f||!f.type.startsWith('image/'))return;
+  $('f_foto').files=e.dataTransfer.files;
+  $('f_foto').dispatchEvent(new Event('change'));
+});
+
+// ─── RENDER LIVE ───
+function render(){
+  $('p_num').textContent=$('f_num').value||DEFAULTS.num;
+  $('p_emitido').textContent=fmtPt($('f_emitido').value);
+  $('p_validade').textContent=fmtPt($('f_validade').value);
+  $('p_cliente').textContent=$('f_cliente').value||'—';
+  $('p_ocasiao').textContent=$('f_ocasiao').value||'—';
+  $('p_data_ev').textContent=$('f_data_ev').value||'—';
+  $('p_tema').textContent=$('f_tema').value||'—';
+  $('p_lede_serif').textContent=$('f_lede_serif').value||'';
+  $('p_lede').textContent=$('f_lede').value||'';
+  $('p_caption').textContent=$('f_caption').value||'';
+  // Itens
+  $('p_palco').innerHTML=getItens('palco').map(t=>`<li>${escapeHtml(t)}</li>`).join('');
+  $('p_mesa').innerHTML=getItens('mesa').map(t=>`<li>${escapeHtml(t)}</li>`).join('');
+  // Invest
+  $('p_inv_desc').firstChild.textContent=$('f_inv_desc').value||'—';
+  $('p_inv_sub').textContent=$('f_inv_sub').value||'';
+  const val=parseFloat($('f_inv_val').value);
+  $('p_inv_val').textContent=isNaN(val)?'—':val.toLocaleString('pt-PT',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';
+  // Nota / cond / ftext
+  $('p_nota').textContent=$('f_nota').value||'';
+  $('p_cond').innerHTML=$('f_cond').value||'';
+  $('p_ftext').textContent=$('f_ftext').value||'';
+}
+function escapeHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+// ─── INIT ───
+function fillForm(d){
+  $('f_num').value=d.num; $('f_emitido').value=d.emitido; $('f_validade').value=d.validade;
+  $('f_cliente').value=d.cliente; $('f_ocasiao').value=d.ocasiao;
+  $('f_data_ev').value=d.data_ev; $('f_tema').value=d.tema;
+  $('f_lede_serif').value=d.lede_serif; $('f_lede').value=d.lede;
+  $('f_caption').value=d.caption;
+  $('items_palco').innerHTML=''; (d.palco||[]).forEach(t=>addItem('palco',t));
+  $('items_mesa').innerHTML='';  (d.mesa||[]).forEach(t=>addItem('mesa',t));
+  $('f_inv_desc').value=d.inv_desc; $('f_inv_sub').value=d.inv_sub; $('f_inv_val').value=d.inv_val;
+  $('f_nota').value=d.nota; $('f_cond').value=d.cond; $('f_ftext').value=d.ftext;
+  render();
+}
+function resetForm(){
+  if(!confirm('Limpar tudo e voltar aos valores padrão?'))return;
+  fillForm({...DEFAULTS,num:gerarNumero(),emitido:hojeISO(),validade:maisDiasISO(15)});
+}
+
+// Pre-fill via URL params (vindos do dashboard, ex: ?nome=X&tema=Y)
+function fromUrl(){
+  const p=new URLSearchParams(location.search);
+  const d={...DEFAULTS};
+  if(p.get('cliente'))d.cliente=p.get('cliente');
+  if(p.get('ocasiao'))d.ocasiao=p.get('ocasiao');
+  if(p.get('data'))d.data_ev=p.get('data');
+  if(p.get('tema'))d.tema=p.get('tema');
+  return d;
+}
+
+// Atualizar render a cada input
+document.querySelectorAll('input,textarea').forEach(el=>{
+  if(el.id&&el.id.startsWith('f_'))el.addEventListener('input',render);
+});
+
+// Boot
+fillForm(fromUrl());
+</script>
+
+</body>
+</html>
