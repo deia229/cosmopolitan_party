@@ -296,14 +296,16 @@ ${obs || '-'}`.trim();
   const msgPedido =
 `Olá ${primeiroNome}, aqui Andreia da Cosmopolitan Party. A sua festa de ${dataPt} ficou reservada.
 
-Para confirmar a reserva falta só o contrato — preciso de:
+Para confirmar a reserva falta apenas o contrato — assim para prosseguirmos precisamos de:
 • Nome completo
 • Foto/cópia do documento (CC ou passaporte)
 • NIF
 • Morada
 
-Mal me envie, mando o contrato. A assinatura é online — em 1 minuto está feito.
-Qualquer dúvida é só dizer.`;
+Assim que tenha toda a informação necessária, enviamos o contrato.
+A assinatura é online pelo que não será necessário se deslocar.
+
+Qualquer dúvida estamos ao dispor.`;
   const telNorm = normalizePtPhone_(tel);
   const waLink = telNorm ? `https://wa.me/${telNorm}?text=${encodeURIComponent(msgPedido)}` : '';
 
