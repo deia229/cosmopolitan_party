@@ -254,6 +254,7 @@ function onFormSubmit(e) {
     ? `${Math.floor(duracaoMin / 60)}h${duracaoMin % 60 ? String(duracaoMin % 60).padStart(2,'0') : ''}`
     : `${duracaoMin}min`;
 
+  // Versão para o evento do Google Calendar (renderiza emojis bem)
   const descricao =
 `🎉 COSMOPOLITAN PARTY — Detalhes da Festa
 
@@ -274,6 +275,29 @@ function onFormSubmit(e) {
 
 📝 Observações:
 ${obs || '—'}`.trim();
+
+  // Versão sem emojis para o corpo plain-text do email (alguns clientes tipo Outlook
+  // não conseguem renderizar emojis em texto puro e mostram tudo como ������)
+  const descricaoPlain =
+`COSMOPOLITAN PARTY — Detalhes da Festa
+
+Data: ${dataLbl}
+Horário: ${horaIniLbl} – ${horaFimLbl} (${duracaoLbl})
+
+Cliente: ${nome || '-'}
+Telefone: ${tel || '-'}
+
+Valores
+- Festa: ${fmtMoney_(valor)}
+- Caução: ${fmtMoney_(cau)}
+- Limpeza: ${fmtMoney_(limp)}
+- Pago: ${fmtMoney_(pago)}
+- Em falta: ${fmtMoney_((+valor || 0) - (+pago || 0))}
+
+Limpeza: ${quemLimpa || '-'}
+
+Observações:
+${obs || '-'}`.trim();
 
   const cal = CalendarApp.getCalendarById(CAL_ID);
   if (!cal) throw new Error(`Não consegui aceder ao calendário: ${CAL_ID}`);
@@ -308,9 +332,9 @@ Qualquer dúvida é só dizer 🙌`;
   const telNorm = normalizePtPhone_(tel);
   const waLink = telNorm ? `https://wa.me/${telNorm}?text=${encodeURIComponent(msgPedido)}` : '';
 
-  const subj = `✅ Festa criada no calendário: ${titulo}`;
-  const bodyText = `${descricao}\n\n🔗 Link do evento: ${linkEvento}` +
-    (waLink ? `\n\n💬 Pedido de dados ao cliente (1 clique):\n${waLink}` : '\n\n⚠️ Sem telefone válido — pedido de dados não pode ser enviado.');
+  const subj = `Festa criada no calendário: ${titulo}`;
+  const bodyText = `${descricaoPlain}\n\nLink do evento: ${linkEvento}` +
+    (waLink ? `\n\nPedido de dados ao cliente (1 clique):\n${waLink}` : '\n\nSem telefone válido — pedido de dados tem de ser enviado manualmente.');
 
   // Email HTML com botão "Pedir dados ao cliente" bem visível
   const htmlBody =
