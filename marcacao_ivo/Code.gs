@@ -208,9 +208,10 @@ function onFormSubmit(e) {
   const cols = getCols_(sh, [
     HDR_DATA, HDR_INICIO, HDR_FIM,
     HDR_NOME, HDR_TEL, HDR_VALOR, HDR_CAUCAO, HDR_LIMPEZA, HDR_PAGO, HDR_OBS,
-    HDR_QUEM_LIMPA,
     HDR_LINK_A, HDR_LINK_F, HDR_SYNC
   ]);
+  // Quem limpa é opcional — se a coluna não existir, ignora sem rebentar
+  const colsOpt = getColsOpt_(sh, [HDR_QUEM_LIMPA]);
 
   const syncVal = sh.getRange(row, cols[HDR_SYNC]).getValue();
   if (String(syncVal).trim().toUpperCase() === 'OK') return;
@@ -240,7 +241,7 @@ function onFormSubmit(e) {
   const limp  = sh.getRange(row, cols[HDR_LIMPEZA]).getValue();
   const pago  = sh.getRange(row, cols[HDR_PAGO]).getValue();
   const obs   = sh.getRange(row, cols[HDR_OBS]).getValue();
-  const quemLimpa = sh.getRange(row, cols[HDR_QUEM_LIMPA]).getValue();
+  const quemLimpa = colsOpt[HDR_QUEM_LIMPA] ? sh.getRange(row, colsOpt[HDR_QUEM_LIMPA]).getValue() : '';
 
   const titulo = `Festa — ${nome || 'Cliente'} (Flamenga)`;
 
@@ -407,6 +408,17 @@ function getCols_(sheet, headersNeeded) {
     const idx = headers.indexOf(String(h).trim());
     if (idx === -1) throw new Error(`Coluna "${h}" não encontrada.`);
     out[h] = idx + 1;
+  });
+  return out;
+}
+// Versão opcional — se a coluna não existir, devolve undefined em vez de rebentar
+function getColsOpt_(sheet, headersNeeded) {
+  const lastCol = sheet.getLastColumn();
+  const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(h => String(h).trim());
+  const out = {};
+  headersNeeded.forEach(h => {
+    const idx = headers.indexOf(String(h).trim());
+    if (idx >= 0) out[h] = idx + 1;
   });
   return out;
 }
