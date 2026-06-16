@@ -294,15 +294,15 @@ ${obs || '—'}`.trim();
   const primeiroNome = String(nome || '').trim().split(/\s+/)[0] || 'cliente';
   const msgPedido =
 `Olá ${primeiroNome} 👋
-Aqui Andreia da Cosmopolitan Party. A sua festa de ${dataPt} está confirmada 🎉
+Aqui Andreia da Cosmopolitan Party. A sua festa de ${dataPt} ficou reservada 🎉
 
-Falta só preencher o contrato — preciso de:
+Para confirmar a reserva falta só o contrato — preciso de:
 • Nome completo
 • Foto/cópia do documento (CC ou passaporte)
 • NIF
 • Morada
 
-Mal me envie, mando o contrato para assinatura.
+Mal me envie, mando o contrato. A assinatura é online — em 1 minuto está feito ✍️
 Qualquer dúvida é só dizer 🙌`;
   const telNorm = normalizePtPhone_(tel);
   const waLink = telNorm ? `https://wa.me/${telNorm}?text=${encodeURIComponent(msgPedido)}` : '';
