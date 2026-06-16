@@ -363,6 +363,144 @@ function escapeHtml_(s) {
     .replace(/"/g, '&quot;');
 }
 
+/***** LEMBRETES DIÁRIOS — corre via acionador temporal (todos os dias, ex: 9h)
+ *     Envia email à Andreia com lista de WhatsApps prontos a enviar:
+ *       D-14: confirmar nº de convidados
+ *       D-7:  cobrar pagamento em falta (só dispara se valor em falta > 0)
+ *       D-1:  confirmação do dia seguinte (+ cobrança se em falta)
+ *****/
+const LEMBRETES_EMAIL_TO = ['ramalheiroa@gmail.com'];
+const LEMBRETES_MBWAY = '964 505 429';
+
+function enviarLembretesDiarios() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName(SHEET_NAME);
+  if (!sh) return;
+
+  const data = sh.getDataRange().getValues();
+  if (data.length <= 1) return;
+  const headers = data[0].map(h => String(h).trim());
+  const rows = data.slice(1);
+  const colOf = (row, name) => {
+    const i = headers.indexOf(name);
+    return i >= 0 ? row[i] : '';
+  };
+
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+
+  const lembretes = { d14: [], d7: [], d1: [] };
+
+  rows.forEach(row => {
+    const nome = String(colOf(row, HDR_NOME) || '').trim();
+    const tel  = String(colOf(row, HDR_TEL)  || '').trim();
+    const dataFesta = colOf(row, HDR_DATA);
+    if (!nome || !dataFesta) return;
+    const evDate = normalizeDate_(dataFesta);
+    if (!evDate) return;
+    evDate.setHours(0, 0, 0, 0);
+    const diffDays = Math.round((evDate.getTime() - today.getTime()) / 86400000);
+    if (![14, 7, 1].includes(diffDays)) return;
+
+    const horaIni = vst_normHora_(colOf(row, HDR_INICIO));
+    const horaFim = vst_normHora_(colOf(row, HDR_FIM));
+    const valor = parseFloat(colOf(row, HDR_VALOR)) || 0;
+    const pago  = parseFloat(colOf(row, HDR_PAGO))  || 0;
+    const extra = parseFloat(colOf(row, 'Pago Extra')) || 0;
+    const emFalta = Math.max(0, valor - pago - extra);
+    const dataPt = formatarDataPt_(dataFesta);
+    const primeiroNome = nome.split(/\s+/)[0] || 'cliente';
+
+    let msg = null;
+    if (diffDays === 14) {
+      msg =
+`Olá ${primeiroNome}, aqui Andreia da Cosmopolitan Party. A sua festa é daqui a 14 dias.
+
+Pode-me confirmar o número aproximado de convidados?
+
+Qualquer dúvida estamos ao dispor.`;
+    } else if (diffDays === 7) {
+      if (emFalta <= 0) return; // só dispara D-7 se houver valor em falta
+      msg =
+`Olá ${primeiroNome}, aqui Andreia da Cosmopolitan Party. A sua festa é daqui a uma semana — ${dataPt} das ${horaIni} às ${horaFim}.
+
+Falta receber ${emFalta.toFixed(2).replace('.', ',')} € do pagamento. Pode enviar por MBWay para ${LEMBRETES_MBWAY} e enviar-nos o comprovativo.
+
+Qualquer dúvida estamos ao dispor.`;
+    } else if (diffDays === 1) {
+      const linhaPag = emFalta > 0
+        ? `\n\nAinda falta o pagamento de ${emFalta.toFixed(2).replace('.', ',')} €. Pode enviar por MBWay para ${LEMBRETES_MBWAY} e mandar-nos o comprovativo antes da festa.`
+        : '';
+      msg =
+`Olá ${primeiroNome}, aqui Andreia da Cosmopolitan Party. A sua festa é amanhã, ${dataPt} das ${horaIni} às ${horaFim}.${linhaPag}
+
+Qualquer assunto urgente é só ligar — 964 505 429 (Ivo) ou 930 666 370 (Érica).`;
+    }
+    if (!msg) return;
+
+    const telNorm = normalizePtPhone_(tel);
+    const waLink = telNorm ? `https://wa.me/${telNorm}?text=${encodeURIComponent(msg)}` : '';
+    const item = { nome, tel, telNorm, dataPt, horaIni, horaFim, emFalta, waLink };
+    if (diffDays === 14) lembretes.d14.push(item);
+    else if (diffDays === 7) lembretes.d7.push(item);
+    else if (diffDays === 1) lembretes.d1.push(item);
+  });
+
+  const total = lembretes.d14.length + lembretes.d7.length + lembretes.d1.length;
+  if (total === 0) return; // sem ruído nos dias sem lembretes
+
+  const seccao = (titulo, sub, arr) => {
+    if (!arr.length) return '';
+    let h = `<div style="margin-bottom:18px"><div style="font-size:13px;font-weight:700;color:#e0187a;margin-bottom:4px">${escapeHtml_(titulo)}</div><div style="font-size:11px;color:#8a5a70;margin-bottom:10px">${escapeHtml_(sub)}</div>`;
+    arr.forEach(i => {
+      const linhaFalta = i.emFalta > 0 ? ` · <span style="color:#c0143c;font-weight:600">${i.emFalta.toFixed(2).replace('.', ',')} € em falta</span>` : '';
+      const btn = i.waLink
+        ? `<a href="${i.waLink}" style="display:inline-block;background:#25D366;color:#fff;text-decoration:none;padding:8px 14px;border-radius:8px;font-weight:600;font-size:12px;margin-left:8px">Enviar WhatsApp</a>`
+        : `<span style="color:#c0143c;font-size:11px;margin-left:8px">sem telefone válido</span>`;
+      h += `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border:1px solid #f0c8dc;border-radius:9px;margin-bottom:6px;background:#fff"><div><div style="font-size:13px;font-weight:600">${escapeHtml_(i.nome)}</div><div style="font-size:11px;color:#8a5a70">${escapeHtml_(i.dataPt)} · ${escapeHtml_(i.horaIni || '')}–${escapeHtml_(i.horaFim || '')}${linhaFalta}</div></div>${btn}</div>`;
+    });
+    h += '</div>';
+    return h;
+  };
+
+  const dataHoje = Utilities.formatDate(today, TZ, 'EEEE, dd/MM/yyyy');
+  const subj = `Lembretes WhatsApp para hoje (${total}) — ${Utilities.formatDate(today, TZ, 'dd/MM/yyyy')}`;
+  const htmlBody =
+    '<div style="font-family:Arial,sans-serif;max-width:600px;color:#1a0010">' +
+      '<div style="background:linear-gradient(135deg,#e0187a,#ff4da6);padding:18px 20px;border-radius:12px 12px 0 0;color:#fff">' +
+        '<div style="font-size:11px;letter-spacing:3px;text-transform:uppercase;opacity:.85">Cosmopolitan Party</div>' +
+        `<div style="font-size:20px;font-weight:700;margin-top:6px">Lembretes para enviar hoje (${total})</div>` +
+        `<div style="font-size:12px;opacity:.9;margin-top:4px;text-transform:capitalize">${escapeHtml_(dataHoje)}</div>` +
+      '</div>' +
+      '<div style="border:1px solid #f0c8dc;border-top:none;border-radius:0 0 12px 12px;padding:20px;background:#fdf2f8">' +
+        seccao(`D-14 (${lembretes.d14.length})`, 'Confirmar número de convidados', lembretes.d14) +
+        seccao(`D-7 (${lembretes.d7.length})`, 'Cobrar pagamento em falta', lembretes.d7) +
+        seccao(`D-1 (${lembretes.d1.length})`, 'Confirmação do dia seguinte', lembretes.d1) +
+        '<p style="font-size:11px;color:#8a5a70;margin-top:14px;border-top:1px solid #f0c8dc;padding-top:10px">Clica em cada botão verde para abrir o WhatsApp com a mensagem pronta. Não envia automaticamente — tens de carregar em Enviar.</p>' +
+      '</div>' +
+    '</div>';
+
+  // Plain text fallback simples
+  const textParts = [`Lembretes para hoje (${total}):`];
+  if (lembretes.d14.length) {
+    textParts.push(`\nD-14 — Confirmar convidados (${lembretes.d14.length}):`);
+    lembretes.d14.forEach(i => textParts.push(`  ${i.nome} · ${i.dataPt}` + (i.waLink ? `\n    ${i.waLink}` : '')));
+  }
+  if (lembretes.d7.length) {
+    textParts.push(`\nD-7 — Cobrar em falta (${lembretes.d7.length}):`);
+    lembretes.d7.forEach(i => textParts.push(`  ${i.nome} · ${i.dataPt} · ${i.emFalta.toFixed(2)} € em falta` + (i.waLink ? `\n    ${i.waLink}` : '')));
+  }
+  if (lembretes.d1.length) {
+    textParts.push(`\nD-1 — Festa amanhã (${lembretes.d1.length}):`);
+    lembretes.d1.forEach(i => textParts.push(`  ${i.nome} · ${i.dataPt}` + (i.waLink ? `\n    ${i.waLink}` : '')));
+  }
+  const bodyText = textParts.join('\n');
+
+  LEMBRETES_EMAIL_TO.forEach(to => {
+    if (!to) return;
+    GmailApp.sendEmail(to, subj, bodyText, { htmlBody: htmlBody, name: 'Cosmopolitan Party' });
+  });
+}
+
 
 /***** DISPONIBILIDADE (página HTML do Ivo) *****/
 function verificarDisponibilidade(data, inicio, fim) {
