@@ -1966,9 +1966,7 @@ function irCkFromEv(){
 const MODELO_GERAL=[
   {tipo:'geral',ref:'criacao',offset:0,  cat:'Contrato',     emoji:'📄', urgencia:'alta',  tarefa:'Enviar contrato ao cliente (ASAP)'},
   {tipo:'geral',ref:'criacao',offset:5,  cat:'Contrato',     emoji:'✍️', urgencia:'alta',  tarefa:'Confirmar assinatura do contrato'},
-  {tipo:'geral',ref:'evento', offset:-14,cat:'Cliente',      emoji:'📞', urgencia:'media', tarefa:'Enviar confirmação final + nº convidados'},
   {tipo:'geral',ref:'evento', offset:-7, cat:'Pagamento',    emoji:'💶', urgencia:'alta',  tarefa:'Confirmar pagamento do sinal'},
-  {tipo:'geral',ref:'evento', offset:-7, cat:'Cliente',      emoji:'📞', urgencia:'media', tarefa:'Recordar regras e horário'},
   {tipo:'geral',ref:'evento', offset:-2, cat:'Espaço',       emoji:'🏠', urgencia:'media', tarefa:'Verificar estado do espaço'},
   {tipo:'geral',ref:'evento', offset:0,  cat:'Dia do evento',emoji:'🎉', urgencia:'alta',  tarefa:'Receber cliente'},
   {tipo:'geral',ref:'evento', offset:0,  cat:'Dia do evento',emoji:'🧹', urgencia:'media', tarefa:'Limpeza e fecho do espaço'},
@@ -1977,6 +1975,7 @@ const MODELO_GERAL=[
 const MODELO_DECCAT=[
   {tipo:'deccat',ref:'evento',offset:-30,fase:'1 mês antes',     cat:'Decoração',emoji:'🎨', urgencia:'alta',  tarefa:'Fechar e encomendar a decoração'},
   {tipo:'deccat',ref:'evento',offset:-30,fase:'1 mês antes',     cat:'Catering', emoji:'🍽️', urgencia:'alta',  tarefa:'Fechar o menu de catering'},
+  {tipo:'deccat',ref:'evento',offset:-14,fase:'2 semanas antes', cat:'Catering', emoji:'🍽️', urgencia:'alta',  tarefa:'Confirmar nº de convidados com o cliente'},
   {tipo:'deccat',ref:'evento',offset:-14,fase:'2 semanas antes', cat:'Catering', emoji:'🍽️', urgencia:'alta',  tarefa:'Encomendar o catering'},
   {tipo:'deccat',ref:'evento',offset:-14,fase:'2 semanas antes', cat:'Decoração',emoji:'🎨', urgencia:'media', tarefa:'Confirmar entrega de materiais de decoração'},
   {tipo:'deccat',ref:'evento',offset:-2, fase:'2 dias antes',    cat:'Decoração',emoji:'🎨', urgencia:'media', tarefa:'Fazer compras de decoração'},
