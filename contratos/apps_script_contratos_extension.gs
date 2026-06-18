@@ -16,6 +16,22 @@
 // SUBSTITUI a função doGet(e) existente por esta:
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Helper — localiza linha por ID, robusto a reordenação da Sheet.
+function findRowByContractId_(sh, contractId, rowHint) {
+  if (rowHint && rowHint >= 2) {
+    var hintVal = (sh.getRange(rowHint, CONFIG.COLS.idContrato).getDisplayValue() || '').toString().trim();
+    if (hintVal === contractId) return rowHint;
+  }
+  var lastRow = sh.getLastRow();
+  if (lastRow < 2) return -1;
+  var n = lastRow - 1;
+  var ids = sh.getRange(2, CONFIG.COLS.idContrato, n, 1).getDisplayValues();
+  for (var i = 0; i < n; i++) {
+    if ((ids[i][0] || '').toString().trim() === contractId) return i + 2;
+  }
+  return -1;
+}
+
 function doGet(e) {
   e = e || { parameter: {} };
   var page = (e.parameter.page || '').toString().trim();
@@ -25,20 +41,20 @@ function doGet(e) {
     return servirContratosPendentes_(e);
   }
 
-  // ── Resto do código original (confirmação de contrato) ─────────────────
-  var row = parseInt((e.parameter.row || '').toString().trim(), 10);
+  // ── Confirmação de contrato — procura por ID (não confia no `row` do URL)
+  var rowHint = parseInt((e.parameter.row || '').toString().trim(), 10);
   var id  = (e.parameter.id || '').toString().trim();
   var t   = (e.parameter.t  || '').toString().trim();
 
-  if (!row || row < 2 || !id || !t) {
+  if (!id || !t) {
     return paginaErro_('Link inválido ou expirado.');
   }
 
   var sh = getSheet_();
-  var idSheet = val_(sh, row, CONFIG.COLS.idContrato);
-  var tokenSheet = val_(sh, row, CONFIG.COLS.token);
+  var row = findRowByContractId_(sh, id, rowHint);
+  if (row < 2) return paginaErro_('Link inválido — contrato não encontrado.');
 
-  if (idSheet !== id)   return paginaErro_('Link inválido — contrato não encontrado.');
+  var tokenSheet = val_(sh, row, CONFIG.COLS.token);
   if (!tokenSheet)      return paginaErro_('Token em falta. Contacta a Cosmopolitan Party.');
   if (tokenSheet !== t) return paginaErro_('Link inválido — token não coincide.');
 

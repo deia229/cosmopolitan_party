@@ -404,6 +404,28 @@ function onFormSubmit(e) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Localiza a linha onde o ID do contrato vive — robusto a reordenação da Sheet.
+// Tenta primeiro o `rowHint` (rápido); se não bater, varre a coluna idContrato.
+// ─────────────────────────────────────────────────────────────────────────────
+function findRowByContractId_(sh, contractId, rowHint) {
+  // 1) Hint — tentativa rápida (caso a linha ainda esteja onde estava)
+  if (rowHint && rowHint >= 2) {
+    var hintVal = (sh.getRange(rowHint, CONFIG.COLS.idContrato).getDisplayValue() || '').toString().trim();
+    if (hintVal === contractId) return rowHint;
+  }
+  // 2) Procura linear pela coluna idContrato
+  var lastRow = sh.getLastRow();
+  if (lastRow < 2) return -1;
+  var n = lastRow - 1;
+  var ids = sh.getRange(2, CONFIG.COLS.idContrato, n, 1).getDisplayValues();
+  for (var i = 0; i < n; i++) {
+    if ((ids[i][0] || '').toString().trim() === contractId) return i + 2;
+  }
+  return -1;
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
 // doGet — ROUTING entre confirmação (original) e listagem de pendentes (NOVA)
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -417,19 +439,23 @@ function doGet(e) {
   }
 
   // ── ROTA ORIGINAL: confirmação de contrato pelo cliente ──
-  var row = parseInt((e.parameter.row || '').toString().trim(), 10);
+  // Aceita o `row` no URL apenas como pista — a fonte de verdade é o `id`.
+  // Procura o ID na Sheet, ignora desalinhamentos de linhas (sort, inserção, etc.).
+  var rowHint = parseInt((e.parameter.row || '').toString().trim(), 10);
   var id  = (e.parameter.id || '').toString().trim();
   var t   = (e.parameter.t  || '').toString().trim();
 
-  if (!row || row < 2 || !id || !t) {
+  if (!id || !t) {
     return paginaErro_('Link inválido ou expirado.');
   }
 
   var sh = getSheet_();
-  var idSheet = val_(sh, row, CONFIG.COLS.idContrato);
-  var tokenSheet = val_(sh, row, CONFIG.COLS.token);
+  var row = findRowByContractId_(sh, id, rowHint);
+  if (row < 2) {
+    return paginaErro_('Link inválido — contrato não encontrado.');
+  }
 
-  if (idSheet !== id)   return paginaErro_('Link inválido — contrato não encontrado.');
+  var tokenSheet = val_(sh, row, CONFIG.COLS.token);
   if (!tokenSheet)      return paginaErro_('Token em falta. Contacta a Cosmopolitan Party.');
   if (tokenSheet !== t) return paginaErro_('Link inválido — token não coincide.');
 
@@ -444,6 +470,7 @@ function doGet(e) {
   sh.getRange(row, CONFIG.COLS.estadoContrato).setValue('Confirmado');
   SpreadsheetApp.flush();
 
+  var idSheet = id;
   var nome = val_(sh, row, CONFIG.COLS.nome);
   var dataEvento = disp_(sh, row, CONFIG.COLS.dataEvento);
 
