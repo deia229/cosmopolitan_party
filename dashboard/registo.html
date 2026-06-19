@@ -56,6 +56,18 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 .toast.err{background:#fce4ec;border-color:var(--red);color:var(--red)}
 
 .loading{padding:30px 20px;text-align:center;color:var(--muted);font-size:13px}
+
+.lo-ov{display:none;position:fixed;inset:0;background:linear-gradient(135deg,#fdf2f8,#fce7f3);z-index:9999;align-items:center;justify-content:center;padding:20px}
+.lo-ov.on{display:flex}
+.lo-card{background:#fff;border-radius:18px;padding:32px 28px;box-shadow:0 20px 60px rgba(224,24,122,.18);max-width:380px;width:100%}
+.lo-card h2{font-family:var(--serif);font-size:24px;margin:0 0 4px;color:var(--pink)}
+.lo-card .lo-sub{font-size:12px;color:var(--muted);margin-bottom:22px;letter-spacing:1.5px;text-transform:uppercase}
+.lo-card label{display:block;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin:14px 0 4px}
+.lo-card input{width:100%;border:1px solid var(--border);border-radius:9px;padding:11px 12px;font-size:16px;font-family:var(--font);outline:none;box-sizing:border-box}
+.lo-card input:focus{border-color:var(--pink)}
+.lo-card button{width:100%;margin-top:18px;background:var(--pink);color:#fff;border:none;border-radius:10px;padding:13px;font-size:14px;font-weight:600;font-family:var(--font);cursor:pointer}
+.lo-card button:hover{opacity:.9}
+.lo-card .lo-err{margin-top:12px;font-size:12px;color:#c53030;min-height:14px}
 </style>
 </head>
 <body>
@@ -114,6 +126,19 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
   </div>
 </div>
 
+<div class="lo-ov" id="loginOv">
+  <form class="lo-card" onsubmit="doLogin(event)">
+    <h2>Cosmopolitan Party</h2>
+    <div class="lo-sub">Registar pagamento · Acesso</div>
+    <label>Email</label>
+    <input type="email" id="loginEmail" required autocomplete="email" autofocus/>
+    <label>Password</label>
+    <input type="password" id="loginPwd" required autocomplete="current-password"/>
+    <button type="submit" id="loginBtn">Entrar</button>
+    <div class="lo-err" id="loginErr"></div>
+  </form>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -141,10 +166,23 @@ function normEvDate(s){
 }
 function fmtPT(iso){const m=String(iso||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?`${m[3]}/${m[2]}`:iso;}
 
-function init(){
+async function init(){
   $('f-data').value=todayISO();
   $('top-date').textContent=new Date().toLocaleDateString('pt-PT',{weekday:'long',day:'numeric',month:'long'});
+  // A tabela cp_event_costs exige sessão autenticada (RLS). Sem login o upsert é bloqueado.
+  const{data:{session}}=await sb.auth.getSession();
+  if(!session){$('loading').style.display='none';$('loginOv').classList.add('on');return;}
   loadEventos();
+}
+
+async function doLogin(e){
+  e.preventDefault();
+  const email=$('loginEmail').value.trim();const password=$('loginPwd').value;
+  const btn=$('loginBtn');btn.textContent='A entrar…';btn.disabled=true;
+  $('loginErr').textContent='';
+  const{error}=await sb.auth.signInWithPassword({email,password});
+  if(error){$('loginErr').textContent='Credenciais inválidas.';btn.textContent='Entrar';btn.disabled=false;return;}
+  location.reload();
 }
 
 function loadEventos(){
@@ -238,7 +276,15 @@ async function registar(){
 
   btn.disabled=false;btn.textContent='Registar pagamento';
 
-  if(error){toast('Erro ao guardar. Tenta de novo.','err');return;}
+  if(error){
+    // Sessão expirada / sem permissão (RLS) → voltar ao login
+    if(/jwt|auth|row-level|permission|policy/i.test(error.message||'')){
+      $('loginOv').classList.add('on');
+    }else{
+      toast('Erro ao guardar. Tenta de novo.','err');
+    }
+    return;
+  }
 
   pagamentosByKey[k]=actuais;
   toast('✓ '+eur(valor)+' registado','ok');
