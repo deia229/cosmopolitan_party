@@ -1965,7 +1965,7 @@ function irCkFromEv(){
 // `offset`: dias signed (positivo = depois, negativo = antes)
 const MODELO_GERAL=[
   {tipo:'geral',ref:'criacao',offset:0,  cat:'Contrato',     emoji:'📄', urgencia:'alta',  tarefa:'Enviar contrato ao cliente (ASAP)'},
-  {tipo:'geral',ref:'criacao',offset:5,  cat:'Contrato',     emoji:'✍️', urgencia:'alta',  tarefa:'Confirmar assinatura do contrato'},
+  {tipo:'geral',ref:'evento', offset:-7, cat:'Contrato',     emoji:'✍️', urgencia:'alta',  tarefa:'Confirmar assinatura do contrato (até 7 dias antes do evento)'},
   {tipo:'geral',ref:'evento', offset:-7, cat:'Pagamento',    emoji:'💶', urgencia:'alta',  tarefa:'Confirmar pagamento do sinal'},
   {tipo:'geral',ref:'evento', offset:-2, cat:'Espaço',       emoji:'🏠', urgencia:'media', tarefa:'Verificar estado do espaço'},
   {tipo:'geral',ref:'evento', offset:0,  cat:'Dia do evento',emoji:'🎉', urgencia:'alta',  tarefa:'Receber cliente'},
