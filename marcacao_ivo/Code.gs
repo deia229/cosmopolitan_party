@@ -254,9 +254,9 @@ function onFormSubmit(e) {
     ? `${Math.floor(duracaoMin / 60)}h${duracaoMin % 60 ? String(duracaoMin % 60).padStart(2,'0') : ''}`
     : `${duracaoMin}min`;
 
-  // Total acordado = festa + caução + limpeza (só se for Cosmopolitan a fazer; senão é devolvida)
-  const limpProv = String(quemLimpa || '').trim().toLowerCase() === 'cosmopolitan' ? (+limp || 0) : 0;
-  const totalAcordado = (+valor || 0) + (+cau || 0) + limpProv;
+  // Valor a receber = soma de tudo o que está no forms (festa + caução + limpeza).
+  // A limpeza é devolvida depois caso o cliente faça a limpeza; mas o que entra é sempre o total.
+  const totalAcordado = (+valor || 0) + (+cau || 0) + (+limp || 0);
   const emFaltaCal = Math.max(0, totalAcordado - (+pago || 0));
 
   const descricao =
@@ -411,11 +411,10 @@ function enviarLembretesDiarios() {
     const valor = parseFloat(colOf(row, HDR_VALOR)) || 0;
     const cau   = parseFloat(colOf(row, HDR_CAUCAO)) || 0;
     const limp  = parseFloat(colOf(row, HDR_LIMPEZA)) || 0;
-    const quemL = String(colOf(row, HDR_QUEM_LIMPA) || '').trim().toLowerCase();
     const pago  = parseFloat(colOf(row, HDR_PAGO))  || 0;
     const extra = parseFloat(colOf(row, 'Pago Extra')) || 0;
-    const limpProv = quemL === 'cosmopolitan' ? limp : 0;
-    const totalAcordado = valor + cau + limpProv;
+    // Valor a receber = soma de tudo o que está no forms (festa + caução + limpeza).
+    const totalAcordado = valor + cau + limp;
     const emFalta = Math.max(0, totalAcordado - pago - extra);
     const dataPt = formatarDataPt_(dataFesta);
     const primeiroNome = nome.split(/\s+/)[0] || 'cliente';
