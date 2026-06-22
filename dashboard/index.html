@@ -1964,6 +1964,7 @@ function irCkFromEv(){
 // `ref`: 'criacao' (carimbo da Sheet) ou 'evento' (dataFesta)
 // `offset`: dias signed (positivo = depois, negativo = antes)
 const MODELO_GERAL=[
+  {tipo:'geral',ref:'criacao',offset:0,  cat:'Contrato',     emoji:'💬', urgencia:'alta',  tarefa:'Enviar mensagem com pedido de dados ao cliente'},
   {tipo:'geral',ref:'criacao',offset:0,  cat:'Contrato',     emoji:'📄', urgencia:'alta',  tarefa:'Enviar contrato ao cliente (ASAP)'},
   {tipo:'geral',ref:'evento', offset:-7, cat:'Contrato',     emoji:'✍️', urgencia:'alta',  tarefa:'Confirmar assinatura do contrato (até 7 dias antes do evento)'},
   {tipo:'geral',ref:'evento', offset:-7, cat:'Pagamento',    emoji:'💶', urgencia:'alta',  tarefa:'Confirmar pagamento do sinal'},
