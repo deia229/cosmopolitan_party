@@ -254,6 +254,11 @@ function onFormSubmit(e) {
     ? `${Math.floor(duracaoMin / 60)}h${duracaoMin % 60 ? String(duracaoMin % 60).padStart(2,'0') : ''}`
     : `${duracaoMin}min`;
 
+  // Total acordado = festa + caução + limpeza (só se for Cosmopolitan a fazer; senão é devolvida)
+  const limpProv = String(quemLimpa || '').trim().toLowerCase() === 'cosmopolitan' ? (+limp || 0) : 0;
+  const totalAcordado = (+valor || 0) + (+cau || 0) + limpProv;
+  const emFaltaCal = Math.max(0, totalAcordado - (+pago || 0));
+
   const descricao =
 `COSMOPOLITAN PARTY — Detalhes da Festa
 
@@ -268,7 +273,7 @@ Valores
 - Caução: ${fmtMoney_(cau)}
 - Limpeza: ${fmtMoney_(limp)}
 - Pago: ${fmtMoney_(pago)}
-- Em falta: ${fmtMoney_((+valor || 0) - (+pago || 0))}
+- Em falta: ${fmtMoney_(emFaltaCal)}
 
 Limpeza: ${quemLimpa || '-'}
 
@@ -404,9 +409,14 @@ function enviarLembretesDiarios() {
     const horaIni = vst_normHora_(colOf(row, HDR_INICIO));
     const horaFim = vst_normHora_(colOf(row, HDR_FIM));
     const valor = parseFloat(colOf(row, HDR_VALOR)) || 0;
+    const cau   = parseFloat(colOf(row, HDR_CAUCAO)) || 0;
+    const limp  = parseFloat(colOf(row, HDR_LIMPEZA)) || 0;
+    const quemL = String(colOf(row, HDR_QUEM_LIMPA) || '').trim().toLowerCase();
     const pago  = parseFloat(colOf(row, HDR_PAGO))  || 0;
     const extra = parseFloat(colOf(row, 'Pago Extra')) || 0;
-    const emFalta = Math.max(0, valor - pago - extra);
+    const limpProv = quemL === 'cosmopolitan' ? limp : 0;
+    const totalAcordado = valor + cau + limpProv;
+    const emFalta = Math.max(0, totalAcordado - pago - extra);
     const dataPt = formatarDataPt_(dataFesta);
     const primeiroNome = nome.split(/\s+/)[0] || 'cliente';
 
