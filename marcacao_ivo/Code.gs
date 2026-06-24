@@ -50,6 +50,7 @@ function doGet(e) {
 
   if (param === 'dados') return doGetDashboard(e);
   if (param === 'updateCal') return updateCalEvento_(e);
+  if (param === 'ocupadas') return doGetOcupadas_(e);
 
   // Por defeito → página de disponibilidade
   return HtmlService.createHtmlOutputFromFile('index')
@@ -189,6 +190,42 @@ function doGetDashboard(e) {
   return ContentService
     .createTextOutput(callback ? `${callback}(${json})` : json)
     .setMimeType(callback ? ContentService.MimeType.JAVASCRIPT : ContentService.MimeType.JSON);
+}
+
+
+/***** API SITE PÚBLICO — datas ocupadas (festas marcadas, hoje em diante)
+ *     GET ?page=ocupadas [&callback=...]
+ *     Resposta: { ocupadas: ["yyyy-mm-dd", ...] }
+ *****/
+function doGetOcupadas_(e) {
+  const callback = e && e.parameter && e.parameter.callback;
+  const send = obj => {
+    const json = JSON.stringify(obj);
+    return ContentService
+      .createTextOutput(callback ? `${callback}(${json})` : json)
+      .setMimeType(callback ? ContentService.MimeType.JAVASCRIPT : ContentService.MimeType.JSON);
+  };
+  try {
+    const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+    if (!sh) return send({ ocupadas: [], err: 'Folha não encontrada.' });
+    const data = sh.getDataRange().getValues();
+    if (data.length <= 1) return send({ ocupadas: [] });
+    const headers = data[0].map(h => String(h).trim());
+    const idx = headers.indexOf(HDR_DATA);
+    if (idx < 0) return send({ ocupadas: [], err: 'Coluna de data não encontrada.' });
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const set = {};
+    data.slice(1).forEach(row => {
+      const d = normalizeDate_(row[idx]);
+      if (!d) return;
+      d.setHours(0, 0, 0, 0);
+      if (d.getTime() < today.getTime()) return;
+      set[Utilities.formatDate(d, TZ, 'yyyy-MM-dd')] = true;
+    });
+    return send({ ocupadas: Object.keys(set).sort() });
+  } catch (err) {
+    return send({ ocupadas: [], err: String(err && err.message || err) });
+  }
 }
 
 
