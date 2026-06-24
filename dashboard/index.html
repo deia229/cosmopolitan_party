@@ -548,31 +548,66 @@ header{background:linear-gradient(135deg,var(--dark),var(--dark2));padding:0 20p
   </div>
 </div>
 
-<!-- PEDIDOS DE DECORAÇÃO -->
+<!-- PEDIDOS (sub-tabs: Decoração + Reservas do site) -->
 <div class="page" id="tab-pedidos">
-  <div class="card">
-    <div class="card-hdr">
-      <span class="card-title">Pedidos de Decoração</span>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <select id="pedFiltroStatus" onchange="loadPedidos()" style="border:1px solid var(--border);border-radius:9px;padding:8px 10px;font-size:12px;font-family:var(--font);outline:none;min-height:36px">
-          <option value="">Todos</option>
-          <option value="novo">Novo</option>
-          <option value="conversa">Em conversa</option>
-          <option value="orcado">Orçado</option>
-          <option value="fechado">Fechado</option>
-          <option value="descartado">Descartado</option>
-        </select>
-        <input id="pedSearch" placeholder="Pesquisar…" style="border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:12px;font-family:var(--font);outline:none;width:130px;min-height:36px" oninput="filterPedidos()"/>
-        <button class="btn btn-g" onclick="loadPedidos()">↻</button>
-        <a href="/decoracao_personalizada.html" target="_blank" class="btn btn-p">↗ Form público</a>
+  <div class="card" style="margin-bottom:0">
+    <div class="card-hdr" style="padding-bottom:0;border-bottom:1px solid var(--border)">
+      <div style="display:flex;gap:0">
+        <button class="et-btn on" id="pedSub-deco-btn" onclick="swPed('pedSub-deco',this)">🎨 Decoração <span id="pedDecoBadge" style="margin-left:4px;font-size:10px;color:var(--muted)"></span></button>
+        <button class="et-btn" id="pedSub-reservas-btn" onclick="swPed('pedSub-reservas',this)">📅 Reservas <span id="pedResBadge" style="margin-left:4px;font-size:10px;color:var(--muted)"></span></button>
       </div>
     </div>
-    <div style="font-size:11px;color:var(--muted);margin-bottom:12px">Pedidos recebidos via formulário público de decoração personalizada.</div>
-    <div style="overflow-x:auto">
-      <table class="tbl">
-        <thead><tr><th>Recebido</th><th>Cliente</th><th>Evento</th><th>Data</th><th>Pax</th><th>Estado</th><th></th></tr></thead>
-        <tbody id="pedBody"><tr><td colspan="7" class="empty-row">A carregar…</td></tr></tbody>
-      </table>
+
+    <!-- SUB-TAB: DECORAÇÃO -->
+    <div class="et-panel on" id="pedSub-deco" style="margin-top:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+        <span style="font-size:11px;color:var(--muted)">Pedidos recebidos via formulário público de decoração personalizada.</span>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <select id="pedFiltroStatus" onchange="loadPedidos()" style="border:1px solid var(--border);border-radius:9px;padding:8px 10px;font-size:12px;font-family:var(--font);outline:none;min-height:36px">
+            <option value="">Todos</option>
+            <option value="novo">Novo</option>
+            <option value="conversa">Em conversa</option>
+            <option value="orcado">Orçado</option>
+            <option value="fechado">Fechado</option>
+            <option value="descartado">Descartado</option>
+          </select>
+          <input id="pedSearch" placeholder="Pesquisar…" style="border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:12px;font-family:var(--font);outline:none;width:130px;min-height:36px" oninput="filterPedidos()"/>
+          <button class="btn btn-g" onclick="loadPedidos()">↻</button>
+          <a href="https://cosmopolitanparty.netlify.app/decoracao_personalizada" target="_blank" class="btn btn-p">↗ Form público</a>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="tbl">
+          <thead><tr><th>Recebido</th><th>Cliente</th><th>Evento</th><th>Data</th><th>Pax</th><th>Estado</th><th></th></tr></thead>
+          <tbody id="pedBody"><tr><td colspan="7" class="empty-row">A carregar…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SUB-TAB: RESERVAS DO SITE -->
+    <div class="et-panel" id="pedSub-reservas" style="margin-top:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+        <span style="font-size:11px;color:var(--muted)">Pedidos de reserva via simulador do site público (cosmopolitanpartyfestas).</span>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <select id="resFiltroStatus" onchange="loadReservas()" style="border:1px solid var(--border);border-radius:9px;padding:8px 10px;font-size:12px;font-family:var(--font);outline:none;min-height:36px">
+            <option value="">Todos</option>
+            <option value="novo">Novo</option>
+            <option value="contactado">Contactado</option>
+            <option value="pago_sinal">Sinal pago</option>
+            <option value="confirmado">Confirmado</option>
+            <option value="descartado">Descartado</option>
+          </select>
+          <input id="resSearch" placeholder="Pesquisar…" style="border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:12px;font-family:var(--font);outline:none;width:130px;min-height:36px" oninput="filterReservas()"/>
+          <button class="btn btn-g" onclick="loadReservas()">↻</button>
+          <a href="https://cosmopolitanpartyfestas.netlify.app/#p-reserva" target="_blank" class="btn btn-p">↗ Simulador</a>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="tbl">
+          <thead><tr><th>Recebido</th><th>Cliente</th><th>Data festa</th><th>Turno</th><th>Total</th><th>Estado</th><th></th></tr></thead>
+          <tbody id="resBody"><tr><td colspan="7" class="empty-row">A carregar…</td></tr></tbody>
+        </table>
+      </div>
     </div>
   </div>
 </div>
@@ -928,6 +963,29 @@ header{background:linear-gradient(135deg,var(--dark),var(--dark2));padding:0 20p
   </div>
 </div>
 
+<!-- MODAL RESERVA DO SITE -->
+<div class="overlay" id="resModal" onclick="closeOverlay('resModal',event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="drag-bar" onclick="closeModal('resModal')"></div>
+    <h2 id="resModalTitle">Reserva</h2>
+    <div id="resContent" style="font-size:13px;line-height:1.6"></div>
+    <label class="f-lbl" style="margin-top:14px">Estado</label>
+    <select id="resStatus" class="f-inp">
+      <option value="novo">Novo</option>
+      <option value="contactado">Contactado</option>
+      <option value="pago_sinal">Sinal pago</option>
+      <option value="confirmado">Confirmado</option>
+      <option value="descartado">Descartado</option>
+    </select>
+    <div class="modal-actions">
+      <button class="btn btn-p" onclick="saveResStatus()">✓ Atualizar estado</button>
+      <button class="btn btn-g" onclick="abrirContactoRes()">💬 WhatsApp</button>
+      <button class="btn btn-g" onclick="apagarReserva()" style="color:var(--red)">🗑️ Apagar</button>
+      <button class="btn btn-g" onclick="closeModal('resModal')">Fechar</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL DIA DO CALENDÁRIO -->
 <div class="overlay" id="calDayModal" onclick="closeOverlay('calDayModal',event)">
   <div class="modal" onclick="event.stopPropagation()">
@@ -1074,6 +1132,7 @@ let sb=null,SCRIPT_URL=localStorage.getItem(LS_URL)||AS_DEF;
 let CONTRATOS_URL=localStorage.getItem(LS_CURL)||CONTRATOS_DEF;
 let eventos=[],orcFull=[],orcamentos=[],curEvIdx=null,curOrcId=null;
 let pedFull=[],pedidos=[],curPedId=null;
+let resFull=[],reservas=[],curResId=null;
 let fin={mes:getMes(),itemsByMonth:{},meses:[],metas:[{label:'Meta CP',meta:4000}]},mesIdx=0;
 let tasks=[],ckData=null;
 let curEvExtras={espaco:[],decoracao:[],catering:[],outros:[]};
@@ -1168,7 +1227,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
   const {data:{session}}=await sb.auth.getSession();
   if(!session){$('loginOv').classList.add('on');return;}
   applyAccessControl(session.user?.email||'');
-  loadOrcamentos();loadEventos();loadTasks();loadContratosPendentes();loadPedidos();renderFin();
+  loadOrcamentos();loadEventos();loadTasks();loadContratosPendentes();loadPedidos();loadReservas();renderFin();
 });
 // ─── ACESSO RESTRITO À ABA FINANCEIRO ───
 const ALLOWED_FIN_EMAILS=['ramalheiroa@gmail.com'];
@@ -1319,7 +1378,7 @@ async function showTab(name,btn){
   });
   if(name==='eventos')loadEventos();
   if(name==='orcamentos')loadOrcamentos();
-  if(name==='pedidos')loadPedidos();
+  if(name==='pedidos'){loadPedidos();loadReservas();}
   if(name==='calendario')loadCalTasks();
   if(name==='financeiro')renderFin();
   if(name==='checklist')renderCkSel();
@@ -3177,13 +3236,19 @@ async function loadPedidos(){
   if(error){$('pedBody').innerHTML=`<tr><td colspan="7" class="empty-row">Erro: ${esc(error.message)}</td></tr>`;return;}
   pedFull=data||[];
   filterPedidos();
-  // Marcar tab com badge se houver "novo"
   const novos=pedFull.filter(p=>p.status==='novo').length;
+  const lblD=$('pedDecoBadge');if(lblD)lblD.textContent=novos>0?`(${novos})`:'';
+  updatePedidosTabBadge();
+}
+function updatePedidosTabBadge(){
+  const novos=(pedFull||[]).filter(p=>p.status==='novo').length+(resFull||[]).filter(r=>r.status==='novo').length;
   const btn=document.querySelector('.tab-btn[onclick*="pedidos"]');
-  if(btn){
-    const base='Pedidos';
-    btn.textContent=novos>0?`${base} (${novos})`:base;
-  }
+  if(btn) btn.textContent=novos>0?`Pedidos (${novos})`:'Pedidos';
+}
+function swPed(panel,btn){
+  document.querySelectorAll('#tab-pedidos .et-panel').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('#tab-pedidos .et-btn').forEach(b=>b.classList.remove('on'));
+  $(panel).classList.add('on');btn.classList.add('on');
 }
 function filterPedidos(){
   const q=($('pedSearch')?.value||'').trim().toLowerCase();
@@ -3261,6 +3326,86 @@ async function apagarPedido(){
   closeModal('pedModal');loadPedidos();showToast('✓ Pedido apagado');
 }
 
+// RESERVAS DO SITE
+const RES_ST_LBL={novo:'Novo',contactado:'Contactado',pago_sinal:'Sinal pago',confirmado:'Confirmado',descartado:'Descartado'};
+const RES_ST_CLS={novo:'pendente',contactado:'enviado',pago_sinal:'enviado',confirmado:'confirmado',descartado:'cancelado'};
+async function loadReservas(){
+  if(!sb){$('resBody').innerHTML='<tr><td colspan="7" class="empty-row">Sem Supabase.</td></tr>';return;}
+  const st=$('resFiltroStatus')?.value||'';
+  let q=sb.from('cp_reservas_site').select('*').order('created_at',{ascending:false}).limit(200);
+  if(st) q=q.eq('status',st);
+  const{data,error}=await q;
+  if(error){$('resBody').innerHTML=`<tr><td colspan="7" class="empty-row">Erro: ${esc(error.message)}</td></tr>`;return;}
+  resFull=data||[];
+  filterReservas();
+  const novos=resFull.filter(r=>r.status==='novo').length;
+  const lblR=$('pedResBadge');if(lblR)lblR.textContent=novos>0?`(${novos})`:'';
+  updatePedidosTabBadge();
+}
+function filterReservas(){
+  const q=($('resSearch')?.value||'').trim().toLowerCase();
+  reservas=resFull.filter(r=>{
+    if(!q)return true;
+    return(r.nome||'').toLowerCase().includes(q)
+      ||(r.contacto||'').toLowerCase().includes(q)
+      ||(r.data_festa||'').toLowerCase().includes(q)
+      ||(r.turno||'').toLowerCase().includes(q);
+  });
+  renderReservas();
+}
+function renderReservas(){
+  $('resBody').innerHTML=reservas.length?reservas.map(r=>{
+    const recv=r.created_at?new Date(r.created_at).toLocaleDateString('pt-PT'):'—';
+    const dt=r.data_festa?fmtD(r.data_festa):'—';
+    return`<tr onclick="openResModal('${r.id}')">
+      <td data-lbl="Recebido" style="font-family:var(--mono);font-size:12px">${recv}</td>
+      <td data-lbl="Cliente"><strong>${esc(r.nome||'—')}</strong><br><span style="font-size:11px;color:var(--muted)">${esc(r.contacto||'')}</span></td>
+      <td data-lbl="Data festa" style="font-family:var(--mono);font-size:12px">${dt}</td>
+      <td data-lbl="Turno" style="font-size:12px">${esc(r.turno||'—')}</td>
+      <td data-lbl="Total" style="font-family:var(--mono);font-size:13px;font-weight:600;color:var(--pink)">${esc(r.total||'—')}</td>
+      <td data-lbl="Estado"><span class="bst ${RES_ST_CLS[r.status]||'rascunho'}">${RES_ST_LBL[r.status]||r.status}</span></td>
+      <td data-lbl="" class="td-act" style="color:var(--pink)">→</td>
+    </tr>`;
+  }).join(''):'<tr><td colspan="7" class="empty-row">Sem reservas.</td></tr>';
+}
+function openResModal(id){
+  const r=resFull.find(x=>x.id===id);if(!r)return;
+  curResId=id;
+  $('resModalTitle').textContent=r.nome||'Reserva';
+  const row=(lbl,val)=>val?`<div style="margin-bottom:6px"><span style="font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)">${lbl}</span><div style="font-size:13px">${esc(val)}</div></div>`:'';
+  $('resContent').innerHTML=
+    row('Contacto',r.contacto)+
+    row('Data da festa',r.data_festa?fmtD(r.data_festa):'')+
+    row('Turno',r.turno)+
+    row('Horário',(r.entrada||'—')+' → '+(r.saida||'—'))+
+    row('Barris',r.barris)+
+    row('Total',r.total)+
+    row('Recebido',r.created_at?new Date(r.created_at).toLocaleString('pt-PT'):'');
+  $('resStatus').value=r.status||'novo';
+  $('resModal').classList.add('on');
+}
+async function saveResStatus(){
+  if(!curResId||!sb)return;
+  const s=$('resStatus').value;
+  const{error}=await sb.from('cp_reservas_site').update({status:s,updated_at:new Date().toISOString()}).eq('id',curResId);
+  if(error){showToast('Erro: '+error.message);return;}
+  closeModal('resModal');loadReservas();showToast('✓ Estado: '+RES_ST_LBL[s]);
+}
+function abrirContactoRes(){
+  const r=resFull.find(x=>x.id===curResId);if(!r)return;
+  const tel=(r.contacto||'').replace(/\D/g,'');
+  if(!tel){showToast('Sem contacto');return;}
+  const num=tel.length===9?'351'+tel:tel;
+  window.open(`https://wa.me/${num}`,'_blank');
+}
+async function apagarReserva(){
+  if(!curResId||!sb)return;
+  if(!confirm('Apagar esta reserva?'))return;
+  const{error}=await sb.from('cp_reservas_site').delete().eq('id',curResId);
+  if(error){showToast('Erro: '+error.message);return;}
+  closeModal('resModal');loadReservas();showToast('✓ Reserva apagada');
+}
+
 function loadTasks(){try{tasks=JSON.parse(localStorage.getItem(LS_TASKS))||[];}catch(e){tasks=[];}renderTasks();}
 function renderTasks(){
   const pend=tasks.filter(t=>!t.feita).length;$('taskCnt').textContent=`${pend} de ${tasks.length} pendentes`;
@@ -3276,7 +3421,7 @@ function saveNota(){localStorage.setItem(LS_NOTA,$('notaArea').value);$('notaTs'
 
 // MODAL
 function closeOverlay(id,e){if(e&&e.target!==$(id))return;closeModal(id);}
-function closeModal(id){$(id).classList.remove('on');if(id==='evModal')curEvIdx=null;if(id==='orcModal')curOrcId=null;if(id==='pedModal')curPedId=null;if(id==='calDayModal')curCalDay=null;}
+function closeModal(id){$(id).classList.remove('on');if(id==='evModal')curEvIdx=null;if(id==='orcModal')curOrcId=null;if(id==='pedModal')curPedId=null;if(id==='resModal')curResId=null;if(id==='calDayModal')curCalDay=null;}
 
 // TOAST
 function showToast(msg){const c=$('toastCont'),t=document.createElement('div');t.className='toast';t.innerHTML=`<span>${esc(msg)}</span><button class="tc" onclick="this.closest('.toast').remove()">✕</button>`;c.appendChild(t);setTimeout(()=>t.remove(),5000);}
