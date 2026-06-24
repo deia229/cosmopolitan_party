@@ -447,6 +447,7 @@
         <div class="rfield"><input type="text" id="rNome" placeholder="O teu nome"></div>
         <div class="rfield"><input type="tel" id="rTel" placeholder="Telefone / WhatsApp"></div>
         <button type="button" id="btnReserva" class="btn btn-primary disabled" style="width:100%;margin-top:6px">Reservar a data</button>
+        <div class="sim-status" id="reservaStatus"></div>
       </div>
     </div>
     <p class="iva-note" style="text-align:center">Aos valores apresentados acresce IVA à taxa legal em vigor (23%). Estimativa indicativa; valor final confirmado em proposta.</p>
@@ -591,17 +592,19 @@
   var ENDPOINT='https://script.google.com/macros/s/AKfycbx5SeYyBiSlv8pkFEg_DMjg0BGiNoLAso_VB00cSFBuCz_038Ojfu6SwBGK95yt4QiJ4A/exec';
   var dataInput=document.getElementById('simData');
   var statusEl=document.getElementById('simStatus');
+  var reservaStatusEl=document.getElementById('reservaStatus');
   var btnReserva=document.getElementById('btnReserva');
   var hoje=new Date(); dataInput.min=hoje.toISOString().slice(0,10);
   function setStatus(cls,txt){statusEl.className='sim-status show '+cls;statusEl.textContent=txt;}
+  function setReservaStatus(cls,txt){reservaStatusEl.className='sim-status show '+cls;reservaStatusEl.textContent=txt;}
   function jsonp(url){return new Promise(function(res,rej){var cb='cp_'+Date.now();var sc=document.createElement('script');var to=setTimeout(function(){delete window[cb];if(sc.parentNode)sc.parentNode.removeChild(sc);rej(new Error('timeout'));},15000);window[cb]=function(d){clearTimeout(to);delete window[cb];if(sc.parentNode)sc.parentNode.removeChild(sc);res(d);};sc.src=url+(url.indexOf('?')>-1?'&':'?')+'callback='+cb;sc.onerror=function(){clearTimeout(to);if(sc.parentNode)sc.parentNode.removeChild(sc);rej(new Error('erro'));};document.body.appendChild(sc);});}
-  function resetReserva(){btnReserva.classList.add('disabled');statusEl.className='sim-status';}
+  function resetReserva(){btnReserva.classList.add('disabled');statusEl.className='sim-status';reservaStatusEl.className='sim-status';}
   dataInput.addEventListener('change',resetReserva);
   btnReserva.addEventListener('click',function(){
     if(btnReserva.classList.contains('disabled'))return;
     var nome=document.getElementById('rNome').value.trim();
     var tel=document.getElementById('rTel').value.trim();
-    if(!nome||!tel){setStatus('busy','Preencha o nome e o contacto para reservar.');return;}
+    if(!nome||!tel){setReservaStatus('busy','Preencha o nome e o contacto para reservar.');return;}
     var t=turnos[turnoKey];
     var barris=[];document.querySelectorAll('#simBarris input:checked').forEach(function(c){barris.push(c.parentNode.textContent.trim());});
     var payload={
@@ -611,7 +614,7 @@
       total: document.getElementById('rTotal').textContent,
       nome: nome, contacto: tel
     };
-    setStatus('load','A enviar o pedido\u2026');
+    setReservaStatus('load','A enviar o pedido\u2026');
     btnReserva.classList.add('disabled');
     fetch('/.netlify/functions/reserva',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
       .then(function(r){return r.json();})
@@ -619,15 +622,15 @@
         if(j&&j.ok){
           window.reservaFeita=true;
           var bd=document.getElementById('btnDeco');if(bd){bd.classList.remove('disabled');bd.textContent='Pedir decora\u00e7\u00e3o';}
-          setStatus('ok','\u2713 Pedido enviado! Entraremos em contacto para confirmar. O pedido de decora\u00e7\u00e3o ficou dispon\u00edvel.');
+          setReservaStatus('ok','\u2713 Pedido enviado! Entraremos em contacto para confirmar.');
         } else {
           btnReserva.classList.remove('disabled');
-          setStatus('busy','N\u00e3o foi poss\u00edvel enviar agora. Tente de novo ou contacte-nos por WhatsApp.');
+          setReservaStatus('busy','N\u00e3o foi poss\u00edvel enviar agora. Tente de novo ou contacte-nos por WhatsApp.');
         }
       })
       .catch(function(){
         btnReserva.classList.remove('disabled');
-        setStatus('busy','N\u00e3o foi poss\u00edvel enviar agora. Tente de novo ou contacte-nos por WhatsApp.');
+        setReservaStatus('busy','N\u00e3o foi poss\u00edvel enviar agora. Tente de novo ou contacte-nos por WhatsApp.');
       });
   });
   document.getElementById('btnCheck').addEventListener('click',function(){
