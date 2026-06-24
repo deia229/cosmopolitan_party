@@ -3416,13 +3416,33 @@ function msgReservaDispon(r){
   const data=r.data_festa?fmtD(r.data_festa):'-';
   const horario=(r.entrada||'-')+' às '+(r.saida||'-');
   const valor=r.total||'-';
-  return `Olá ${nome}! 💫 Obrigada pelo interesse na Cosmopolitan Party. Ainda temos disponibilidade para o dia ${data}! Para o turno ${horario}, o valor do espaço é de ${valor} (+ IVA à taxa legal) e já inclui a limpeza. A caução é de 100€, devolvida após o evento se estiver tudo em conformidade. Para garantir a data, é necessário o pagamento de 50% por MBWay. Vai querer avançar?`;
+  const num=+r.total_num||0;
+  const sinal=num?eur(num*0.5):'metade do valor';
+  return `Olá ${nome}! ✨ Obrigada pelo interesse na Cosmopolitan Party.
+
+Ainda temos disponibilidade para o dia ${data}! Para o turno ${horario}, o valor do espaço é de ${valor} (+ IVA à taxa legal) e já inclui a limpeza.
+
+A caução é de 100€, devolvida após o evento se estiver tudo em conformidade.
+
+Para garantir a data, é necessário o pagamento de 50% — ${sinal} — por MBWay.
+
+Vai querer avançar?`;
 }
 function msgReservaConfirm(r){
   const data=r.data_festa?fmtD(r.data_festa):'-';
   const num=+r.total_num||0;
   const restante=num?eur(num*0.5):'-';
-  return `Está reservado! 🎉 Recebemos o sinal e o dia ${data} é oficialmente seu. O valor restante (${restante}) deverá ser liquidado até 7 dias antes do evento, também por MBWay. Também podemos tratar da decoração, deixamos aqui o pedido de orçamento ${LINK_DECORACAO}. Dá-nos o máximo de detalhe do que gostarias e pode anexar fotos de inspiração. Temos também opção de catering, com menu completo desde 25€/pessoa e várias opções de finger food 😊 Qualquer dúvida, estamos aqui. Obrigada. Cosmopolitan Party`;
+  return `Está reservado! 🎉 Recebemos o sinal e o dia ${data} é oficialmente seu.
+
+O valor restante (${restante}) deverá ser liquidado até 7 dias antes do evento, também por MBWay.
+
+Também podemos tratar da decoração — deixamos aqui o pedido de orçamento: ${LINK_DECORACAO}
+Dá-nos o máximo de detalhe do que gostarias e pode anexar fotos de inspiração.
+
+Temos também opção de catering, com menu completo desde 25€/pessoa e várias opções de finger food.
+
+Qualquer dúvida, estamos aqui. Obrigada.
+Cosmopolitan Party`;
 }
 function enviarMsgRes(tipo){
   const r=resFull.find(x=>x.id===curResId);if(!r)return;
