@@ -40,6 +40,12 @@ const VST_SHEET_MARC = 'Visitas Marcacoes';
 const VST_PAGINA_PUBLICA = 'https://cosmopolitanparty.pt/visitas/';
 
 
+/***** CONFIG — SUPABASE (reservas do site público) *****/
+// Anon key é pública (mesma exposta no dashboard e no site público).
+const SB_URL = 'https://fsbpakhrfkrmfgpaxyly.supabase.co';
+const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZzYnBha2hyZmtybWZncGF4eWx5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1NzMyMjAsImV4cCI6MjA4OTE0OTIyMH0.fkF9Ch9QvX2lecY1B2FxuDWxD4DmH4T6WAg6ggYBVlY';
+
+
 /***** doGet — router principal *****/
 function doGet(e) {
   const param = (e && e.parameter && e.parameter.page) ? e.parameter.page : '';
@@ -491,6 +497,40 @@ Qualquer assunto urgente é só ligar — 964 505 429 (Ivo) ou 930 666 370 (Éri
     else if (diffDays === 1) lembretes.d1.push(item);
   });
 
+  // Reservas do site (Supabase) a 7 dias, com sinal pago, que ainda não estão
+  // formalizadas na Sheet — dedupedas por telefone contra os já adicionados acima.
+  const telsJaIncluidos = new Set();
+  lembretes.d14.concat(lembretes.d7, lembretes.d1)
+    .forEach(i => { if (i.telNorm) telsJaIncluidos.add(i.telNorm); });
+  lembretes_reservasSupabaseD7_().forEach(r => {
+    const telNorm = normalizePtPhone_(r.contacto);
+    if (telNorm && telsJaIncluidos.has(telNorm)) return;
+    const nome = String(r.nome || 'cliente').trim();
+    const primeiroNome = nome.split(/\s+/)[0] || 'cliente';
+    const dataPt = formatarDataPt_(r.data_festa);
+    const num = +r.total_num || 0;
+    const restante = num * 0.5;
+    const restStr = restante > 0 ? restante.toFixed(2).replace('.', ',') + ' €' : 'o valor restante';
+    const msg =
+`Olá ${primeiroNome}!
+
+A sua festa é daqui a 7 dias — ${dataPt}. Apenas um pequeno lembrete: falta liquidar ${restStr}.
+
+Pode enviar por MBWay para o ${LEMBRETES_MBWAY} e mandar-nos o comprovativo.
+
+Qualquer dúvida, estamos aqui.
+Cosmopolitan Party`;
+    const waLink = telNorm ? `https://wa.me/${telNorm}?text=${encodeURIComponent(msg)}` : '';
+    lembretes.d7.push({
+      nome, tel: r.contacto || '', telNorm,
+      dataPt,
+      horaIni: r.entrada || '',
+      horaFim: r.saida || '',
+      emFalta: restante,
+      waLink
+    });
+  });
+
   const total = lembretes.d14.length + lembretes.d7.length + lembretes.d1.length;
   if (total === 0) return; // sem ruído nos dias sem lembretes
 
@@ -545,6 +585,26 @@ Qualquer assunto urgente é só ligar — 964 505 429 (Ivo) ou 930 666 370 (Éri
     if (!to) return;
     GmailApp.sendEmail(to, subj, bodyText, { htmlBody: htmlBody, name: 'Cosmopolitan Party' });
   });
+}
+
+
+/***** Lê reservas do Supabase com sinal pago para D-7 (data_festa = hoje+7) *****/
+function lembretes_reservasSupabaseD7_() {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const target = new Date(today.getTime() + 7 * 86400000);
+  const targetISO = Utilities.formatDate(target, TZ, 'yyyy-MM-dd');
+  const url = SB_URL + '/rest/v1/cp_reservas_site'
+    + '?select=*&status=eq.pago_sinal&data_festa=eq.' + targetISO;
+  try {
+    const r = UrlFetchApp.fetch(url, {
+      headers: { apikey: SB_ANON, Authorization: 'Bearer ' + SB_ANON },
+      muteHttpExceptions: true
+    });
+    if (r.getResponseCode() >= 300) return [];
+    return JSON.parse(r.getContentText() || '[]') || [];
+  } catch (err) {
+    return [];
+  }
 }
 
 
