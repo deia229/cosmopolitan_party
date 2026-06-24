@@ -975,6 +975,7 @@ header{background:linear-gradient(135deg,var(--dark),var(--dark2));padding:0 20p
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btn-g" onclick="enviarMsgRes('dispon')" style="font-size:12px">1 · Disponibilidade</button>
         <button class="btn btn-g" onclick="enviarMsgRes('confirm')" style="font-size:12px">2 · Reserva confirmada</button>
+        <button class="btn btn-g" onclick="enviarMsgRes('lembrete')" style="font-size:12px">3 · Lembrete restante</button>
       </div>
       <div style="font-size:10px;color:var(--muted);margin-top:6px">Abrem WhatsApp com a mensagem pré-preenchida — não envia automaticamente.</div>
     </div>
@@ -3428,6 +3429,20 @@ Para garantir a data, é necessário o pagamento de 50% — ${sinal} — por MBW
 
 Vai querer avançar?`;
 }
+function msgReservaLembrete(r){
+  const nome=String(r.nome||'cliente').trim().split(/\s+/)[0];
+  const data=r.data_festa?fmtD(r.data_festa):'-';
+  const num=+r.total_num||0;
+  const restante=num?eur(num*0.5):'o valor restante';
+  return `Olá ${nome}!
+
+A sua festa é daqui a 7 dias — ${data}. Apenas um pequeno lembrete: falta liquidar ${restante}.
+
+Pode enviar por MBWay para o 964 505 429 e mandar-nos o comprovativo.
+
+Qualquer dúvida, estamos aqui.
+Cosmopolitan Party`;
+}
 function msgReservaConfirm(r){
   const data=r.data_festa?fmtD(r.data_festa):'-';
   const num=+r.total_num||0;
@@ -3451,7 +3466,7 @@ function enviarMsgRes(tipo){
   const tel=(r.contacto||'').replace(/\D/g,'');
   if(!tel){showToast('Sem contacto');return;}
   const num=tel.length===9?'351'+tel:tel;
-  const msg=tipo==='dispon'?msgReservaDispon(r):msgReservaConfirm(r);
+  const msg=tipo==='dispon'?msgReservaDispon(r):tipo==='lembrete'?msgReservaLembrete(r):msgReservaConfirm(r);
   window.open(`https://wa.me/${num}?text=${encodeURIComponent(msg)}`,'_blank');
 }
 async function apagarReserva(){
