@@ -969,6 +969,16 @@ header{background:linear-gradient(135deg,var(--dark),var(--dark2));padding:0 20p
     <div class="drag-bar" onclick="closeModal('resModal')"></div>
     <h2 id="resModalTitle">Reserva</h2>
     <div id="resContent" style="font-size:13px;line-height:1.6"></div>
+
+    <div style="margin-top:14px;padding:10px 12px;background:#fdf2f8;border:1px solid #f0c8dc;border-radius:10px">
+      <div style="font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--pink);margin-bottom:8px">📩 Mensagens prontas</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-g" onclick="enviarMsgRes('dispon')" style="font-size:12px">1 · Disponibilidade</button>
+        <button class="btn btn-g" onclick="enviarMsgRes('confirm')" style="font-size:12px">2 · Reserva confirmada</button>
+      </div>
+      <div style="font-size:10px;color:var(--muted);margin-top:6px">Abrem WhatsApp com a mensagem pré-preenchida — não envia automaticamente.</div>
+    </div>
+
     <label class="f-lbl" style="margin-top:14px">Estado</label>
     <select id="resStatus" class="f-inp">
       <option value="novo">Novo</option>
@@ -3397,6 +3407,30 @@ function abrirContactoRes(){
   if(!tel){showToast('Sem contacto');return;}
   const num=tel.length===9?'351'+tel:tel;
   window.open(`https://wa.me/${num}`,'_blank');
+}
+// Mensagens pré-preenchidas para envio via WhatsApp.
+// Template aprovado: ver memory/reference_telegram_reservas.md
+const LINK_DECORACAO='https://cosmopolitanparty.netlify.app/decoracao_personalizada';
+function msgReservaDispon(r){
+  const nome=String(r.nome||'cliente').trim().split(/\s+/)[0];
+  const data=r.data_festa?fmtD(r.data_festa):'-';
+  const horario=(r.entrada||'-')+' às '+(r.saida||'-');
+  const valor=r.total||'-';
+  return `Olá ${nome}! 💫 Obrigada pelo interesse na Cosmopolitan Party. Ainda temos disponibilidade para o dia ${data}! Para o turno ${horario}, o valor do espaço é de ${valor} (+ IVA à taxa legal) e já inclui a limpeza. A caução é de 100€, devolvida após o evento se estiver tudo em conformidade. Para garantir a data, é necessário o pagamento de 50% por MBWay. Vai querer avançar?`;
+}
+function msgReservaConfirm(r){
+  const data=r.data_festa?fmtD(r.data_festa):'-';
+  const num=+r.total_num||0;
+  const restante=num?eur(num*0.5):'-';
+  return `Está reservado! 🎉 Recebemos o sinal e o dia ${data} é oficialmente seu. O valor restante (${restante}) deverá ser liquidado até 7 dias antes do evento, também por MBWay. Também podemos tratar da decoração, deixamos aqui o pedido de orçamento ${LINK_DECORACAO}. Dá-nos o máximo de detalhe do que gostarias e pode anexar fotos de inspiração. Temos também opção de catering, com menu completo desde 25€/pessoa e várias opções de finger food 😊 Qualquer dúvida, estamos aqui. Obrigada. Cosmopolitan Party`;
+}
+function enviarMsgRes(tipo){
+  const r=resFull.find(x=>x.id===curResId);if(!r)return;
+  const tel=(r.contacto||'').replace(/\D/g,'');
+  if(!tel){showToast('Sem contacto');return;}
+  const num=tel.length===9?'351'+tel:tel;
+  const msg=tipo==='dispon'?msgReservaDispon(r):msgReservaConfirm(r);
+  window.open(`https://wa.me/${num}?text=${encodeURIComponent(msg)}`,'_blank');
 }
 async function apagarReserva(){
   if(!curResId||!sb)return;
