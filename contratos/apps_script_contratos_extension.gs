@@ -96,8 +96,22 @@ function doGet(e) {
 // ADICIONA esta função nova:
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Aceita data nos formatos yyyy/MM/dd, yyyy-MM-dd, dd/MM/yyyy. Devolve timestamp (ou 0).
+function parseDataContrato_(s) {
+  if (!s) return 0;
+  s = String(s).trim();
+  var m = s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+  if (m) return new Date(+m[1], +m[2] - 1, +m[3]).getTime();
+  m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+  if (m) return new Date(+m[3], +m[2] - 1, +m[1]).getTime();
+  return 0;
+}
+
 function servirContratosPendentes_(e) {
   var all = (e.parameter.all || '').toString().trim() === '1';
+  // Filtro opcional: só contratos cuja dataEvento >= since (YYYY-MM-DD)
+  var since = (e.parameter.since || '').toString().trim();
+  var sinceTs = since ? parseDataContrato_(since) : 0;
   var sh = getSheet_();
   var lastRow = sh.getLastRow();
   var contratos = [];
@@ -138,6 +152,11 @@ function servirContratosPendentes_(e) {
 
       var nome = (nomeArr[j][0] || '').toString().trim();
       var dataEv = (dataArr[j][0] || '').toString().trim();
+      // Filtro temporal: ignora contratos cuja data do evento já passou (mês anterior)
+      if (sinceTs) {
+        var evTs = parseDataContrato_(dataEv);
+        if (evTs && evTs < sinceTs) continue;
+      }
       var chaveDup = nome.toLowerCase() + '|' + dataEv;
       var substituidoPor = confirmadosPorChave[chaveDup] || null;
 

@@ -1323,7 +1323,9 @@ function loadContratosPendentes(){
     if(Array.isArray(eventos)&&eventos.length){renderEventos(eventos);renderNextEvent();}
     renderAlertas();
   };
-  const s=document.createElement('script');s.id='_cpcontr';s.src=CONTRATOS_URL+'?page=contratos&all=1&callback='+cb;
+  // Só pede contratos cuja festa é no mês actual ou posterior (resposta mais leve).
+  const _now=new Date();const _sinceISO=`${_now.getFullYear()}-${String(_now.getMonth()+1).padStart(2,'0')}-01`;
+  const s=document.createElement('script');s.id='_cpcontr';s.src=CONTRATOS_URL+'?page=contratos&all=1&since='+encodeURIComponent(_sinceISO)+'&callback='+cb;
   s.onerror=()=>{if(done)return;done=true;clearTimeout(timer);delete window[cb];renderContratosWidget(true);};
   document.head.appendChild(s);
 }
