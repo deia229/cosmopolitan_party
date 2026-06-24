@@ -1314,7 +1314,7 @@ function loadContratosPendentes(){
   const cb='cpcontr_'+Date.now();
   const tag=document.getElementById('_cpcontr');if(tag)tag.remove();
   let done=false;
-  const timer=setTimeout(()=>{if(!done){done=true;delete window[cb];document.getElementById('_cpcontr')?.remove();renderContratosWidget(true);}},10000);
+  const timer=setTimeout(()=>{if(!done){done=true;delete window[cb];document.getElementById('_cpcontr')?.remove();renderContratosWidget(true);}},25000);
   window[cb]=data=>{if(done)return;done=true;clearTimeout(timer);delete window[cb];document.getElementById('_cpcontr')?.remove();
     contratosAll=Array.isArray(data)?data:[];
     contratosPend=contratosAll.filter(c=>!c.confirmado);
