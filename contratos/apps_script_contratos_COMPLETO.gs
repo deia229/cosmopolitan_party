@@ -349,15 +349,14 @@ function onFormSubmit(e) {
 
   // 5. Criar link WhatsApp
   var telNorm = normalizePtPhone_(telefone);
-  var primeiroNome = nome ? nome.split(' ')[0] : 'cliente';
 
   var msgWA =
-    'Olá ' + primeiroNome + ' 👋\n\n' +
-    'Segue o teu contrato de reserva do espaço Cosmopolitan Party 🎉\n\n' +
-    '📅 *' + dataEvento + '* · ' + horaInicio + '–' + horaFim + '\n' +
-    '👥 Máx. ' + maxPessoas + ' pessoas\n\n' +
-    '📄 *Contrato em PDF:* ' + docInfo.pdfUrl + '\n\n' +
-    'Por favor lê o contrato e clica em *Confirmar contrato* no final do documento. Qualquer dúvida estamos disponíveis.';
+    'Boa tarde novamente\n' +
+    'Em anexo o contrato da festa de ' + dataEvento + '.\n\n' +
+    'É tudo digital — basta abrir o PDF e clicar no link de confirmação no final (Cláusula 7). Esse clique fica registado com data e hora e vale como aceitação.\n\n' +
+    docInfo.pdfUrl + '\n\n' +
+    'A reserva fica então garantida quando recebermos a confirmação e o sinal. Alguma questão que surja estamos ao dispor\n\n' +
+    'Cosmopolitan Party';
 
   var waLink = telNorm ? buildWaMe_(telNorm, msgWA) : '';
 
