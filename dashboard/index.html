@@ -285,6 +285,9 @@ header{background:linear-gradient(135deg,var(--dark),var(--dark2));padding:0 20p
   .tools-grid{grid-template-columns:1fr 1fr}
   .ck-totals{grid-template-columns:1fr}
   .date-chip{display:none}
+  .sync-lbl{display:none}
+  .tpl-btn{padding:6px 9px;font-size:14px}
+  .tpl-btn-lbl{display:none}
   .card{padding:15px 14px}
   .card-title{font-size:16px}
   /* Tabelas → cards no telefone (Eventos, Pedidos, Orçamentos) */
@@ -387,6 +390,8 @@ header{background:linear-gradient(135deg,var(--dark),var(--dark2));padding:0 20p
 .lo-card .lo-err{margin-top:12px;font-size:12px;color:#c53030;min-height:14px}
 .logout-btn{background:none;border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;font-family:var(--mono);letter-spacing:1px;text-transform:uppercase;color:var(--muted);cursor:pointer}
 .logout-btn:hover{color:var(--pink);border-color:var(--pink)}
+.tpl-btn{background:var(--pink);border:1px solid var(--pink);border-radius:8px;padding:6px 12px;font-size:11px;font-weight:600;letter-spacing:.5px;color:#fff;cursor:pointer;white-space:nowrap}
+.tpl-btn:hover{filter:brightness(1.08)}
 </style>
 </head>
 <body>
@@ -410,6 +415,7 @@ header{background:linear-gradient(135deg,var(--dark),var(--dark2));padding:0 20p
   <div class="hdr-r">
     <span class="date-chip" id="dateLbl"></span>
     <div class="sync-row"><div class="sdot" id="syncDot"></div><span class="sync-lbl" id="syncLbl">A ligar…</span></div>
+    <button class="tpl-btn" onclick="abrirMensagens()" title="Templates WhatsApp">💬<span class="tpl-btn-lbl"> Templates</span></button>
     <button class="logout-btn" onclick="doLogout()" title="Sair">Sair</button>
   </div>
 </header>
@@ -1464,7 +1470,7 @@ Para confirmar a reserva falta apenas o contrato — assim para prosseguirmos pr
 • Foto/cópia do documento (CC ou passaporte)
 • NIF
 • Morada
-• Previsão do nº de pessoas
+• Previsão do nº de convidados
 
 Assim que tenha toda a informação necessária, enviamos o contrato.
 A assinatura é online pelo que não será necessário se deslocar.
