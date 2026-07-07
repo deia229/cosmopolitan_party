@@ -400,6 +400,8 @@ function onFormSubmit(e) {
     body: 'Contrato: ' + idContrato + ' | ' + nome + '\nPDF: ' + docInfo.pdfUrl + (waLink ? '\nWhatsApp: ' + waLink : ''),
     htmlBody: htmlEmail
   });
+
+  try { syncContratoRow_(sh, row); } catch (e) { Logger.log('sync pós-geração falhou: ' + e.message); }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -489,6 +491,8 @@ function doGet(e) {
         '<p><b>Confirmado em:</b> ' + Utilities.formatDate(now, CONFIG.TZ, 'dd/MM/yyyy HH:mm') + '</p>' +
       '</div>'
   });
+
+  try { syncContratoRow_(sh, row); } catch (e) { Logger.log('sync pós-confirmação falhou: ' + e.message); }
 
   return paginaSucesso_('Contrato confirmado com sucesso! A Cosmopolitan Party já foi notificada.', false);
 }
@@ -612,4 +616,114 @@ function paginaErro_(msg) {
     '<p>' + esc_(msg) + '</p><p style="margin-top:8px">Contacta a Cosmopolitan Party.</p>' +
     '<div class="brand">Cosmopolitan Party · cosmopolitanparty.loures@gmail.com</div></div></body></html>'
   ).setTitle('Cosmopolitan Party');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SUPABASE SYNC — espelha contratos da Sheet para a tabela public.cp_contratos.
+// Requer Script Properties: SUPABASE_URL e SUPABASE_SERVICE_KEY.
+// ─────────────────────────────────────────────────────────────────────────────
+
+function sbUrl_() { return PropertiesService.getScriptProperties().getProperty('SUPABASE_URL'); }
+function sbKey_() { return PropertiesService.getScriptProperties().getProperty('SUPABASE_SERVICE_KEY'); }
+
+function sbHeaders_() {
+  var k = sbKey_();
+  return {
+    'apikey': k,
+    'Authorization': 'Bearer ' + k,
+    'Content-Type': 'application/json',
+    'Prefer': 'resolution=merge-duplicates,return=minimal'
+  };
+}
+
+function toNumNullable_(s) {
+  if (s === '' || s == null) return null;
+  var n = parseFloat(String(s).replace(',', '.').replace(/[^\d.\-]/g, ''));
+  return isNaN(n) ? null : n;
+}
+
+function toDateIso_(s) {
+  if (!s) return null;
+  s = String(s).trim();
+  var m = s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+  if (m) return m[1] + '-' + String(m[2]).padStart(2, '0') + '-' + String(m[3]).padStart(2, '0');
+  m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+  if (m) return m[3] + '-' + String(m[2]).padStart(2, '0') + '-' + String(m[1]).padStart(2, '0');
+  return null;
+}
+
+function readContratoFromRow_(sh, row) {
+  var id = disp_(sh, row, CONFIG.COLS.idContrato);
+  if (!id) return null;
+  var estado = disp_(sh, row, CONFIG.COLS.estadoContrato) || 'Pendente';
+  var dataConfRaw = disp_(sh, row, CONFIG.COLS.dataConfirmacao);
+  var horaConfRaw = disp_(sh, row, CONFIG.COLS.horaConfirmacao);
+  var dataConfIso = null;
+  if (dataConfRaw) {
+    var dOnly = toDateIso_(dataConfRaw);
+    if (dOnly) {
+      var hh = (horaConfRaw && /^\d{1,2}:\d{2}/.test(horaConfRaw)) ? horaConfRaw.substring(0, 5) : '00:00';
+      dataConfIso = dOnly + 'T' + hh + ':00+00:00';
+    }
+  }
+  return {
+    id: id,
+    cliente: disp_(sh, row, CONFIG.COLS.nome),
+    nif: disp_(sh, row, CONFIG.COLS.nif) || null,
+    morada: disp_(sh, row, CONFIG.COLS.morada) || null,
+    telefone: (disp_(sh, row, CONFIG.COLS.telefone) || disp_(sh, row, CONFIG.COLS.whatsapp)) || null,
+    email: null,
+    data_evento: toDateIso_(disp_(sh, row, CONFIG.COLS.dataEvento)),
+    hora_inicio: disp_(sh, row, CONFIG.COLS.horaInicio) || null,
+    hora_fim: disp_(sh, row, CONFIG.COLS.horaFim) || null,
+    max_pessoas: toNumNullable_(disp_(sh, row, CONFIG.COLS.maxPessoas)),
+    valor_aluguer: toNumNullable_(disp_(sh, row, CONFIG.COLS.valorBase)),
+    caucao: toNumNullable_(disp_(sh, row, CONFIG.COLS.caucao)),
+    limpeza: toNumNullable_(disp_(sh, row, CONFIG.COLS.limpeza)),
+    sinal_pago: toNumNullable_(disp_(sh, row, CONFIG.COLS.valorJaPago)),
+    com_iva: /^(sim|s|true|1)$/i.test(disp_(sh, row, CONFIG.COLS.comIVA)),
+    estado: estado,
+    data_confirmacao: dataConfIso,
+    link_pdf: disp_(sh, row, CONFIG.COLS.linkPDF) || null,
+    wa_link: disp_(sh, row, CONFIG.COLS.whatsappCliente) || null,
+    sheet_row: row
+  };
+}
+
+function sbUpsertContrato_(payload) {
+  if (!payload || !payload.id) return;
+  var url = sbUrl_();
+  if (!url) { Logger.log('SUPABASE_URL não configurado em Script Properties.'); return; }
+  try {
+    var res = UrlFetchApp.fetch(url + '/rest/v1/cp_contratos?on_conflict=id', {
+      method: 'post',
+      headers: sbHeaders_(),
+      payload: JSON.stringify(payload),
+      muteHttpExceptions: true
+    });
+    var code = res.getResponseCode();
+    if (code >= 400) Logger.log('Supabase upsert HTTP ' + code + ': ' + res.getContentText());
+  } catch (e) {
+    Logger.log('Supabase upsert exception: ' + e.message);
+  }
+}
+
+function syncContratoRow_(sh, row) {
+  var p = readContratoFromRow_(sh, row);
+  if (p) sbUpsertContrato_(p);
+}
+
+// Corre uma vez no editor para popular Supabase com todos os contratos existentes.
+function syncAllContratos_() {
+  var sh = getSheet_();
+  var last = sh.getLastRow();
+  if (last < 2) { Logger.log('Sheet sem contratos.'); return; }
+  var ok = 0, skip = 0;
+  for (var r = 2; r <= last; r++) {
+    var id = disp_(sh, r, CONFIG.COLS.idContrato);
+    if (!id) { skip++; continue; }
+    syncContratoRow_(sh, r);
+    ok++;
+  }
+  Logger.log('syncAllContratos: enviados ' + ok + ' contratos, saltados ' + skip + ' (sem ID).');
 }
