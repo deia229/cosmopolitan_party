@@ -1152,6 +1152,19 @@ header{background:linear-gradient(135deg,var(--dark),var(--dark2));padding:0 20p
   </div>
 </div>
 
+<!-- MODAL TAREFAS ATRASADAS -->
+<div class="overlay" id="tarefasAtrasadasModal" onclick="closeOverlay('tarefasAtrasadasModal',event)">
+  <div class="modal" style="max-width:640px" onclick="event.stopPropagation()">
+    <div class="drag-bar" onclick="closeModal('tarefasAtrasadasModal')"></div>
+    <h2 style="margin:0 0 4px 0">⚠️ Tarefas atrasadas</h2>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Tarefas do modelo Geral com data ultrapassada e por concluir.</div>
+    <div id="tarefasAtrasadasList"></div>
+    <div class="modal-actions">
+      <button class="btn btn-g" onclick="closeModal('tarefasAtrasadasModal')" style="flex:1">Fechar</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL ADENDA AO CONTRATO -->
 <div class="overlay" id="adendaModal" onclick="closeOverlay('adendaModal',event)">
   <div class="modal" style="max-width:720px" onclick="event.stopPropagation()">
@@ -2908,7 +2921,48 @@ function renderAlertas(){
   if(a.pedidosNovos)chips.push(chip('blue','📬','Pedidos novos',a.pedidosNovos,'goAlertaPedidos()','Pedidos de decoração "novo" há >2 dias sem resposta'));
   strip.innerHTML=chips.join('');
 }
-function goAlertaChecklist(){const btn=Array.from(document.querySelectorAll('.tab-btn')).find(b=>(b.getAttribute('onclick')||'').includes("'checklist'"));showTab('checklist',btn);}
+function goAlertaChecklist(){abrirTarefasAtrasadas();}
+function abrirTarefasAtrasadas(){
+  const hoje=new Date();hoje.setHours(0,0,0,0);
+  const linhas=[];
+  (eventos||[]).forEach(ev=>{
+    if(isArchived(ev))return;
+    const tks=tarefasByKey[evKey(ev)]||[];
+    tks.forEach(t=>{
+      if(t.tipo!=='geral'||t.feito||!t.data)return;
+      const td=new Date(t.data+'T00:00:00');
+      if(isNaN(td.getTime())||td>=hoje)return;
+      const dias=Math.ceil((hoje-td)/86400000);
+      linhas.push({ev,tarefa:t.tarefa||t.nome||'—',emoji:t.emoji||'📋',cat:t.cat||'',data:t.data,dias});
+    });
+  });
+  linhas.sort((a,b)=>b.dias-a.dias);
+  const box=$('tarefasAtrasadasList');
+  if(!linhas.length){
+    box.innerHTML='<div class="cp-empty">✓ Nenhuma tarefa atrasada.</div>';
+  }else{
+    box.innerHTML='<div class="cp-list">'+linhas.map(l=>{
+      const dataFmt=l.data.split('-').reverse().join('/');
+      const dataFestaFmt=(l.ev.dataFesta||'').split('-').reverse().join('/');
+      return`<div class="cp-item" style="border-color:#fcd9df;background:#fef2f2">
+        <div class="cp-item-info">
+          <div class="cp-item-cliente">${esc(l.emoji)} ${esc(l.tarefa)} <span class="cp-dias urg">${l.dias}d atrás</span></div>
+          <div class="cp-item-meta">${esc(l.ev.cliente||'—')} · festa ${esc(dataFestaFmt)} · prazo ${esc(dataFmt)}${l.cat?` · ${esc(l.cat)}`:''}</div>
+        </div>
+        <div class="cp-item-actions">
+          <button type="button" class="cp-btn" title="Abrir checklist do evento" onclick="irCkFromTarefaAtrasada('${esc(evKey(l.ev))}')">Ver ➜</button>
+        </div>
+      </div>`;
+    }).join('')+'</div>';
+  }
+  $('tarefasAtrasadasModal').classList.add('on');
+}
+function irCkFromTarefaAtrasada(key){
+  closeModal('tarefasAtrasadasModal');
+  const btn=Array.from(document.querySelectorAll('.tab-btn')).find(b=>(b.getAttribute('onclick')||'').includes("'checklist'"));
+  showTab('checklist',btn);
+  setTimeout(()=>{const sel=$('ckEvSel');if(sel){sel.value=key;loadCkEvento();}},250);
+}
 function goAlertaEventos(){const btn=Array.from(document.querySelectorAll('.tab-btn')).find(b=>(b.getAttribute('onclick')||'').includes("'eventos'"));showTab('eventos',btn);}
 function goAlertaContratos(){const cp=$('cpBox');if(cp){const tabBtn=Array.from(document.querySelectorAll('.tab-btn')).find(b=>(b.getAttribute('onclick')||'').includes("'visao'"));if(tabBtn)showTab('visao',tabBtn);setTimeout(()=>cp.scrollIntoView({behavior:'smooth',block:'center'}),100);}}
 function goAlertaPedidos(){const btn=Array.from(document.querySelectorAll('.tab-btn')).find(b=>(b.getAttribute('onclick')||'').includes("'pedidos'"));showTab('pedidos',btn);}
