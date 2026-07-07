@@ -203,6 +203,31 @@ header{background:linear-gradient(135deg,var(--dark),var(--dark2));padding:0 20p
 .cp-dias.med{background:#fff8e1;color:var(--amber)}
 .cp-dias.calm{background:#ecfdf5;color:var(--green)}
 .cp-dias.past{background:#f3f4f6;color:#6b7280}
+/* Adenda modal */
+.ad-form{display:grid;grid-template-columns:1fr 100px 32px;gap:6px;margin-bottom:6px;align-items:center}
+.ad-form input{border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-family:inherit;font-size:13px;outline:none}
+.ad-form input:focus{border-color:var(--pink)}
+.ad-linhas{margin-bottom:10px}
+.ad-empty{color:var(--muted);font-size:12px;padding:6px 2px}
+.ad-preview-lbl{font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin:14px 0 6px 0}
+.ad-preview-wrap{display:flex;justify-content:center;background:#faf5f7;padding:16px;border-radius:12px;overflow:auto}
+.ad-card{width:560px;background:#fff;border-radius:18px;border:1px solid #f5d6e3;padding:28px 28px 24px 28px;color:#3a0a1a;font-family:'DM Sans',system-ui,sans-serif;box-sizing:border-box}
+.ad-brand{font-family:'Playfair Display',serif;font-size:22px;font-weight:900;color:#3a0a1a;margin-bottom:2px}
+.ad-tag{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#a8617a;margin-bottom:18px}
+.ad-title{font-family:'DM Mono',monospace;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#e91e63;font-weight:600;margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid #f5d6e3}
+.ad-title-num{color:#3a0a1a}
+.ad-meta{display:flex;justify-content:space-between;margin-bottom:14px;font-size:13px;gap:12px}
+.ad-meta-label{color:#a8617a;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:2px}
+.ad-meta-val{font-weight:600}
+.ad-sec{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#6e2638;margin:14px 0 6px 0}
+.ad-line{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f3e8ee;font-size:14px}
+.ad-line-desc{color:#3a0a1a}
+.ad-line-val{font-family:'DM Mono',monospace;color:#a40c1f;font-weight:600}
+.ad-total{background:#3a0a1a;border-radius:12px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;margin-top:14px}
+.ad-total-lbl{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#f5d6e3}
+.ad-total-val{font-family:'Playfair Display',serif;font-size:22px;font-weight:900;color:#ffa8b8}
+.ad-foot{margin-top:14px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#a8617a;text-align:right}
+.ad-note{margin-top:8px;font-size:11px;color:#6e2638;line-height:1.5}
 .tools-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
 .tool-card{border:1px solid var(--border);border-radius:12px;padding:15px 13px;cursor:pointer;transition:all .2s;text-decoration:none;display:flex;flex-direction:column;gap:6px;background:var(--card)}
 .tool-card:hover{border-color:var(--pink);box-shadow:0 4px 14px rgba(224,24,122,.1);transform:translateY(-1px)}
@@ -462,6 +487,15 @@ header{background:linear-gradient(135deg,var(--dark),var(--dark2));padding:0 20p
       <button class="btn btn-g" onclick="loadContratosPendentes()">↻</button>
     </div>
     <div id="cpBox"><div style="text-align:center;padding:14px;color:var(--muted);font-size:12px">A carregar contratos…</div></div>
+  </div>
+  <!-- EVENTOS COM CONTRATO ASSINADO -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-hdr">
+      <span class="card-title">Próximos eventos com contrato</span>
+      <span class="card-mono" id="evAssChip">–</span>
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Aqui podes adicionar extras/alterações e gerar uma imagem de adenda para enviar ao cliente.</div>
+    <div id="evAssBox"><div style="text-align:center;padding:14px;color:var(--muted);font-size:12px">A carregar…</div></div>
   </div>
 
   <div class="card" style="margin-bottom:16px">
@@ -1118,6 +1152,31 @@ header{background:linear-gradient(135deg,var(--dark),var(--dark2));padding:0 20p
   </div>
 </div>
 
+<!-- MODAL ADENDA AO CONTRATO -->
+<div class="overlay" id="adendaModal" onclick="closeOverlay('adendaModal',event)">
+  <div class="modal" style="max-width:720px" onclick="event.stopPropagation()">
+    <div class="drag-bar" onclick="closeModal('adendaModal')"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:12px">
+      <h2 style="margin:0">📎 Adenda ao contrato</h2>
+      <span id="adTitle" style="font-family:var(--mono);font-size:11px;color:var(--muted)"></span>
+    </div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Adiciona alterações acordadas (hora extra, +pessoas, extras…) e gera uma imagem para enviar ao cliente por WhatsApp.</div>
+    <div style="font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);display:grid;grid-template-columns:1fr 100px 32px;gap:6px;margin-bottom:4px"><span>Descrição</span><span>Valor €</span><span></span></div>
+    <div id="adLinhas" class="ad-linhas"></div>
+    <div class="ad-form">
+      <input id="adNovoDesc" placeholder="ex: 1h extra, +10 pessoas, menu vegetariano"/>
+      <input id="adNovoVal" type="number" step="0.01" placeholder="0"/>
+      <button class="btn btn-p" onclick="adAddLinha()" style="padding:6px 10px">+</button>
+    </div>
+    <div class="ad-preview-lbl">Preview da imagem</div>
+    <div class="ad-preview-wrap"><div id="adCard" class="ad-card"></div></div>
+    <div class="modal-actions">
+      <button class="btn btn-p" onclick="adGerarImagem()" style="flex:1">📷 Gerar imagem PNG</button>
+      <button class="btn btn-g" onclick="closeModal('adendaModal')">Fechar</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL MENSAGENS / TEMPLATES WHATSAPP -->
 <div class="overlay" id="msgModal" onclick="closeOverlay('msgModal',event)">
   <div class="modal" onclick="event.stopPropagation()">
@@ -1327,6 +1386,7 @@ function loadContratosPendentes(){
     contratosPend=contratosAll.filter(c=>!c.confirmado);
     buildContratoIndex();
     renderContratosWidget(false);
+    renderEventosAssinados();
     if(Array.isArray(eventos)&&eventos.length){renderEventos(eventos);renderNextEvent();}
     renderAlertas();
   };
@@ -1408,6 +1468,147 @@ Cosmopolitan Party`;
     document.body.removeChild(ta);
   }
   showToast('📋 Mensagem copiada — cola no WhatsApp');
+}
+
+// ── EVENTOS COM CONTRATO ASSINADO + ADENDAS ──
+function renderEventosAssinados(){
+  const box=$('evAssBox'),chip=$('evAssChip');
+  if(!box||!chip)return;
+  const today=new Date();today.setHours(0,0,0,0);
+  const lista=(contratosAll||[]).filter(c=>{
+    if(!c.confirmado)return false;
+    if(c.substituidoPor)return false;
+    const iso=normEvDate(c.dataEvento);
+    if(!iso)return false;
+    return new Date(iso+'T00:00:00')>=today;
+  }).sort((a,b)=>(normEvDate(a.dataEvento)||'9999').localeCompare(normEvDate(b.dataEvento)||'9999'));
+  chip.textContent=lista.length?lista.length:'0';
+  if(!lista.length){
+    box.innerHTML='<div class="cp-empty" style="background:#f3f4f6;color:var(--muted);border-color:var(--border)">Sem eventos próximos com contrato assinado.<br><button class="btn btn-g" style="margin-top:10px;font-size:11px" onclick="abrirAdendaExemplo()">🧪 Testar adenda com contrato fictício</button></div>';
+    return;
+  }
+  box.innerHTML='<div class="cp-list">'+lista.map(c=>{
+    const dataIso=normEvDate(c.dataEvento);
+    let diasHtml='';
+    if(dataIso){
+      const d=new Date(dataIso+'T00:00:00');
+      const diff=Math.ceil((d-today)/86400000);
+      let cls='calm',txt=diff+'d';
+      if(diff===0){cls='urg';txt='Hoje!';}
+      else if(diff<=7){cls='urg';txt=diff+'d';}
+      else if(diff<=30){cls='med';txt=diff+'d';}
+      diasHtml=`<span class="cp-dias ${cls}">${txt}</span>`;
+    }
+    const pdfBtn=c.linkPDF?`<a href="${esc(c.linkPDF)}" target="_blank" class="cp-btn" title="Abrir PDF">📄</a>`:'';
+    const adBtn=`<button type="button" onclick="abrirAdenda('${esc(c.id)}')" class="cp-btn" title="Criar adenda (extras/alterações)">📎 Adenda</button>`;
+    const waBtn=c.waLink?`<a href="${esc(c.waLink)}" target="_blank" class="cp-btn wa" title="Enviar WhatsApp ao cliente">💬</a>`:'';
+    return`<div class="cp-item">
+      <div class="cp-item-info">
+        <div class="cp-item-cliente">${esc(c.cliente||'—')} ${diasHtml}</div>
+        <div class="cp-item-meta">${esc(c.id)} · ${esc(c.dataEvento)} ${esc(c.horaInicio||'')}–${esc(c.horaFim||'')}</div>
+      </div>
+      <div class="cp-item-actions">${pdfBtn}${adBtn}${waBtn}</div>
+    </div>`;
+  }).join('')+'</div>';
+}
+
+// State + funções da Adenda
+let adAtual={contratoId:'',contrato:null,linhas:[]};
+function abrirAdendaExemplo(){
+  adAtual={contratoId:'CP-2026-999',contrato:{id:'CP-2026-999',cliente:'Cliente de Exemplo',dataEvento:'2026-08-15',horaInicio:'20:00',horaFim:'02:00'},linhas:[]};
+  $('adTitle').textContent='CP-2026-999 (teste)';
+  $('adNovoDesc').value='';$('adNovoVal').value='';
+  adRenderLinhas();adAtualizarPreview();
+  $('adendaModal').classList.add('on');
+  setTimeout(()=>$('adNovoDesc').focus(),80);
+}
+function abrirAdenda(id){
+  const c=(contratosAll||[]).find(x=>String(x.id)===String(id));
+  if(!c){showToast('Contrato não encontrado');return;}
+  adAtual={contratoId:c.id,contrato:c,linhas:[]};
+  $('adTitle').textContent=c.id;
+  $('adNovoDesc').value='';$('adNovoVal').value='';
+  adRenderLinhas();
+  adAtualizarPreview();
+  $('adendaModal').classList.add('on');
+  setTimeout(()=>$('adNovoDesc').focus(),80);
+}
+function adAddLinha(){
+  const d=$('adNovoDesc').value.trim();
+  const v=+$('adNovoVal').value||0;
+  if(!d){showToast('Descrição obrigatória');return;}
+  adAtual.linhas.push({desc:d,val:v});
+  $('adNovoDesc').value='';$('adNovoVal').value='';
+  adRenderLinhas();adAtualizarPreview();
+  $('adNovoDesc').focus();
+}
+function adRemoveLinha(i){
+  adAtual.linhas.splice(i,1);
+  adRenderLinhas();adAtualizarPreview();
+}
+function adRenderLinhas(){
+  const box=$('adLinhas');
+  if(!adAtual.linhas.length){box.innerHTML='<div class="ad-empty">Sem alterações adicionadas.</div>';return;}
+  box.innerHTML=adAtual.linhas.map((l,i)=>`
+    <div class="ad-form">
+      <input value="${esc(l.desc)}" oninput="adAtual.linhas[${i}].desc=this.value;adAtualizarPreview()"/>
+      <input type="number" step="0.01" value="${l.val}" oninput="adAtual.linhas[${i}].val=+this.value||0;adAtualizarPreview()"/>
+      <button class="btn btn-g" style="padding:6px 8px" onclick="adRemoveLinha(${i})" title="Remover">×</button>
+    </div>
+  `).join('');
+}
+function adFmtEur(n){return (n||0).toLocaleString('pt-PT',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';}
+function adFmtData(s){
+  if(!s)return '';
+  const iso=normEvDate(s);
+  const m=iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return m?`${m[3]}/${m[2]}/${m[1]}`:s;
+}
+function adAtualizarPreview(){
+  const c=adAtual.contrato||{};
+  const total=adAtual.linhas.reduce((s,l)=>s+(+l.val||0),0);
+  const linhasHtml=adAtual.linhas.length?adAtual.linhas.map(l=>`
+    <div class="ad-line">
+      <span class="ad-line-desc">${esc(l.desc)}</span>
+      <span class="ad-line-val">${l.val>0?'+ ':''}${adFmtEur(l.val)}</span>
+    </div>
+  `).join(''):`<div style="padding:8px 0;color:#a8617a;font-size:13px">Sem alterações.</div>`;
+  const hoje=new Date();
+  const emissao=`${String(hoje.getDate()).padStart(2,'0')}/${String(hoje.getMonth()+1).padStart(2,'0')}/${hoje.getFullYear()}`;
+  $('adCard').innerHTML=`
+    <div class="ad-brand">Cosmopolitan Party</div>
+    <div class="ad-tag">Rua da Ribeira 41 · Flamenga, Loures</div>
+    <div class="ad-title">Adenda ao Contrato N.º <span class="ad-title-num">${esc(c.id||'—')}</span></div>
+    <div class="ad-meta">
+      <div><div class="ad-meta-label">Cliente</div><div class="ad-meta-val">${esc(c.cliente||'—')}</div></div>
+      <div style="text-align:right"><div class="ad-meta-label">Data da festa</div><div class="ad-meta-val">${esc(adFmtData(c.dataEvento))}</div></div>
+    </div>
+    <div class="ad-sec">Alterações acordadas</div>
+    ${linhasHtml}
+    <div class="ad-total">
+      <span class="ad-total-lbl">Total alterações</span>
+      <span class="ad-total-val">${total>0?'+ ':''}${adFmtEur(total)}</span>
+    </div>
+    <div class="ad-note">Estes valores acrescem aos já contratados na versão original do contrato ${esc(c.id||'')}. Restantes cláusulas mantêm-se inalteradas.</div>
+    <div class="ad-foot">Emitida em ${emissao}</div>
+  `;
+}
+async function adGerarImagem(){
+  if(!adAtual.linhas.length){showToast('Adiciona pelo menos uma alteração');return;}
+  if(typeof html2canvas==='undefined'){showToast('Biblioteca não carregada. Aguarda e tenta de novo.');return;}
+  adAtualizarPreview();
+  await new Promise(r=>setTimeout(r,150));
+  showToast('A gerar imagem…');
+  try{
+    const canvas=await html2canvas($('adCard'),{scale:2,backgroundColor:'#ffffff',logging:false});
+    canvas.toBlob(blob=>{
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement('a');
+      a.href=url;a.download=`adenda-${adAtual.contratoId||'contrato'}.png`;a.click();
+      URL.revokeObjectURL(url);
+      showToast('✓ Imagem descarregada — anexa no WhatsApp');
+    });
+  }catch(e){showToast('Erro: '+e.message);}
 }
 
 async function showTab(name,btn){
