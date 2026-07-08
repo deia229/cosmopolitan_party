@@ -1386,6 +1386,45 @@ function saveContratosUrl(){
   loadContratosPendentes();
   setTimeout(()=>$('contratosUrlStatus').textContent='',3000);
 }
+// Lê contratos de Supabase (tabela cp_contratos, alimentada pelo Apps Script).
+// Fallback JSONP mantido comentado abaixo durante ~2 semanas (2026-07-08) — remover na Fase 5.
+async function loadContratosPendentes(){
+  $('cpBox').innerHTML='<div style="text-align:center;padding:14px;color:var(--muted);font-size:12px">A carregar contratos…</div>';
+  $('cpChip').textContent='…';
+  if(!sb){renderContratosWidget(true);return;}
+  const _now=new Date();const _sinceISO=`${_now.getFullYear()}-${String(_now.getMonth()+1).padStart(2,'0')}-01`;
+  const {data,error}=await sb.from('cp_contratos')
+    .select('id,cliente,telefone,data_evento,hora_inicio,hora_fim,estado,data_confirmacao,link_pdf,wa_link')
+    .gte('data_evento',_sinceISO)
+    .order('data_evento',{ascending:true});
+  if(error){console.warn('cp_contratos read failed:',error);renderContratosWidget(true);return;}
+  const _fmtHora=t=>String(t||'').slice(0,5);
+  contratosAll=(data||[]).map(r=>({
+    id:r.id,
+    cliente:r.cliente||'',
+    telefone:r.telefone||'',
+    dataEvento:r.data_evento||'',
+    horaInicio:_fmtHora(r.hora_inicio),
+    horaFim:_fmtHora(r.hora_fim),
+    estado:r.estado||'',
+    dataConfirmacao:r.data_confirmacao||'',
+    confirmado:(r.estado==='Confirmado')||!!r.data_confirmacao,
+    linkPDF:r.link_pdf||'',
+    waLink:r.wa_link||'',
+    substituidoPor:null
+  }));
+  // Calcula substituidoPor em runtime: para (cliente+data), se existir um contrato confirmado, os pendentes com a mesma chave apontam para o id desse confirmado.
+  const _confPorChave={};
+  contratosAll.forEach(c=>{if(c.confirmado){const k=normName(c.cliente)+'|'+normEvDate(c.dataEvento);_confPorChave[k]=c.id;}});
+  contratosAll.forEach(c=>{const k=normName(c.cliente)+'|'+normEvDate(c.dataEvento);const sub=_confPorChave[k];if(sub&&sub!==c.id)c.substituidoPor=sub;});
+  contratosPend=contratosAll.filter(c=>!c.confirmado);
+  buildContratoIndex();
+  renderContratosWidget(false);
+  renderEventosAssinados();
+  if(Array.isArray(eventos)&&eventos.length){renderEventos(eventos);renderNextEvent();}
+  renderAlertas();
+}
+/* JSONP fallback (Fase 5 remove):
 function loadContratosPendentes(){
   if(!CONTRATOS_URL){$('cpBox').innerHTML='<div class="cp-error">Configura o URL do Apps Script de contratos em Ferramentas.</div>';$('cpChip').textContent='—';return;}
   $('cpBox').innerHTML='<div style="text-align:center;padding:14px;color:var(--muted);font-size:12px">A carregar contratos…</div>';
@@ -1403,17 +1442,17 @@ function loadContratosPendentes(){
     if(Array.isArray(eventos)&&eventos.length){renderEventos(eventos);renderNextEvent();}
     renderAlertas();
   };
-  // Só pede contratos cuja festa é no mês actual ou posterior (resposta mais leve).
   const _now=new Date();const _sinceISO=`${_now.getFullYear()}-${String(_now.getMonth()+1).padStart(2,'0')}-01`;
   const s=document.createElement('script');s.id='_cpcontr';s.src=CONTRATOS_URL+'?page=contratos&all=1&since='+encodeURIComponent(_sinceISO)+'&callback='+cb;
   s.onerror=()=>{if(done)return;done=true;clearTimeout(timer);delete window[cb];renderContratosWidget(true);};
   document.head.appendChild(s);
 }
+*/
 function renderContratosWidget(error){
   const box=$('cpBox'),chip=$('cpChip');
   if(error){
     chip.textContent='erro';
-    box.innerHTML='<div class="cp-error">⚠ Não consegui ler os contratos.<br><span style="font-size:11px">Verifica que o Apps Script de contratos tem a rota <code>?page=contratos</code> instalada (ver <code>contratos/apps_script_contratos_extension.gs</code>).</span></div>';
+    box.innerHTML='<div class="cp-error">⚠ Não consegui ler os contratos de Supabase.<br><span style="font-size:11px">Verifica ligação e RLS na tabela <code>cp_contratos</code>.</span></div>';
     return;
   }
   if(!contratosPend.length){

@@ -714,7 +714,7 @@ function syncContratoRow_(sh, row) {
 }
 
 // Corre uma vez no editor para popular Supabase com todos os contratos existentes.
-function syncAllContratos_() {
+function syncAllContratos() {
   var sh = getSheet_();
   var last = sh.getLastRow();
   if (last < 2) { Logger.log('Sheet sem contratos.'); return; }
