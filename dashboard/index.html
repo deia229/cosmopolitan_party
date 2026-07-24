@@ -887,6 +887,17 @@ header{background:linear-gradient(135deg,var(--dark),var(--dark2));padding:0 20p
     <div class="et-panel on" id="et-info">
       <div id="evContratoAviso" style="display:none;margin-bottom:12px;padding:11px 13px;border-radius:10px;border:1px solid #f0c36d;background:#fff8e1;color:#7a5300;font-size:12.5px;line-height:1.45"></div>
       <div class="det-grid" id="evInfo"></div>
+      <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px">
+        <div style="font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--pink);margin-bottom:8px">Enviar template via WhatsApp</div>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <select id="evMsgSel" style="flex:1;min-width:180px;border:1px solid var(--border);border-radius:9px;padding:9px 10px;font-family:var(--font);font-size:13px;outline:none;background:var(--card);min-height:42px">
+            <option value="">— escolhe template —</option>
+          </select>
+          <button class="btn btn-p" onclick="enviarTemplateEv()" style="min-height:42px">📤 WhatsApp</button>
+          <button class="btn btn-g" onclick="copiarTemplateEv()" style="min-height:42px">📋 Copiar</button>
+        </div>
+        <div style="font-size:10px;color:var(--muted);margin-top:6px">Abre WhatsApp com a mensagem pré-preenchida — <code>[Nome]</code> e <code>[Data]</code> são substituídos automaticamente.</div>
+      </div>
       <div id="evInfoEdit" style="display:none;margin-top:14px;border-top:1px solid var(--border);padding-top:14px">
         <div style="font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--pink);margin-bottom:10px">Editar dados do cliente</div>
         <div style="display:grid;gap:8px">
@@ -2232,11 +2243,16 @@ async function openEvModal(idx){
   if(_aviso){
     if(_cntSt==='pend'||_cntSt==='none'){
       const _lbl=_cntSt==='pend'?'ainda não foi assinado':'ainda não foi criado';
-      _aviso.innerHTML=`⚠️ <strong>Contrato ${_lbl}.</strong> Sem contrato assinado o PIN de entrada no espaço não pode ser entregue — e sem PIN não é possível aceder ao local no dia da festa. Envia o template <em>“Aviso — contrato por assinar (sem PIN)”</em> ao cliente.`;
+      _aviso.innerHTML=`⚠️ <strong>Contrato ${_lbl}.</strong> Sem contrato assinado o PIN de entrada no espaço não pode ser entregue — e sem PIN não é possível aceder ao local no dia da festa. <button type="button" class="btn btn-p" style="margin-left:6px;padding:6px 10px;font-size:12px;min-height:0" onclick="selecionarTemplateAviso()">📤 Enviar aviso</button>`;
       _aviso.style.display='block';
     }else{
       _aviso.style.display='none';
     }
+  }
+  // Preencher o seletor de templates
+  const _sel=$('evMsgSel');
+  if(_sel){
+    _sel.innerHTML='<option value="">— escolhe template —</option>'+MSG_TEMPLATES.map((m,i)=>`<option value="${i}">${esc(m.titulo)}</option>`).join('');
   }
   $('evPag').innerHTML=`
     <div><div class="det-lbl">Total</div><div class="det-val big">${eur(total)}</div></div>
@@ -3849,6 +3865,44 @@ Conte-nos com detalhe o que tem em mente e, se quiser, pode anexar fotos de insp
 
 Qualquer dúvida, estamos aqui. Obrigada.
 Cosmopolitan Party`;
+}
+function _preencherTemplate(corpo,ev){
+  const nome=String(ev.cliente||'').trim().split(/\s+/)[0]||'';
+  const data=ev.dataFesta?fmtD(ev.dataFesta):'';
+  const horario=(ev.horaInicio||'-')+' às '+(ev.horaFim||'-');
+  const c=findContrato(ev);
+  const link=(c&&c.linkPDF)?c.linkPDF:'[Link do contrato]';
+  return String(corpo)
+    .replace(/\[Nome\]/g,nome)
+    .replace(/\[Data\]/g,data)
+    .replace(/\[Horário\]/g,horario)
+    .replace(/\[Link do contrato\]/g,link);
+}
+function selecionarTemplateAviso(){
+  const sel=$('evMsgSel');if(!sel)return;
+  const idx=MSG_TEMPLATES.findIndex(t=>/contrato por assinar/i.test(t.titulo));
+  if(idx>=0){sel.value=String(idx);enviarTemplateEv();}
+}
+function enviarTemplateEv(){
+  const ev=eventos.find(e=>e.rowIndex===curEvIdx);if(!ev){showToast('Evento não encontrado');return;}
+  const i=parseInt($('evMsgSel').value);
+  if(isNaN(i)||!MSG_TEMPLATES[i]){showToast('Escolhe um template');return;}
+  const tel=String(ev.telefone||'').replace(/\D/g,'');
+  if(!tel){showToast('Sem telefone no evento');return;}
+  const num=tel.length===9?'351'+tel:tel;
+  const msg=_preencherTemplate(MSG_TEMPLATES[i].corpo,ev);
+  window.open(`https://wa.me/${num}?text=${encodeURIComponent(msg)}`,'_blank');
+}
+async function copiarTemplateEv(){
+  const ev=eventos.find(e=>e.rowIndex===curEvIdx);if(!ev){showToast('Evento não encontrado');return;}
+  const i=parseInt($('evMsgSel').value);
+  if(isNaN(i)||!MSG_TEMPLATES[i]){showToast('Escolhe um template');return;}
+  const txt=_preencherTemplate(MSG_TEMPLATES[i].corpo,ev);
+  try{await navigator.clipboard.writeText(txt);}catch(e){
+    const ta=document.createElement('textarea');ta.value=txt;ta.style.position='fixed';ta.style.left='-9999px';
+    document.body.appendChild(ta);ta.select();try{document.execCommand('copy');}catch(_){}document.body.removeChild(ta);
+  }
+  showToast('📋 Mensagem copiada');
 }
 function enviarMsgRes(tipo){
   const r=resFull.find(x=>x.id===curResId);if(!r)return;
