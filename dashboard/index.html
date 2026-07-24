@@ -888,6 +888,13 @@ header{background:linear-gradient(135deg,var(--dark),var(--dark2));padding:0 20p
       <div id="evContratoAviso" style="display:none;margin-bottom:12px;padding:11px 13px;border-radius:10px;border:1px solid #f0c36d;background:#fff8e1;color:#7a5300;font-size:12.5px;line-height:1.45"></div>
       <div class="det-grid" id="evInfo"></div>
       <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px">
+        <div style="font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--pink);margin-bottom:8px">Contrato</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn btn-p" onclick="abrirNovoContratoEv()" style="min-height:42px">📝 Criar contrato (pré-preenchido)</button>
+        </div>
+        <div style="font-size:10px;color:var(--muted);margin-top:6px">Abre o Google Form com nome, telefone, data, horas, valor, caução e limpeza já preenchidos com os dados deste evento.</div>
+      </div>
+      <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px">
         <div style="font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--pink);margin-bottom:8px">Enviar template via WhatsApp</div>
         <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
           <select id="evMsgSel" style="flex:1;min-width:180px;border:1px solid var(--border);border-radius:9px;padding:9px 10px;font-family:var(--font);font-size:13px;outline:none;background:var(--card);min-height:42px">
@@ -3896,6 +3903,26 @@ function selecionarTemplateAviso(){
   const sel=$('evMsgSel');if(!sel)return;
   const idx=MSG_TEMPLATES.findIndex(t=>/contrato por assinar/i.test(t.titulo));
   if(idx>=0){sel.value=String(idx);enviarTemplateEv();}
+}
+const CONTRATO_FORM_BASE='https://docs.google.com/forms/d/e/1FAIpQLSdXojeBZeEKgUr05bGWwHYFrVypFL0XuQvnrWBYLw-KowfBLQ/viewform';
+const CONTRATO_FORM_ENTRIES={nome:'2039294775',nif:'170501223',morada:'478567186',whatsapp:'353489756',data:'2141012538',horaInicio:'1648949831',horaFim:'694426724',maxPessoas:'1178793517',valorBase:'257674912',caucao:'768064814',limpeza:'998747158',comIVA:'478766673',valorJaPago:'843143902',limpezaCargo:'756547867'};
+function novoContratoUrl(ev){
+  const p=new URLSearchParams();p.set('usp','pp_url');
+  const add=(k,v)=>{if(v===undefined||v===null)return;const s=String(v).trim();if(s==='')return;p.append('entry.'+CONTRATO_FORM_ENTRIES[k],s);};
+  add('nome',ev.cliente);
+  add('whatsapp',(ev.telefone||'').toString().replace(/\D/g,''));
+  if(ev.dataFesta){const [y,m,d]=String(ev.dataFesta).split('-');if(y&&m&&d){p.append('entry.'+CONTRATO_FORM_ENTRIES.data+'_year',y);p.append('entry.'+CONTRATO_FORM_ENTRIES.data+'_month',String(parseInt(m,10)));p.append('entry.'+CONTRATO_FORM_ENTRIES.data+'_day',String(parseInt(d,10)));}}
+  const setHora=(key,val)=>{if(!val)return;const [h,mm]=String(val).split(':');if(h===undefined)return;p.append('entry.'+CONTRATO_FORM_ENTRIES[key]+'_hour',String(parseInt(h,10)));p.append('entry.'+CONTRATO_FORM_ENTRIES[key]+'_minute',String(parseInt(mm||0,10)));};
+  setHora('horaInicio',ev.horaInicio);setHora('horaFim',ev.horaFim);
+  add('valorBase',ev.valorTotal);
+  add('caucao',ev.caucao);
+  add('limpeza',ev.limpeza);
+  try{add('valorJaPago',paidTotal(ev));}catch(e){}
+  return CONTRATO_FORM_BASE+'?'+p.toString();
+}
+function abrirNovoContratoEv(){
+  const ev=eventos.find(e=>e.rowIndex===curEvIdx);if(!ev){showToast('Evento não encontrado');return;}
+  window.open(novoContratoUrl(ev),'_blank');
 }
 function _driveDownloadUrl(url){
   if(!url)return '';
