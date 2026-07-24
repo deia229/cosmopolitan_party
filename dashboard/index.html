@@ -895,8 +895,9 @@ header{background:linear-gradient(135deg,var(--dark),var(--dark2));padding:0 20p
           </select>
           <button class="btn btn-p" onclick="enviarTemplateEv()" style="min-height:42px">📤 WhatsApp</button>
           <button class="btn btn-g" onclick="copiarTemplateEv()" style="min-height:42px">📋 Copiar</button>
+          <button class="btn btn-g" onclick="abrirPdfContratoEv()" style="min-height:42px" title="Abrir o PDF do contrato numa aba nova para descarregar e anexar no WhatsApp">📎 Abrir PDF</button>
         </div>
-        <div style="font-size:10px;color:var(--muted);margin-top:6px">Abre WhatsApp com a mensagem pré-preenchida — <code>[Nome]</code> e <code>[Data]</code> são substituídos automaticamente.</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:6px">Ao enviar um template de contrato, o PDF abre em paralelo para descarregares e anexares no WhatsApp.</div>
       </div>
       <div id="evInfoEdit" style="display:none;margin-top:14px;border-top:1px solid var(--border);padding-top:14px">
         <div style="font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--pink);margin-bottom:10px">Editar dados do cliente</div>
@@ -1746,11 +1747,9 @@ Qualquer dúvida estamos ao dispor.`
     titulo:'Envio do contrato (assinatura digital)',
     sub:'Quando o contrato está pronto para enviar.',
     corpo:`Boa tarde novamente
-Em anexo o contrato da festa de [Data].
+Envio em anexo o contrato da festa de [Data].
 
 É tudo digital — basta abrir o PDF e clicar no link de confirmação no final (Cláusula 7). Esse clique fica registado com data e hora e vale como aceitação.
-
-[Link do contrato]
 
 A reserva fica então garantida quando recebermos a confirmação e o sinal. Alguma questão que surja estamos ao dispor
 
@@ -1785,9 +1784,7 @@ Informo que falta apenas a assinatura do contrato para a festa de [Data].
 
 ⚠️ Sem o contrato assinado não é possível entregar o PIN de entrada no espaço
 
-O processo é rápido: basta abrir o PDF e clicar no link de confirmação no final (Cláusula 7). Esse clique fica registado com data e hora e vale como aceitação.
-
-Contrato em PDF: [Link do contrato]
+Reenvio em anexo o contrato — o processo é rápido: basta abrir o PDF e clicar no link de confirmação no final (Cláusula 7). Esse clique fica registado com data e hora e vale como aceitação.
 
 Assim que estiver tratado, enviaremos o PIN na data do evento
 
@@ -3900,6 +3897,17 @@ function selecionarTemplateAviso(){
   const idx=MSG_TEMPLATES.findIndex(t=>/contrato por assinar/i.test(t.titulo));
   if(idx>=0){sel.value=String(idx);enviarTemplateEv();}
 }
+function _driveDownloadUrl(url){
+  if(!url)return '';
+  const m=String(url).match(/\/d\/([a-zA-Z0-9_-]+)/)||String(url).match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  return m?`https://drive.google.com/uc?export=download&id=${m[1]}`:url;
+}
+function abrirPdfContratoEv(){
+  const ev=eventos.find(e=>e.rowIndex===curEvIdx);if(!ev){showToast('Evento não encontrado');return;}
+  const c=findContrato(ev);
+  if(!c||!c.linkPDF){showToast('Sem PDF associado a este evento');return;}
+  window.open(_driveDownloadUrl(c.linkPDF),'_blank');
+}
 function enviarTemplateEv(){
   const ev=eventos.find(e=>e.rowIndex===curEvIdx);if(!ev){showToast('Evento não encontrado');return;}
   const i=parseInt($('evMsgSel').value);
@@ -3907,7 +3915,15 @@ function enviarTemplateEv(){
   const tel=String(ev.telefone||'').replace(/\D/g,'');
   if(!tel){showToast('Sem telefone no evento');return;}
   const num=tel.length===9?'351'+tel:tel;
-  const msg=_preencherTemplate(MSG_TEMPLATES[i].corpo,ev);
+  const tpl=MSG_TEMPLATES[i];
+  const msg=_preencherTemplate(tpl.corpo,ev);
+  // Se é template de contrato, abre também o PDF para anexar
+  const ehContrato=/contrato/i.test(tpl.titulo);
+  if(ehContrato){
+    const c=findContrato(ev);
+    if(c&&c.linkPDF)window.open(_driveDownloadUrl(c.linkPDF),'_blank');
+    else showToast('⚠️ Template de contrato mas sem PDF associado — anexa manualmente');
+  }
   window.open(`https://wa.me/${num}?text=${encodeURIComponent(msg)}`,'_blank');
 }
 async function copiarTemplateEv(){
