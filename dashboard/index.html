@@ -885,6 +885,7 @@ header{background:linear-gradient(135deg,var(--dark),var(--dark2));padding:0 20p
       <button class="et-btn" onclick="swET('et-pag',this)">Pagamento</button>
     </div>
     <div class="et-panel on" id="et-info">
+      <div id="evContratoAviso" style="display:none;margin-bottom:12px;padding:11px 13px;border-radius:10px;border:1px solid #f0c36d;background:#fff8e1;color:#7a5300;font-size:12.5px;line-height:1.45"></div>
       <div class="det-grid" id="evInfo"></div>
       <div id="evInfoEdit" style="display:none;margin-top:14px;border-top:1px solid var(--border);padding-top:14px">
         <div style="font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--pink);margin-bottom:10px">Editar dados do cliente</div>
@@ -1764,6 +1765,23 @@ Passo só para confirmar se recebeu a minha mensagem sobre os dados para o contr
 Cosmopolitan Party`
   },
   {
+    titulo:'Aviso — contrato por assinar (sem PIN)',
+    sub:'Quando o evento se aproxima e o contrato ainda não foi assinado.',
+    corpo:`Olá [Nome],
+Falta apenas a assinatura do contrato para a festa de [Data].
+
+⚠️ Sem o contrato assinado não podemos entregar o PIN de entrada no espaço — e sem PIN não é possível aceder ao local no dia da festa.
+
+O processo é rápido: basta abrir o PDF e clicar no link de confirmação no final (Cláusula 7). Esse clique fica registado com data e hora e vale como aceitação.
+
+[Link do contrato]
+
+Assim que estiver tratado, enviamos o PIN e fica tudo garantido.
+
+Qualquer dúvida estamos ao dispor.
+Cosmopolitan Party`
+  },
+  {
     titulo:'Confirmação após assinatura',
     sub:'Quando o cliente confirma o contrato pelo link.',
     corpo:`Obrigada [Nome], está confirmado
@@ -2209,6 +2227,17 @@ async function openEvModal(idx){
     <div><div class="det-lbl">Telefone</div><div class="det-val" id="dispTelefone">${esc(ev.telefone||'—')}${origNote(ev._origTelefone,ev.telefone)}</div></div>
     <div><div class="det-lbl">Email</div><div class="det-val" id="dispEmail">${esc(ev.email||'—')}${origNote(ev._origEmail,ev.email)}</div></div>
     <div><div class="det-lbl">Observações</div><div class="det-val" id="dispObs" style="font-size:12px">${esc(ev.observacoes||'—')}</div></div>`;
+  const _cntSt=getContratoStatus(ev);
+  const _aviso=$('evContratoAviso');
+  if(_aviso){
+    if(_cntSt==='pend'||_cntSt==='none'){
+      const _lbl=_cntSt==='pend'?'ainda não foi assinado':'ainda não foi criado';
+      _aviso.innerHTML=`⚠️ <strong>Contrato ${_lbl}.</strong> Sem contrato assinado o PIN de entrada no espaço não pode ser entregue — e sem PIN não é possível aceder ao local no dia da festa. Envia o template <em>“Aviso — contrato por assinar (sem PIN)”</em> ao cliente.`;
+      _aviso.style.display='block';
+    }else{
+      _aviso.style.display='none';
+    }
+  }
   $('evPag').innerHTML=`
     <div><div class="det-lbl">Total</div><div class="det-val big">${eur(total)}</div></div>
     <div><div class="det-lbl">Em falta</div><div class="det-val" style="color:${falta<=0?'var(--green)':'var(--red)'};font-weight:700;font-size:16px">${eur(falta)}</div></div>
