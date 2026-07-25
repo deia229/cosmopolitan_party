@@ -56,6 +56,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 .toast.err{background:#fce4ec;border-color:var(--red);color:var(--red)}
 
 .loading{padding:30px 20px;text-align:center;color:var(--muted);font-size:13px}
+.login-wrap{padding:8px 20px 0}
+.login-wrap .field input{width:100%;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:15px 14px;font-size:16px;color:var(--text);outline:none;font-family:var(--font);appearance:none;-webkit-appearance:none}
+.login-wrap .field input:focus{border-color:var(--pink)}
+.login-hint{font-size:11px;color:var(--muted);padding:0 20px;margin-top:14px;text-align:center}
 </style>
 </head>
 <body>
@@ -67,7 +71,22 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
   </div>
   <div class="subtitle">Registar pagamento</div>
 
-  <div id="loading" class="loading">A carregar eventos…</div>
+  <div id="loading" class="loading">A verificar sessão…</div>
+
+  <div id="login" style="display:none">
+    <div class="login-wrap">
+      <div class="field">
+        <label>Email</label>
+        <input type="email" id="l-email" placeholder="teu@email.com" autocomplete="username">
+      </div>
+      <div class="field">
+        <label>Palavra-passe</label>
+        <input type="password" id="l-pass" placeholder="••••••••" autocomplete="current-password">
+      </div>
+    </div>
+    <button class="submit-btn" id="login-btn" onclick="fazerLogin()">Entrar</button>
+    <div class="login-hint">Usa a mesma conta do dashboard. A sessão fica guardada neste dispositivo.</div>
+  </div>
 
   <div id="form" style="display:none">
     <div class="form-wrap">
@@ -141,11 +160,36 @@ function normEvDate(s){
 }
 function fmtPT(iso){const m=String(iso||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?`${m[3]}/${m[2]}`:iso;}
 
-function init(){
+async function init(){
   $('f-data').value=todayISO();
   $('top-date').textContent=new Date().toLocaleDateString('pt-PT',{weekday:'long',day:'numeric',month:'long'});
+  const{data:{session}}=await sb.auth.getSession();
+  if(!session){mostrarLogin();return;}
   loadEventos();
 }
+function mostrarLogin(){
+  $('loading').style.display='none';
+  $('form').style.display='none';
+  $('login').style.display='block';
+  setTimeout(()=>$('l-email')?.focus(),150);
+}
+async function fazerLogin(){
+  const email=$('l-email').value.trim();
+  const password=$('l-pass').value;
+  if(!email||!password){toast('Preenche email e palavra-passe.','err');return;}
+  const btn=$('login-btn');btn.disabled=true;btn.textContent='A entrar…';
+  const{error}=await sb.auth.signInWithPassword({email,password});
+  btn.disabled=false;btn.textContent='Entrar';
+  if(error){toast('Erro: '+(error.message||'login inválido'),'err');return;}
+  $('l-pass').value='';
+  $('login').style.display='none';
+  $('loading').style.display='block';
+  $('loading').textContent='A carregar eventos…';
+  loadEventos();
+}
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&$('login').style.display!=='none')fazerLogin();
+});
 
 function loadEventos(){
   const cb='cpreg_'+Date.now();
