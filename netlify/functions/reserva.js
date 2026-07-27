@@ -45,8 +45,9 @@ function fmtEur(n) {
 // confirmarem e carregarem em Enviar.
 //
 // Valores derivados do pedido do site:
-//   total do site = valor do espaço (já com limpeza) + caução (100€)
-//   → valor do espaço = total − 100 ;  sinal 50% = espaço ÷ 2
+//   total do site = valor a pagar, já com limpeza e com a caução (100€) incluída
+//   → apresenta-se o total tal como vem do site ;  sinal = 50% do total
+//   A caução conta para o pagamento e é devolvida nos dias a seguir ao evento.
 function waConfirmacaoLink(d) {
   const telNorm = normalizePtPhone(d.contacto);
   if (!telNorm) return "";
@@ -56,8 +57,7 @@ function waConfirmacaoLink(d) {
   const horario = d.entrada && d.saida ? `${d.entrada} às ${d.saida}` : "";
 
   const total = parseTotalNum(d.total);
-  const espaco = total != null ? total - CAUCAO_EUR : null;
-  const temValores = espaco != null && espaco > 0;
+  const temValores = total != null && total > 0;
 
   const linhas = [
     `${saudacao} ✨ Obrigada pelo interesse na Cosmopolitan Party.`,
@@ -65,9 +65,9 @@ function waConfirmacaoLink(d) {
     dataPt
       ? `Ainda temos disponibilidade para o dia ${dataPt}!` +
         (temValores
-          ? ` Para o turno ${horario}, o valor do espaço é de ${fmtEur(espaco)}€ (+IVA) e já inclui a limpeza.`
+          ? ` Para o turno ${horario}, o valor é de ${fmtEur(total)}€ (+IVA) e já inclui a limpeza.`
           : horario
-          ? ` Para o turno ${horario}, o valor do espaço já inclui a limpeza.`
+          ? ` Para o turno ${horario}, o valor já inclui a limpeza.`
           : "")
       : "Ainda temos disponibilidade para a data pedida!",
   ];
@@ -75,9 +75,9 @@ function waConfirmacaoLink(d) {
   if (temValores) {
     linhas.push(
       "",
-      `A caução é de ${fmtEur(CAUCAO_EUR)}€, devolvida após o evento se estiver tudo em conformidade.`,
+      `Neste valor estão incluídos ${fmtEur(CAUCAO_EUR)}€ de caução, que contam para o pagamento e são devolvidos nos dias a seguir ao evento, se estiver tudo em conformidade.`,
       "",
-      `Para garantir a data, é necessário o pagamento de 50% — ${fmtEur(espaco / 2)} € por:`,
+      `Para garantir a data, é necessário o pagamento de 50% — ${fmtEur(total / 2)} € por:`,
       `• MBWay ${PAG_MBWAY}`,
       `• ${PAG_IBAN}`,
       "E envio de comprovativo."
