@@ -177,8 +177,8 @@ function doGetDashboard(e) {
         rowIndex:    idx,
         carimbo:     formatVal_(col(HDR_TS)),
         dataFesta:   formatVal_(col(HDR_DATA)),
-        horaInicio:  formatVal_(col(HDR_INICIO)),
-        horaFim:     formatVal_(col(HDR_FIM)),
+        horaInicio:  formatHora_(col(HDR_INICIO)),
+        horaFim:     formatHora_(col(HDR_FIM)),
         cliente:     col(HDR_NOME),
         telefone:    String(col(HDR_TEL)),
         valorTotal:  parseFloat(col(HDR_VALOR))   || 0,
@@ -249,7 +249,33 @@ function onFormSubmit(e) {
   const row = e.range.getRow();
   if (row <= 1) return;
 
-  criarEventoFesta_(sh, row, { notificar: true });
+  try {
+    criarEventoFesta_(sh, row, { notificar: true });
+  } catch (err) {
+    // Sem isto a submissão falha em silêncio: a linha fica na folha, o evento
+    // nunca é criado e ninguém dá por isso até dar de caras com o calendário.
+    marcarFalhaSync_(sh, row, err);
+    throw err;
+  }
+}
+
+
+/***** Regista a falha na coluna Sync e avisa por email *****/
+function marcarFalhaSync_(sh, row, err) {
+  const msg = String(err && err.message || err);
+  try {
+    const cols = getColsOpt_(sh, [HDR_SYNC, HDR_NOME, HDR_DATA]);
+    if (cols[HDR_SYNC]) sh.getRange(row, cols[HDR_SYNC]).setValue('ERRO: ' + msg.slice(0, 180));
+    const nome = cols[HDR_NOME] ? sh.getRange(row, cols[HDR_NOME]).getValue() : '';
+    const data = cols[HDR_DATA] ? sh.getRange(row, cols[HDR_DATA]).getValue() : '';
+    const subj = `⚠️ Festa NÃO criada no calendário: ${nome || 'sem nome'}`;
+    const body = `A linha ${row} da folha "${SHEET_NAME}" entrou, mas o evento não foi criado.\n\n` +
+      `Cliente: ${nome || '-'}\nData: ${formatarDataPt_(data)}\nErro: ${msg}\n\n` +
+      `Corrige a linha e usa "Sincronizar Calendar" no dashboard para criar o evento.`;
+    EMAIL_TO.forEach(to => { if (to) GmailApp.sendEmail(to, subj, body, { name: 'Cosmopolitan Party' }); });
+  } catch (e2) {
+    Logger.log('marcarFalhaSync_ falhou: ' + e2);
+  }
 }
 
 
@@ -787,10 +813,16 @@ function normalizeDate_(v) {
   if (v instanceof Date && !isNaN(v.getTime())) return v;
   const s = String(v).trim();
   if (!s) return null;
+
+  // Formatos explícitos PRIMEIRO. new Date('05/12/2026') seria lido à
+  // americana (12 de Maio) — dia/mês trocados sempre que o dia é <= 12.
+  let m = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/);        // DD/MM/YYYY
+  if (m) return new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
+  m = s.match(/^(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})/);             // YYYY-MM-DD
+  if (m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+
   const parsed = new Date(s);
   if (!isNaN(parsed.getTime())) return parsed;
-  const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-  if (m) return new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
   return null;
 }
 
@@ -802,10 +834,23 @@ function normalizeTime_(v) {
     const total = Math.round(v * 86400);
     return { hours: Math.floor(total / 3600) % 24, minutes: Math.floor((total % 3600) / 60), seconds: total % 60 };
   }
-  const s = String(v).trim();
-  const m = s.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+  // Texto escrito à mão: "18:00", "18h", "18h30", "18.30", "18", "18:00h",
+  // "18 : 00", "8:00 AM". Antes só passava "H:MM" — tudo o resto rebentava
+  // o acionador e a festa ficava sem evento no calendário.
+  let s = String(v).trim().toLowerCase().replace(/\s+/g, '');
+  if (!s) return null;
+  const ampm = /(am|pm)$/.exec(s);
+  if (ampm) s = s.slice(0, -2);
+  const m = s.match(/^(\d{1,2})(?:[:h.,](\d{1,2}))?(?:[:.,](\d{1,2}))?h?$/);
   if (!m) return null;
-  const h = Number(m[1]), mi = Number(m[2]), se = m[3] ? Number(m[3]) : 0;
+  let h = Number(m[1]);
+  const mi = m[2] ? Number(m[2]) : 0;
+  const se = m[3] ? Number(m[3]) : 0;
+  if (ampm) {
+    if (h > 12) return null;
+    if (ampm[1] === 'pm' && h < 12) h += 12;
+    if (ampm[1] === 'am' && h === 12) h = 0;
+  }
   if (h > 23 || mi > 59 || se > 59) return null;
   return { hours: h, minutes: mi, seconds: se };
 }
@@ -814,6 +859,17 @@ function formatVal_(v) {
   if (v instanceof Date && !isNaN(v.getTime())) {
     return Utilities.formatDate(v, TZ, 'yyyy-MM-dd');
   }
+  return String(v);
+}
+
+// Horas: uma célula formatada como hora chega cá como Date (1899-12-30),
+// que o formatVal_ devolveria como data. Devolve sempre HH:mm.
+function formatHora_(v) {
+  if (v instanceof Date && !isNaN(v.getTime())) {
+    return Utilities.formatDate(v, TZ, 'HH:mm');
+  }
+  const t = normalizeTime_(v);
+  if (t) return `${String(t.hours).padStart(2, '0')}:${String(t.minutes).padStart(2, '0')}`;
   return String(v);
 }
 
