@@ -851,6 +851,10 @@ function normalizeTime_(v) {
     if (ampm[1] === 'pm' && h < 12) h += 12;
     if (ampm[1] === 'am' && h === 12) h = 0;
   }
+  // "24:00" (meia-noite) e madrugadas escritas como 25h/26h: passam para a
+  // hora equivalente do dia seguinte. Quem chama já empurra o fim +24h
+  // quando ele fica <= ao início, por isso o dia certo sai sozinho.
+  if (h >= 24 && h <= 29) h -= 24;
   if (h > 23 || mi > 59 || se > 59) return null;
   return { hours: h, minutes: mi, seconds: se };
 }
