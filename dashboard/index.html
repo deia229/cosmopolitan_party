@@ -842,7 +842,7 @@ header{background:linear-gradient(135deg,var(--dark),var(--dark2));padding:0 20p
       <a href="https://calendar.google.com/calendar/r?cid=cosmopolitanparty.loures@gmail.com" target="_blank" class="tool-card"><div class="tool-icon">📅</div><div class="tool-badge">CALENDÁRIO</div><div class="tool-name">Calendário de Festas</div><div class="tool-desc">Google Calendar com todos os eventos.</div></a>
       <a href="https://docs.google.com/spreadsheets/d/1d4g95miZ9LFgvakB4nsJs8QHCY5O-0xWJOa5FcpekPQ" target="_blank" class="tool-card"><div class="tool-icon">📊</div><div class="tool-badge">SHEET</div><div class="tool-name">Base de Dados</div><div class="tool-desc">Google Sheet com registos, contratos e pagamentos.</div></a>
       <div class="tool-card" id="driveToolCard" onclick="abrirDrive()"><div class="tool-icon">📁</div><div class="tool-badge">DRIVE</div><div class="tool-name">Documentos</div><div class="tool-desc" id="driveLinkDesc">Contratos, PDFs e ficheiros do espaço.</div></div>
-      <div class="tool-card" id="syncCalCard" onclick="sincronizarTodosCalendar()"><div class="tool-icon">🔄</div><div class="tool-badge">SYNC</div><div class="tool-name">Sincronizar Calendar</div><div class="tool-desc" id="syncCalDesc">Aplica overrides (nome/tel/obs) aos eventos do Calendar.</div></div>
+      <div class="tool-card" id="syncCalCard" onclick="sincronizarTodosCalendar()"><div class="tool-icon">🔄</div><div class="tool-badge">SYNC</div><div class="tool-name">Sincronizar Calendar</div><div class="tool-desc" id="syncCalDesc">Cria os eventos em falta e aplica overrides (nome/tel/obs) no Calendar.</div></div>
       <div class="tool-card" id="ericaToolCard" onclick="abrirEricaModal()" style="display:none"><div class="tool-icon">⏱️</div><div class="tool-badge" id="ehMiniBadge">HORAS</div><div class="tool-name">Horas — Erica</div><div class="tool-desc" id="ehMiniDesc">○ Parado · Hoje 0h00</div></div>
     </div>
   </div>
@@ -3003,6 +3003,7 @@ function computeAlertas(){
   const today=new Date();today.setHours(0,0,0,0);
   const inDays=ev=>{if(!ev.dataFesta)return Infinity;const d=new Date(ev.dataFesta+'T00:00:00');return Math.ceil((d-today)/86400000);};
   let semContrato=0,porAssinar=0,semSinal=0,pedidosNovos=0,tarefasAtrasadas=0;
+  const semCalendar=eventosSemCalendar().length;
   (eventos||[]).forEach(ev=>{
     if(isArchived(ev))return;
     const diff=inDays(ev);
@@ -3025,12 +3026,23 @@ function computeAlertas(){
     const cre=p.created_at?new Date(p.created_at).getTime():0;
     if(cre&&cre<=limiteDt)pedidosNovos++;
   });
-  return{semContrato,porAssinar,semSinal,pedidosNovos,tarefasAtrasadas};
+  return{semContrato,porAssinar,semSinal,pedidosNovos,tarefasAtrasadas,semCalendar};
+}
+// Festas de hoje em diante que não têm evento no Google Calendar.
+// Acontece quando a linha é escrita à mão na Sheet: o acionador do Apps Script
+// só dispara em submissões do formulário, por isso o evento nunca é criado.
+function eventosSemCalendar(){
+  const today=new Date();today.setHours(0,0,0,0);
+  return(eventos||[]).filter(ev=>{
+    if(isArchived(ev)||!ev.dataFesta)return false;
+    if(new Date(ev.dataFesta+'T00:00:00')<today)return false;
+    return!String(ev.linkCalendar||'').trim();
+  }).sort((a,b)=>(a.dataFesta||'').localeCompare(b.dataFesta||''));
 }
 function renderAlertas(){
   const strip=$('alertStrip');if(!strip)return;
   const a=computeAlertas();
-  const total=a.semContrato+a.porAssinar+a.semSinal+a.pedidosNovos+a.tarefasAtrasadas;
+  const total=a.semContrato+a.porAssinar+a.semSinal+a.pedidosNovos+a.tarefasAtrasadas+a.semCalendar;
   if(total===0){strip.className='alert-strip alert-ok';strip.innerHTML='<div class="alert-empty">✓ Tudo em dia</div>';return;}
   strip.className='alert-strip';
   const chip=(cls,ic,lbl,n,onclick,title)=>`<div class="alert-chip ${cls}" onclick="${onclick}" title="${title}"><span class="a-ic">${ic}</span><span>${lbl}</span><span class="a-num">${n}</span></div>`;
@@ -3040,6 +3052,7 @@ function renderAlertas(){
   if(a.semSinal)chips.push(chip('pink','💶','Sinal em falta',a.semSinal,'goAlertaEventos()','Festas a ≤7 dias sem qualquer pagamento'));
   if(a.tarefasAtrasadas)chips.push(chip('red','📋','Tarefas atrasadas',a.tarefasAtrasadas,'goAlertaChecklist()','Tarefas do modelo Geral com data ultrapassada'));
   if(a.pedidosNovos)chips.push(chip('blue','📬','Pedidos novos',a.pedidosNovos,'goAlertaPedidos()','Pedidos de decoração "novo" há >2 dias sem resposta'));
+  if(a.semCalendar)chips.push(chip('amber','📅','Sem Calendar',a.semCalendar,'criarEventosCalendarioEmFalta()','Festas futuras que não estão no Google Calendar — clica para criar os eventos'));
   strip.innerHTML=chips.join('');
 }
 function goAlertaChecklist(){abrirTarefasAtrasadas();}
@@ -3453,6 +3466,41 @@ function pushCalendarUpdate(ev,nome,tel,obs){
     else if(res&&res.err&&res.err!=='sem link')showToast('⚠ Calendar: '+res.err);
   });
 }
+// Cria no Google Calendar as festas que estão na Sheet mas nunca geraram evento.
+// (O acionador do Apps Script só corre para linhas criadas pelo formulário —
+//  linhas escritas à mão na Sheet aparecem no dashboard mas não no calendário.)
+function criarEventosCalFaltaAsync(){
+  return new Promise(resolve=>{
+    if(!SCRIPT_URL){resolve({ok:false,err:'sem SCRIPT_URL'});return;}
+    const cb='calfalta_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
+    let done=false;
+    const cleanup=()=>{delete window[cb];document.getElementById('_'+cb)?.remove();};
+    const timer=setTimeout(()=>{if(done)return;done=true;cleanup();resolve({ok:false,err:'timeout'});},120000);
+    window[cb]=res=>{if(done)return;done=true;clearTimeout(timer);cleanup();resolve(res||{ok:false,err:'sem resposta'});};
+    const s=document.createElement('script');s.id='_'+cb;
+    s.src=SCRIPT_URL+'?'+new URLSearchParams({page:'criarCalFalta',callback:cb}).toString();
+    s.onerror=()=>{if(done)return;done=true;clearTimeout(timer);cleanup();resolve({ok:false,err:'network'});};
+    document.head.appendChild(s);
+  });
+}
+// Wrapper com confirmação e toasts — usado pelo alerta "Sem Calendar".
+let _calFaltaInProgress=false;
+async function criarEventosCalendarioEmFalta(){
+  if(_calFaltaInProgress){showToast('Já está a criar…');return;}
+  const emFalta=eventosSemCalendar();
+  if(!emFalta.length){showToast('Todas as festas futuras já estão no Calendar.');return;}
+  const lista=emFalta.slice(0,8).map(e=>`• ${e.cliente||'—'} — ${fmtD(e.dataFesta)}`).join('\n');
+  if(!confirm(`Criar no Google Calendar ${emFalta.length} festa(s) sem evento?\n\n${lista}${emFalta.length>8?'\n…':''}`))return;
+  _calFaltaInProgress=true;
+  showToast('A criar eventos no Calendar…');
+  const res=await criarEventosCalFaltaAsync();
+  _calFaltaInProgress=false;
+  if(!res||!res.ok){showToast('⚠ Calendar: '+((res&&res.err)||'falhou'));return;}
+  const n=(res.criadas||[]).length;
+  const erros=(res.erros||[]).length;
+  showToast(n?`✓ ${n} evento(s) criado(s)${erros?` · ${erros} com erro`:''}`:'Nada para criar.');
+  if(n)loadEventos();
+}
 // Sincroniza Google Calendar para TODAS as festas com overrides no Supabase.
 // Pergunta antes; mostra progresso; throttled para não martelar o Apps Script.
 let _syncCalInProgress=false;
@@ -3460,9 +3508,15 @@ async function sincronizarTodosCalendar(){
   if(_syncCalInProgress){showToast('Já está a sincronizar…');return;}
   if(!sb){showToast('Supabase não disponível');return;}
   if(!eventos||!eventos.length){showToast('Eventos ainda a carregar — tenta daqui a uns segundos.');return;}
-  if(!confirm('Sincronizar Google Calendar com TODAS as festas que tenham nome/tel/obs editado?\n\nIsto vai atualizar título e descrição dos eventos correspondentes.'))return;
+  if(!confirm('Sincronizar Google Calendar com TODAS as festas?\n\n• Cria os eventos das festas futuras que ainda não estão no Calendar\n• Atualiza título e descrição das festas com nome/tel/obs editado'))return;
   _syncCalInProgress=true;
   const card=$('syncCalDesc');const orig=card?card.textContent:'';
+  // 1) Criar eventos em falta (linhas metidas à mão na Sheet nunca criam evento)
+  if(card)card.textContent='A criar eventos em falta…';
+  const criar=await criarEventosCalFaltaAsync();
+  const criadas=(criar&&criar.ok&&(criar.criadas||[]).length)||0;
+  if(criadas)loadEventos();
+  // 2) Aplicar overrides aos eventos existentes
   if(card)card.textContent='A procurar festas com overrides…';
   const{data,error}=await sb.from('cp_event_costs')
     .select('event_key,cliente_override,telefone_override,email_override')
@@ -3482,7 +3536,9 @@ async function sincronizarTodosCalendar(){
   }
   if(card)card.textContent=orig;
   _syncCalInProgress=false;
-  const parts=[`✓ ${ok} sincronizadas`];
+  const parts=[];
+  if(criadas)parts.push(`✓ ${criadas} criadas no Calendar`);
+  parts.push(`✓ ${ok} sincronizadas`);
   if(fail)parts.push(`${fail} falharam`);
   if(skipped)parts.push(`${skipped} sem link Calendar`);
   showToast(parts.join(' · '));

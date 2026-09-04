@@ -57,6 +57,7 @@ function doGet(e) {
   if (param === 'dados') return doGetDashboard(e);
   if (param === 'updateCal') return updateCalEvento_(e);
   if (param === 'ocupadas') return doGetOcupadas_(e);
+  if (param === 'criarCalFalta') return doGetCriarCalFalta_(e);
 
   // Por defeito → página de disponibilidade
   return HtmlService.createHtmlOutputFromFile('index')
@@ -248,6 +249,19 @@ function onFormSubmit(e) {
   const row = e.range.getRow();
   if (row <= 1) return;
 
+  criarEventoFesta_(sh, row, { notificar: true });
+}
+
+
+/***** Cria o evento no Google Calendar para UMA linha da folha "Festas".
+ *     Usado pelo acionador do formulário e pelo backfill das linhas
+ *     acrescentadas à mão (essas nunca passam pelo acionador).
+ *     opts.notificar — envia o email interno com link WhatsApp (default: true)
+ *     Devolve { ok, link?, cliente?, row?, motivo? }. Lança em datas inválidas.
+ *****/
+function criarEventoFesta_(sh, row, opts) {
+  const notificar = !opts || opts.notificar !== false;
+
   const cols = getCols_(sh, [
     HDR_DATA, HDR_INICIO, HDR_FIM,
     HDR_NOME, HDR_TEL, HDR_VALOR, HDR_CAUCAO, HDR_LIMPEZA, HDR_PAGO, HDR_OBS,
@@ -257,7 +271,7 @@ function onFormSubmit(e) {
   const colsOpt = getColsOpt_(sh, [HDR_QUEM_LIMPA]);
 
   const syncVal = sh.getRange(row, cols[HDR_SYNC]).getValue();
-  if (String(syncVal).trim().toUpperCase() === 'OK') return;
+  if (String(syncVal).trim().toUpperCase() === 'OK') return { ok: false, motivo: 'ja-sincronizada' };
 
   const dataFesta = sh.getRange(row, cols[HDR_DATA]).getValue();
   const horaIni   = sh.getRange(row, cols[HDR_INICIO]).getValue();
@@ -357,31 +371,121 @@ Qualquer dúvida estamos ao dispor.`;
   const telNorm = normalizePtPhone_(tel);
   const waLink = telNorm ? `https://wa.me/${telNorm}?text=${encodeURIComponent(msgPedido)}` : '';
 
-  const subj = `Festa criada no calendário: ${titulo}`;
-  const bodyText = `${descricao}\n\nLink do evento: ${linkEvento}` +
-    (waLink ? `\n\nPedido de dados ao cliente (1 clique):\n${waLink}` : '\n\nSem telefone válido — pedido de dados tem de ser enviado manualmente.');
+  if (!notificar) return { ok: true, link: linkEvento, cliente: String(nome || ''), row: row };
 
-  const htmlBody =
-    '<div style="font-family:Arial,sans-serif;max-width:560px;color:#1a0010">' +
-      '<div style="background:linear-gradient(135deg,#e0187a,#ff4da6);padding:20px;border-radius:12px 12px 0 0;color:#fff">' +
-        '<div style="font-size:11px;letter-spacing:3px;text-transform:uppercase;opacity:.85">Cosmopolitan Party</div>' +
-        `<div style="font-size:20px;font-weight:700;margin-top:6px">Festa criada</div>` +
-        `<div style="font-size:13px;opacity:.9;margin-top:4px">${escapeHtml_(nome || 'Cliente')} · ${escapeHtml_(dataPt)}</div>` +
-      '</div>' +
-      '<div style="border:1px solid #f0c8dc;border-top:none;border-radius:0 0 12px 12px;padding:20px">' +
-        `<pre style="font-family:Arial,sans-serif;white-space:pre-wrap;font-size:13px;margin:0 0 16px;color:#333">${escapeHtml_(descricao)}</pre>` +
-        `<p style="margin:0 0 10px;font-size:13px"><a href="${linkEvento}" style="color:#e0187a;text-decoration:none;font-weight:600">Abrir no Google Calendar</a></p>` +
-        (waLink
-          ? `<div style="margin-top:18px;padding-top:14px;border-top:1px solid #f0c8dc"><p style="margin:0 0 8px;font-size:12px;color:#8a5a70">Próximo passo — pedido de dados ao cliente:</p><a href="${waLink}" style="display:inline-block;background:#25D366;color:#fff;text-decoration:none;padding:11px 18px;border-radius:9px;font-weight:600;font-size:13px">Enviar WhatsApp (mensagem pronta)</a></div>`
-          : '<p style="margin-top:14px;color:#c0143c;font-size:12px">Sem telefone válido — pedido de dados tem de ser enviado manualmente.</p>') +
-      '</div>' +
-    '</div>';
+  {
+    const subj = `Festa criada no calendário: ${titulo}`;
+    const bodyText = `${descricao}\n\nLink do evento: ${linkEvento}` +
+      (waLink ? `\n\nPedido de dados ao cliente (1 clique):\n${waLink}` : '\n\nSem telefone válido — pedido de dados tem de ser enviado manualmente.');
 
-  EMAIL_TO.forEach(to => {
-    if (!to) return;
-    // GmailApp.sendEmail só aceita assinatura posicional (recipient, subject, body, options)
-    GmailApp.sendEmail(to, subj, bodyText, { htmlBody: htmlBody, name: 'Cosmopolitan Party' });
-  });
+    const htmlBody =
+      '<div style="font-family:Arial,sans-serif;max-width:560px;color:#1a0010">' +
+        '<div style="background:linear-gradient(135deg,#e0187a,#ff4da6);padding:20px;border-radius:12px 12px 0 0;color:#fff">' +
+          '<div style="font-size:11px;letter-spacing:3px;text-transform:uppercase;opacity:.85">Cosmopolitan Party</div>' +
+          `<div style="font-size:20px;font-weight:700;margin-top:6px">Festa criada</div>` +
+          `<div style="font-size:13px;opacity:.9;margin-top:4px">${escapeHtml_(nome || 'Cliente')} · ${escapeHtml_(dataPt)}</div>` +
+        '</div>' +
+        '<div style="border:1px solid #f0c8dc;border-top:none;border-radius:0 0 12px 12px;padding:20px">' +
+          `<pre style="font-family:Arial,sans-serif;white-space:pre-wrap;font-size:13px;margin:0 0 16px;color:#333">${escapeHtml_(descricao)}</pre>` +
+          `<p style="margin:0 0 10px;font-size:13px"><a href="${linkEvento}" style="color:#e0187a;text-decoration:none;font-weight:600">Abrir no Google Calendar</a></p>` +
+          (waLink
+            ? `<div style="margin-top:18px;padding-top:14px;border-top:1px solid #f0c8dc"><p style="margin:0 0 8px;font-size:12px;color:#8a5a70">Próximo passo — pedido de dados ao cliente:</p><a href="${waLink}" style="display:inline-block;background:#25D366;color:#fff;text-decoration:none;padding:11px 18px;border-radius:9px;font-weight:600;font-size:13px">Enviar WhatsApp (mensagem pronta)</a></div>`
+            : '<p style="margin-top:14px;color:#c0143c;font-size:12px">Sem telefone válido — pedido de dados tem de ser enviado manualmente.</p>') +
+        '</div>' +
+      '</div>';
+
+    EMAIL_TO.forEach(to => {
+      if (!to) return;
+      // GmailApp.sendEmail só aceita assinatura posicional (recipient, subject, body, options)
+      GmailApp.sendEmail(to, subj, bodyText, { htmlBody: htmlBody, name: 'Cosmopolitan Party' });
+    });
+  }
+
+  return { ok: true, link: linkEvento, cliente: String(nome || ''), row: row };
+}
+
+
+/***** BACKFILL — cria no Google Calendar as festas que ficaram de fora.
+ *     O acionador "Ao enviar um formulário" só corre para linhas criadas
+ *     PELO formulário. Linhas escritas à mão na folha "Festas" nunca criam
+ *     evento — ficam no dashboard mas não no calendário. Isto trata delas.
+ *
+ *     Salta qualquer linha que já tenha Sync = OK ou link de calendário,
+ *     por isso nunca duplica eventos. Pode correr-se as vezes que forem
+ *     precisas.
+ *
+ *     opts.apenasFuturas — só festas de hoje em diante (default: true)
+ *     opts.notificar     — email interno por cada evento criado (default: false)
+ *****/
+function sincronizarFestasEmFalta(opts) {
+  opts = opts || {};
+  const apenasFuturas = opts.apenasFuturas !== false;
+  const notificar = opts.notificar === true;
+
+  const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+  if (!sh) return { ok: false, err: `Folha "${SHEET_NAME}" não encontrada.` };
+
+  const cols = getCols_(sh, [HDR_DATA, HDR_NOME, HDR_SYNC, HDR_LINK_F]);
+  const valores = sh.getDataRange().getValues();
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+
+  const criadas = [];
+  const erros = [];
+  let jaOk = 0, passadas = 0;
+
+  for (let i = 1; i < valores.length; i++) {
+    const linha = valores[i];
+    const row = i + 1;
+    const dataVal = linha[cols[HDR_DATA] - 1];
+    const nome = String(linha[cols[HDR_NOME] - 1] || '').trim();
+    const sync = String(linha[cols[HDR_SYNC] - 1] || '').trim().toUpperCase();
+    const link = String(linha[cols[HDR_LINK_F] - 1] || '').trim();
+
+    if (!dataVal || !nome) continue;
+    if (sync === 'OK' || link) { jaOk++; continue; }
+
+    const d = normalizeDate_(dataVal);
+    if (!d) { erros.push({ row: row, cliente: nome, err: 'Data da festa inválida.' }); continue; }
+    d.setHours(0, 0, 0, 0);
+    if (apenasFuturas && d.getTime() < hoje.getTime()) { passadas++; continue; }
+
+    try {
+      const res = criarEventoFesta_(sh, row, { notificar: notificar });
+      if (res && res.ok) {
+        criadas.push({
+          row: row,
+          cliente: nome,
+          data: Utilities.formatDate(d, TZ, 'yyyy-MM-dd'),
+          link: res.link
+        });
+      }
+    } catch (err) {
+      erros.push({ row: row, cliente: nome, err: String(err && err.message || err) });
+    }
+  }
+
+  const resumo = { ok: true, criadas: criadas, erros: erros, jaSincronizadas: jaOk, ignoradasPassadas: passadas };
+  Logger.log(JSON.stringify(resumo));
+  return resumo;
+}
+
+
+/***** Rota GET ?page=criarCalFalta[&todas=1] — backfill chamado pelo dashboard *****/
+function doGetCriarCalFalta_(e) {
+  const callback = e && e.parameter && e.parameter.callback;
+  const send = obj => {
+    const json = JSON.stringify(obj);
+    return ContentService
+      .createTextOutput(callback ? `${callback}(${json})` : json)
+      .setMimeType(callback ? ContentService.MimeType.JAVASCRIPT : ContentService.MimeType.JSON);
+  };
+  try {
+    const todas = e && e.parameter && e.parameter.todas === '1';
+    return send(sincronizarFestasEmFalta({ apenasFuturas: !todas, notificar: false }));
+  } catch (err) {
+    return send({ ok: false, err: String(err && err.message || err) });
+  }
 }
 
 // ─── Helpers para o pedido de dados ───
