@@ -201,6 +201,9 @@ function gerarContratoDocEPdf_(dados) {
     '[NIF]': dados.nif || '—',
     '[MORADA]': dados.morada || '—',
     '[TELEFONE]': dados.telefone || '—',
+    // A Sheet não recolhe email do cliente — sem esta linha o contrato saía
+    // com o literal "[EMAIL CLIENTE]" impresso na identificação das partes.
+    '[EMAIL CLIENTE]': dados.email || '—',
     '[DATA]': dados.dataEvento || '',
     '[HORA INÍCIO]': dados.horaInicio || '',
     '[HORA FIM]': dados.horaFim || '',
