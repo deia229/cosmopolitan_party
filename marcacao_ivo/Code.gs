@@ -32,9 +32,6 @@ const FORM_FIELDS = {
 };
 const BUFFER_MINUTES = 0;
 
-// Página de registo de pagamentos da festa (dashboard Netlify).
-const LINK_REGISTO_PAGAMENTO = 'https://cosmopolitanparty.netlify.app/registo.html';
-
 
 /***** CONFIG — VISITAS *****/
 const VST_EMAILS_INTERNOS = ['cosmopolitanparty.loures@gmail.com', 'ocasiaodemordomias@gmail.com'];
@@ -362,7 +359,6 @@ Qualquer dúvida estamos ao dispor.`;
 
   const subj = `Festa criada no calendário: ${titulo}`;
   const bodyText = `${descricao}\n\nLink do evento: ${linkEvento}` +
-    `\n\nRegistar pagamento da festa:\n${LINK_REGISTO_PAGAMENTO}` +
     (waLink ? `\n\nPedido de dados ao cliente (1 clique):\n${waLink}` : '\n\nSem telefone válido — pedido de dados tem de ser enviado manualmente.');
 
   const htmlBody =
@@ -375,7 +371,6 @@ Qualquer dúvida estamos ao dispor.`;
       '<div style="border:1px solid #f0c8dc;border-top:none;border-radius:0 0 12px 12px;padding:20px">' +
         `<pre style="font-family:Arial,sans-serif;white-space:pre-wrap;font-size:13px;margin:0 0 16px;color:#333">${escapeHtml_(descricao)}</pre>` +
         `<p style="margin:0 0 10px;font-size:13px"><a href="${linkEvento}" style="color:#e0187a;text-decoration:none;font-weight:600">Abrir no Google Calendar</a></p>` +
-        `<p style="margin:0 0 10px;font-size:13px"><a href="${LINK_REGISTO_PAGAMENTO}" style="color:#e0187a;text-decoration:none;font-weight:600">Registar pagamento da festa</a></p>` +
         (waLink
           ? `<div style="margin-top:18px;padding-top:14px;border-top:1px solid #f0c8dc"><p style="margin:0 0 8px;font-size:12px;color:#8a5a70">Próximo passo — pedido de dados ao cliente:</p><a href="${waLink}" style="display:inline-block;background:#25D366;color:#fff;text-decoration:none;padding:11px 18px;border-radius:9px;font-weight:600;font-size:13px">Enviar WhatsApp (mensagem pronta)</a></div>`
           : '<p style="margin-top:14px;color:#c0143c;font-size:12px">Sem telefone válido — pedido de dados tem de ser enviado manualmente.</p>') +
@@ -567,7 +562,6 @@ Cosmopolitan Party`;
         seccao(`D-7 (${lembretes.d7.length})`, 'Cobrar pagamento em falta', lembretes.d7) +
         seccao(`D-1 (${lembretes.d1.length})`, 'Confirmação do dia seguinte', lembretes.d1) +
         '<p style="font-size:11px;color:#8a5a70;margin-top:14px;border-top:1px solid #f0c8dc;padding-top:10px">Clica em cada botão verde para abrir o WhatsApp com a mensagem pronta. Não envia automaticamente — tens de carregar em Enviar.</p>' +
-        `<p style="font-size:12px;margin:10px 0 0"><a href="${LINK_REGISTO_PAGAMENTO}" style="color:#e0187a;text-decoration:none;font-weight:600">Registar pagamento recebido →</a></p>` +
       '</div>' +
     '</div>';
 
@@ -585,7 +579,6 @@ Cosmopolitan Party`;
     textParts.push(`\nD-1 — Festa amanhã (${lembretes.d1.length}):`);
     lembretes.d1.forEach(i => textParts.push(`  ${i.nome} · ${i.dataPt}` + (i.waLink ? `\n    ${i.waLink}` : '')));
   }
-  textParts.push(`\nRegistar pagamento recebido:\n  ${LINK_REGISTO_PAGAMENTO}`);
   const bodyText = textParts.join('\n');
 
   LEMBRETES_EMAIL_TO.forEach(to => {
