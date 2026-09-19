@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<title>Cosmopolitan Party — Custos de Catering</title>
+<meta name="theme-color" content="#e0187a">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --pink:#e0187a;--pink2:#ff4da6;--pink3:#fce4ec;
+  --dark:#1a0010;--dark2:#3d0030;
+  --bg:#faf8f9;--card:#fff;--border:#f0c8dc;
+  --text:#1a0010;--muted:#8a5a70;
+  --green:#1d6a4a;--green-bg:#e8f5e9;--amber:#8a6d00;--amber-bg:#fff8e1;--red:#c0143c;--red-bg:#fef2f2;
+  --font:'DM Sans',sans-serif;--mono:'DM Mono',monospace;--serif:'Playfair Display',serif;
+  --tap:44px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;-webkit-text-size-adjust:100%;padding-bottom:40px}
+header{background:linear-gradient(135deg,var(--dark),var(--dark2));padding:0 16px;height:54px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200;box-shadow:0 2px 16px rgba(0,0,0,.3)}
+.brand{display:flex;align-items:center;gap:10px}
+.brand-logo{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--pink),var(--pink2));display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.brand-name{font-family:var(--serif);font-size:16px;font-weight:900;color:#fff}
+.brand-sub{font-family:var(--mono);font-size:8px;color:rgba(255,180,220,.45);letter-spacing:3px;text-transform:uppercase;margin-top:1px}
+.hdr-r{display:flex;align-items:center;gap:8px}
+.hdr-btn{background:none;border:1px solid rgba(255,255,255,.28);border-radius:8px;padding:6px 10px;font-size:11px;color:rgba(255,255,255,.75);cursor:pointer;font-family:var(--font);min-height:32px}
+.hdr-btn:active{opacity:.7}
+.wrap{max-width:1100px;margin:0 auto;padding:16px 14px}
+
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:14px}
+.card-hdr{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.card-title{font-size:14px;font-weight:700}
+.card-mono{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.hint{font-size:11px;color:var(--muted);line-height:1.5}
+
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+@media(max-width:760px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 13px}
+.kpi-lbl{font-family:var(--mono);font-size:9px;letter-spacing:1.4px;text-transform:uppercase;color:var(--muted)}
+.kpi-val{font-size:21px;font-weight:700;margin-top:5px;font-family:var(--mono)}
+.kpi-sub{font-size:10px;color:var(--muted);margin-top:3px}
+.kpi.rec{background:#f2fbf6;border-color:#c9e9d8}.kpi.rec .kpi-val{color:var(--green)}
+.kpi.cus{background:#fff7ed;border-color:#fde0c4}.kpi.cus .kpi-val{color:#a04510}
+.kpi.mar{background:var(--pink3);border-color:var(--border)}.kpi.mar .kpi-val{color:var(--pink)}
+.kpi.pax .kpi-val{color:var(--text)}
+
+.field{margin-bottom:12px}
+.field label{display:block;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1.4px;margin-bottom:6px}
+select,input{width:100%;background:#fff;border:1px solid var(--border);border-radius:10px;padding:11px 12px;font-size:15px;color:var(--text);outline:none;font-family:var(--font);appearance:none;-webkit-appearance:none}
+select:focus,input:focus{border-color:var(--pink)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media(max-width:600px){.row3{grid-template-columns:1fr 1fr}}
+
+.btn{border:none;border-radius:11px;padding:11px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);min-height:var(--tap);display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.btn-p{background:linear-gradient(135deg,var(--pink),var(--pink2));color:#fff;box-shadow:0 3px 12px rgba(224,24,122,.22)}
+.btn-g{background:#fff;color:var(--text);border:1px solid var(--border)}
+.btn-d{background:var(--red-bg);color:var(--red);border:1px solid #fcd9df}
+.btn:active{opacity:.8}
+.btn:disabled{opacity:.45;cursor:default;box-shadow:none}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+
+.grp{border:1px solid var(--border);border-radius:13px;overflow:hidden;margin-bottom:10px}
+.grp-hdr{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 13px;background:var(--pink3);cursor:pointer}
+.grp-name{font-size:13px;font-weight:700;display:flex;align-items:center;gap:7px}
+.grp-tot{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--pink)}
+.grp-body{padding:4px 0;display:none}
+.grp.open .grp-body{display:block}
+.grp-unit{font-family:var(--mono);font-size:10px;color:var(--muted);font-weight:400}
+
+.it{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;padding:9px 13px;border-top:1px solid #f7e6ef}
+.it:first-child{border-top:none}
+.it.off{opacity:.42}
+.it-l{min-width:0}
+.it-nome{font-size:12.5px;font-weight:500;line-height:1.3}
+.it-meta{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:2px}
+.it-val{font-family:var(--mono);font-size:13px;font-weight:600;white-space:nowrap}
+.it-val.dep{color:var(--amber)}
+.seg{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;flex-shrink:0}
+.seg button{border:none;background:#fff;color:var(--muted);font-size:10px;font-weight:600;padding:6px 8px;cursor:pointer;font-family:var(--font);min-height:30px;letter-spacing:.3px}
+.seg button.on{background:var(--pink);color:#fff}
+.seg button.on.p{background:var(--muted)}
+
+.falta-it{display:grid;grid-template-columns:24px 1fr 104px;gap:9px;align-items:center;padding:9px 0;border-bottom:1px solid #f7e6ef}
+.falta-it:last-child{border-bottom:none}
+.chk{width:22px;height:22px;border:1.5px solid var(--border);border-radius:7px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;color:#fff;flex-shrink:0;background:#fff}
+.chk.on{background:var(--green);border-color:var(--green)}
+.falta-nome{font-size:12.5px;font-weight:500}
+.falta-onde{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:1px}
+.falta-it input{padding:8px 10px;font-size:14px;text-align:right;font-family:var(--mono)}
+
+.tot-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-top:1px solid var(--border);font-size:13px}
+.tot-row:first-child{border-top:none}
+.tot-row strong{font-family:var(--mono);font-weight:700}
+.tot-row.big{font-size:15px;padding-top:12px}
+.pos{color:var(--green)}.neg{color:var(--red)}.pk{color:var(--pink)}.am{color:var(--amber)}
+
+.bar{height:9px;border-radius:5px;background:#f1e4eb;overflow:hidden;margin:8px 0 4px}
+.bar span{display:block;height:100%;background:linear-gradient(90deg,var(--pink),var(--pink2))}
+
+.note{background:var(--amber-bg);border:1px solid #f3e0a8;border-radius:11px;padding:10px 12px;font-size:11.5px;color:#6b5300;line-height:1.55;margin-top:10px}
+.note b{color:#4a3900}
+
+.login{display:none}
+.toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(90px);background:var(--dark);border-radius:13px;padding:13px 20px;font-size:13px;font-weight:600;color:#fff;transition:transform .3s cubic-bezier(.34,1.56,.64,1);pointer-events:none;z-index:999;max-width:92vw;text-align:center}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast.ok{background:var(--green-bg);color:var(--green);border:1.5px solid var(--green)}
+.toast.err{background:var(--pink3);color:var(--red);border:1.5px solid var(--red)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="brand-logo">🍽️</div>
+    <div><div class="brand-name">Custos de Catering</div><div class="brand-sub">Cosmopolitan Party</div></div>
+  </div>
+  <div class="hdr-r">
+    <button class="hdr-btn" onclick="imprimir()">Imprimir</button>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- KPIs -->
+  <div class="kpis">
+    <div class="kpi rec"><div class="kpi-lbl">Receita</div><div class="kpi-val" id="kRec">–</div><div class="kpi-sub" id="kRecSub">comida + bebidas</div></div>
+    <div class="kpi cus"><div class="kpi-lbl">Custo real</div><div class="kpi-val" id="kCus">–</div><div class="kpi-sub" id="kCusSub">—</div></div>
+    <div class="kpi mar"><div class="kpi-lbl">Margem</div><div class="kpi-val" id="kMar">–</div><div class="kpi-sub" id="kMarSub">—</div></div>
+    <div class="kpi pax"><div class="kpi-lbl">Por convidado</div><div class="kpi-val" id="kPax">–</div><div class="kpi-sub" id="kPaxSub">custo / pessoa</div></div>
+  </div>
+
+  <!-- Evento + receita -->
+  <div class="card">
+    <div class="card-hdr"><span class="card-title">📅 Evento</span><span class="card-mono" id="evChip">20/09</span></div>
+    <div class="field">
+      <label>Evento (para gravar os custos)</label>
+      <select id="evSel"><option value="">— a carregar eventos… —</option></select>
+    </div>
+    <div class="row3">
+      <div class="field"><label>Receita comida €</label><input type="number" id="recComida" value="420" step="5"></div>
+      <div class="field"><label>Receita bebidas €</label><input type="number" id="recBebidas" value="50" step="5"></div>
+      <div class="field"><label>Nº convidados</label><input type="number" id="pax" value="50" step="1"></div>
+    </div>
+    <div class="hint">Valores da fatura Makro de 19/09/2026 (FAC 01215202601/030761) já carregados, <b>sem IVA</b> — é esse o custo real para a empresa, porque o IVA é dedutível.</div>
+  </div>
+
+  <!-- Fatura -->
+  <div class="card">
+    <div class="card-hdr">
+      <span class="card-title">🧾 Fatura Makro · 19/09</span>
+      <span class="card-mono" id="fatChip">–</span>
+    </div>
+    <div class="hint" style="margin-bottom:10px">Toca em <b>Evento</b> / <b>Pessoal</b> para tirar do cálculo o que é para vocês.</div>
+    <div id="grupos"></div>
+  </div>
+
+  <!-- Em falta -->
+  <div class="card">
+    <div class="card-hdr"><span class="card-title">🛒 Ainda por comprar</span><span class="card-mono" id="faltaChip">–</span></div>
+    <div class="hint" style="margin-bottom:8px">Põe o valor à medida que compras e marca ✓. Os valores entram logo no custo.</div>
+    <div id="faltaList"></div>
+  </div>
+
+  <!-- Resumo por componente -->
+  <div class="card">
+    <div class="card-hdr"><span class="card-title">📊 Custo por componente</span><span class="card-mono">fatura + por comprar</span></div>
+    <div id="resumoComp"></div>
+  </div>
+
+  <!-- Balanço -->
+  <div class="card">
+    <div class="card-hdr"><span class="card-title">💶 Balanço</span></div>
+    <div id="balanco"></div>
+    <div class="note" id="notaDep"></div>
+  </div>
+
+  <!-- Gravar -->
+  <div class="card">
+    <div class="card-hdr"><span class="card-title">☁️ Gravar no evento</span><span class="card-mono" id="sbChip">—</span></div>
+    <div class="hint">Grava uma linha de custo por componente na checklist do evento (categoria <b>Catering</b>), para aparecer em Custos por Categoria no cockpit.</div>
+    <div class="login" id="login">
+      <div class="row2" style="margin-top:12px">
+        <div class="field"><label>Email</label><input type="email" id="lEmail" autocomplete="username"></div>
+        <div class="field"><label>Palavra-passe</label><input type="password" id="lPass" autocomplete="current-password"></div>
+      </div>
+      <button class="btn btn-g" id="loginBtn" onclick="fazerLogin()" style="width:100%">Entrar</button>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-p" id="saveBtn" onclick="gravar()">Gravar custos no evento</button>
+      <button class="btn btn-g" onclick="exportCSV()">Exportar CSV</button>
+      <button class="btn btn-d" onclick="reset()">Repor fatura</button>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SCRIPT_URL='https://script.google.com/macros/s/AKfycbx5SeYyBiSlv8pkFEg_DMjg0BGiNoLAso_VB00cSFBuCz_038Ojfu6SwBGK95yt4QiJ4A/exec';
+const SB_URL='https://fsbpakhrfkrmfgpaxyly.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZzYnBha2hyZmtybWZncGF4eWx5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1NzMyMjAsImV4cCI6MjA4OTE0OTIyMH0.fkF9Ch9QvX2lecY1B2FxuDWxD4DmH4T6WAg6ggYBVlY';
+const sb=supabase.createClient(SB_URL,SB_KEY);
+const LS='cp_catering_2009_v1';
+const $=id=>document.getElementById(id);
+const eur=n=>(+n||0).toLocaleString('pt-PT',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* Componentes do menu ---------------------------------------------------- */
+const COMPS={
+  hotdogs:      {ic:'🌭', nome:'Mini hot dogs',      un:50, tipo:'comida'},
+  pizzas:       {ic:'🍕', nome:'Mini pizzas',        un:50, tipo:'comida'},
+  hamburgueres: {ic:'🍔', nome:'Mini hambúrgueres',  un:50, tipo:'comida'},
+  queijos:      {ic:'🧀', nome:'Tábua de queijos',   un:0,  tipo:'comida'},
+  mexicana:     {ic:'🌮', nome:'Tábua mexicana',     un:0,  tipo:'comida'},
+  frutas:       {ic:'🍉', nome:'Tábua de frutas',    un:0,  tipo:'comida'},
+  sopa:         {ic:'🥣', nome:'Sopa de legumes 3L', un:0,  tipo:'comida'},
+  bebidas:      {ic:'🥤', nome:'Kit de bebidas',     un:0,  tipo:'bebidas'},
+  material:     {ic:'🧤', nome:'Material / consumíveis', un:0, tipo:'comida'},
+  deposito:     {ic:'♻️', nome:'Depósitos (recuperáveis)', un:0, tipo:'deposito'},
+  pessoal:      {ic:'🏠', nome:'Para nós (fora do evento)', un:0, tipo:'pessoal'}
+};
+const ORDEM=['hotdogs','pizzas','hamburgueres','queijos','mexicana','frutas','sopa','bebidas','material','deposito','pessoal'];
+
+/* Fatura Makro 19/09/2026 — valores sem IVA --------------------------------
+   dest: 'ev' (entra no custo do evento) | 'pe' (é para nós)                */
+const FATURA=[
+ {id:1, nome:'Tortilhas wrap 20un 12cm 360g',      q:1, pu:2.09,  tot:2.09,  comp:'mexicana',     dest:'ev'},
+ {id:2, nome:'Queijo flamengo fatiado 2×4',        q:1, pu:5.69,  tot:5.69,  comp:'hamburgueres', dest:'ev'},
+ {id:3, nome:'Queijo da Ilha 400g',                q:1, pu:4.79,  tot:4.79,  comp:'queijos',      dest:'ev'},
+ {id:4, nome:'Queijo ovelha c/ pimenta 210g',      q:1, pu:4.11,  tot:4.11,  comp:'queijos',      dest:'ev'},
+ {id:5, nome:'Queijo mistura H. Maia 210g',        q:1, pu:3.25,  tot:3.25,  comp:'queijos',      dest:'ev'},
+ {id:6, nome:'Queijo Brie cunha 180g',             q:1, pu:2.35,  tot:2.35,  comp:'queijos',      dest:'ev'},
+ {id:7, nome:'Queijo Feta DOP grego 150g',         q:1, pu:2.64,  tot:2.64,  comp:'queijos',      dest:'ev'},
+ {id:8, nome:'Mini pão hambúrguer 32×35g (2 cx = 64 un)', q:2, pu:8.79, tot:17.58, comp:'hamburgueres', dest:'ev'},
+ {id:9, nome:'Gyoza de carne Ajinomoto 600g',      q:1, pu:6.49,  tot:6.49,  comp:'pessoal',      dest:'pe'},
+ {id:10,nome:'Presunto fatiado 200g',              q:1, pu:2.99,  tot:2.99,  comp:'queijos',      dest:'ev'},
+ {id:11,nome:'Salame extra ElPozo 70g',            q:1, pu:1.49,  tot:1.49,  comp:'queijos',      dest:'ev'},
+ {id:12,nome:'Paio York fatiado 150g',             q:1, pu:1.49,  tot:1.49,  comp:'queijos',      dest:'ev'},
+ {id:13,nome:'Uva branca s/ semente 750g',         q:1, pu:3.88,  tot:3.88,  comp:'frutas',       dest:'ev'},
+ {id:14,nome:'Melancia riscada · 3,665 kg × 0,38 €/kg', q:1, pu:1.39, tot:1.39, comp:'frutas',    dest:'ev'},
+ {id:15,nome:'Morango 500g',                       q:1, pu:2.24,  tot:2.24,  comp:'frutas',       dest:'ev'},
+ {id:16,nome:'Melão verde · 3,320 kg × 0,74 €/kg', q:1, pu:2.46,  tot:2.46,  comp:'frutas',       dest:'ev'},
+ {id:17,nome:'Alface coração 450g',                q:1, pu:2.48,  tot:2.48,  comp:'hamburgueres', dest:'ev'},
+ {id:18,nome:'Tomate redondo · 1,090 kg × 2,48 €/kg (hambúrgueres + mexicana)', q:1, pu:2.70, tot:2.70, comp:'hamburgueres', dest:'ev'},
+ {id:19,nome:'Pepino · 1,110 kg × 1,98 €/kg',      q:1, pu:2.20,  tot:2.20,  comp:'mexicana',     dest:'ev'},
+ {id:20,nome:'Cocktail salgado natural 250g',      q:1, pu:3.48,  tot:3.48,  comp:'mexicana',     dest:'ev'},
+ {id:21,nome:'Cocktail salgado mix 1kg',           q:1, pu:4.78,  tot:4.78,  comp:'mexicana',     dest:'ev'},
+ {id:22,nome:'Milho doce lata 300g',               q:1, pu:1.25,  tot:1.25,  comp:'mexicana',     dest:'ev'},
+ {id:23,nome:'Molho guacamole 950ml',              q:1, pu:10.49, tot:10.49, comp:'mexicana',     dest:'ev'},
+ {id:24,nome:'Salsichas Frankfurt 10 un',          q:1, pu:1.19,  tot:1.19,  comp:'hotdogs',      dest:'ev'},
+ {id:25,nome:'Salsichas Frankfurt 50 un',          q:1, pu:5.59,  tot:5.59,  comp:'hotdogs',      dest:'ev'},
+ {id:26,nome:'Ice tea pêssego 2L (3 × 1,89) = 6L', q:3, pu:1.89,  tot:5.67,  comp:'bebidas',      dest:'ev'},
+ {id:27,nome:'  ↳ IEC bebidas açucaradas',         q:3, pu:0.139, tot:0.42,  comp:'bebidas',      dest:'ev'},
+ {id:28,nome:'  ↳ Depósito 3 × 0,10',              q:3, pu:0.10,  tot:0.30,  comp:'deposito',     dest:'ev'},
+ {id:29,nome:'Ice tea limão 2L (3 × 1,89) = 6L',   q:3, pu:1.89,  tot:5.67,  comp:'bebidas',      dest:'ev'},
+ {id:30,nome:'  ↳ IEC bebidas açucaradas',         q:3, pu:0.139, tot:0.42,  comp:'bebidas',      dest:'ev'},
+ {id:31,nome:'  ↳ Depósito 3 × 0,10',              q:3, pu:0.10,  tot:0.30,  comp:'deposito',     dest:'ev'},
+ {id:32,nome:'Coca-Cola 1,5L (8 × 1,49) = 12L',    q:8, pu:1.49,  tot:11.92, comp:'bebidas',      dest:'ev'},
+ {id:33,nome:'  ↳ IEC bebidas açucaradas',         q:8, pu:0.348, tot:2.80,  comp:'bebidas',      dest:'ev'},
+ {id:34,nome:'  ↳ Depósito 8 × 0,10',              q:8, pu:0.10,  tot:0.80,  comp:'deposito',     dest:'ev'},
+ {id:35,nome:'Água Rioba 24×50cl (grade) = 12L',   q:1, pu:3.12,  tot:3.12,  comp:'bebidas',      dest:'ev'},
+ {id:36,nome:'  ↳ Depósito grade 24 × 0,10',       q:24,pu:0.10,  tot:2.40,  comp:'deposito',     dest:'ev'},
+ {id:37,nome:'Luvas descartáveis 500 un',          q:1, pu:3.99,  tot:3.99,  comp:'material',     dest:'ev'}
+];
+
+/* Ainda por comprar ------------------------------------------------------- */
+const FALTA_BASE=[
+ {id:'f1', nome:'Pães mini hot dog',            onde:'Continente', comp:'hotdogs',      val:0, ok:false},
+ {id:'f2', nome:'Mini pizzas (50)',             onde:'Recheio',    comp:'pizzas',       val:0, ok:false},
+ {id:'f3', nome:'Hambúrgueres (50)',            onde:'Talho',      comp:'hamburgueres', val:0, ok:false},
+ {id:'f4', nome:'Batata palha',                 onde:'—',          comp:'hotdogs',      val:0, ok:false},
+ {id:'f5', nome:'Cebola',                       onde:'—',          comp:'hotdogs',      val:0, ok:false},
+ {id:'f6', nome:'Pão para tábua de queijos',    onde:'Aldi',       comp:'queijos',      val:0, ok:false},
+ {id:'f7', nome:'Queijos pequenos',             onde:'Aldi',       comp:'queijos',      val:0, ok:false},
+ {id:'f8', nome:'Tostas',                       onde:'—',          comp:'queijos',      val:0, ok:false},
+ {id:'f9', nome:'Nachos',                       onde:'—',          comp:'mexicana',     val:0, ok:false},
+ {id:'f10',nome:'Sopa de legumes (3 L)',        onde:'Recheio',    comp:'sopa',         val:0, ok:false}
+];
+
+let itens=[],falta=[],eventos=[],abertos={};
+
+/* Estado ------------------------------------------------------------------ */
+function load(){
+  let s=null;
+  try{s=JSON.parse(localStorage.getItem(LS)||'null');}catch(e){}
+  itens=FATURA.map(f=>({...f}));
+  falta=FALTA_BASE.map(f=>({...f}));
+  if(s){
+    (s.dest||[]).forEach(d=>{const it=itens.find(i=>i.id===d.id);if(it){it.dest=d.dest;if(d.comp)it.comp=d.comp;}});
+    (s.falta||[]).forEach(d=>{const f=falta.find(i=>i.id===d.id);if(f){f.val=+d.val||0;f.ok=!!d.ok;}});
+    if(s.recComida!=null)$('recComida').value=s.recComida;
+    if(s.recBebidas!=null)$('recBebidas').value=s.recBebidas;
+    if(s.pax!=null)$('pax').value=s.pax;
+    if(s.evKey)window._evKeySalvo=s.evKey;
+    abertos=s.abertos||{};
+  }
+}
+function save(){
+  const s={
+    dest:itens.map(i=>({id:i.id,dest:i.dest,comp:i.comp})),
+    falta:falta.map(f=>({id:f.id,val:f.val,ok:f.ok})),
+    recComida:+$('recComida').value||0,
+    recBebidas:+$('recBebidas').value||0,
+    pax:+$('pax').value||0,
+    evKey:$('evSel').value||'',
+    abertos
+  };
+  try{localStorage.setItem(LS,JSON.stringify(s));}catch(e){}
+}
+
+/* Cálculo ----------------------------------------------------------------- */
+function porComponente(){
+  const m={};ORDEM.forEach(k=>m[k]={fatura:0,falta:0,total:0});
+  itens.forEach(i=>{
+    const k=(i.dest==='pe')?'pessoal':i.comp;
+    if(!m[k])m[k]={fatura:0,falta:0,total:0};
+    m[k].fatura+=i.tot;m[k].total+=i.tot;
+  });
+  falta.forEach(f=>{const k=f.comp;if(!m[k])m[k]={fatura:0,falta:0,total:0};m[k].falta+=+f.val||0;m[k].total+=+f.val||0;});
+  return m;
+}
+function totais(){
+  const m=porComponente();
+  let comida=0,bebidas=0,deposito=0,pessoal=0;
+  Object.keys(m).forEach(k=>{
+    const t=(COMPS[k]||{}).tipo||'comida';
+    if(t==='comida')comida+=m[k].total;
+    else if(t==='bebidas')bebidas+=m[k].total;
+    else if(t==='deposito')deposito+=m[k].total;
+    else if(t==='pessoal')pessoal+=m[k].total;
+  });
+  const recC=+$('recComida').value||0,recB=+$('recBebidas').value||0;
+  const custoEvento=comida+bebidas;                 // depósitos não contam (voltam)
+  const pagoMakro=itens.reduce((s,i)=>s+i.tot,0);   // tudo o que saiu da carteira
+  return {m,comida,bebidas,deposito,pessoal,recC,recB,rec:recC+recB,custoEvento,pagoMakro,
+          margem:(recC+recB)-custoEvento,margemC:recC-comida,margemB:recB-bebidas};
+}
+
+/* Render ------------------------------------------------------------------ */
+function render(){
+  const m=porComponente();
+  // grupos da fatura
+  let h='';
+  ORDEM.forEach(k=>{
+    const its=itens.filter(i=>(i.dest==='pe'?'pessoal':i.comp)===k);
+    if(!its.length)return;
+    const c=COMPS[k],tot=its.reduce((s,i)=>s+i.tot,0);
+    const open=abertos[k]!==false;
+    const un=c.un&&k!=='pessoal'?`<span class="grp-unit">${eur(tot/c.un)}/un</span>`:'';
+    h+=`<div class="grp ${open?'open':''}" id="grp-${k}">
+      <div class="grp-hdr" onclick="togGrp('${k}')">
+        <span class="grp-name">${c.ic} ${esc(c.nome)} ${un}</span>
+        <span class="grp-tot">${eur(tot)}</span>
+      </div>
+      <div class="grp-body">`;
+    its.forEach(i=>{
+      h+=`<div class="it ${i.dest==='pe'?'off':''}">
+        <div class="it-l"><div class="it-nome">${esc(i.nome)}</div>
+          <div class="it-meta">${i.q} × ${i.pu.toLocaleString('pt-PT',{minimumFractionDigits:2,maximumFractionDigits:3})} €</div></div>
+        <div class="it-val ${i.comp==='deposito'?'dep':''}">${eur(i.tot)}</div>
+        <div class="seg">
+          <button class="${i.dest==='ev'?'on':''}" onclick="setDest(${i.id},'ev')">Evento</button>
+          <button class="${i.dest==='pe'?'on p':''}" onclick="setDest(${i.id},'pe')">Nós</button>
+        </div>
+      </div>`;
+    });
+    h+='</div></div>';
+  });
+  $('grupos').innerHTML=h;
+  const somaFat=itens.reduce((s,i)=>s+i.tot,0);
+  $('fatChip').textContent=itens.length+' linhas · '+eur(somaFat);
+
+  // em falta
+  let fh='';
+  falta.forEach(f=>{
+    fh+=`<div class="falta-it">
+      <div class="chk ${f.ok?'on':''}" onclick="togFalta('${f.id}')">${f.ok?'✓':''}</div>
+      <div><div class="falta-nome">${COMPS[f.comp].ic} ${esc(f.nome)}</div><div class="falta-onde">${esc(f.onde)} · ${esc(COMPS[f.comp].nome)}</div></div>
+      <input type="number" step="0.01" value="${f.val||''}" placeholder="0,00" oninput="setFalta('${f.id}',this.value)">
+    </div>`;
+  });
+  $('faltaList').innerHTML=fh;
+  const nFalta=falta.filter(f=>!f.ok).length;
+  const vFalta=falta.reduce((s,f)=>s+(+f.val||0),0);
+  $('faltaChip').textContent=nFalta?`${nFalta} por comprar · ${eur(vFalta)} já lançado`:`tudo comprado · ${eur(vFalta)}`;
+
+  renderResumo();
+}
+
+function renderResumo(){
+  const m=porComponente();
+  const t=totais();
+  let rh='';
+  ORDEM.filter(k=>k!=='pessoal'&&k!=='deposito').forEach(k=>{
+    const v=m[k]||{fatura:0,falta:0,total:0};
+    if(!v.total&&!COMPS[k].un)return;
+    const c=COMPS[k];
+    const pct=t.custoEvento?Math.round(v.total/t.custoEvento*100):0;
+    const unid=c.un?` · ${eur(v.total/c.un)} por unidade (${c.un})`:'';
+    rh+=`<div style="margin-bottom:11px">
+      <div style="display:flex;justify-content:space-between;font-size:12.5px;font-weight:600">
+        <span>${c.ic} ${esc(c.nome)}</span><span style="font-family:var(--mono)">${eur(v.total)}</span></div>
+      <div class="bar"><span style="width:${Math.min(100,pct)}%"></span></div>
+      <div class="hint">${pct}% do custo${unid}${v.falta?` · inclui ${eur(v.falta)} de compras novas`:''}${!v.total?' · <b>ainda sem custo lançado</b>':''}</div>
+    </div>`;
+  });
+  rh+=`<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
+    <div class="tot-row"><span>♻️ Depósitos de embalagens (voltam ao devolver)</span><strong class="am">${eur(t.deposito)}</strong></div>
+    <div class="tot-row"><span>🏠 Para nós (fora do evento)</span><strong>${eur(t.pessoal)}</strong></div>
+  </div>`;
+  $('resumoComp').innerHTML=rh;
+
+  // balanço
+  const pax=+$('pax').value||0;
+  const pc=v=>pax?eur(v/pax):'—';
+  $('balanco').innerHTML=`
+    <div class="tot-row"><span>🍽️ Receita comida</span><strong class="pos">${eur(t.recC)}</strong></div>
+    <div class="tot-row"><span>— Custo comida${''}</span><strong class="neg">${eur(t.comida)}</strong></div>
+    <div class="tot-row"><span><b>= Margem comida</b></span><strong class="${t.margemC>=0?'pos':'neg'}">${eur(t.margemC)} ${t.recC?`(${Math.round(t.margemC/t.recC*100)}%)`:''}</strong></div>
+    <div class="tot-row" style="margin-top:6px"><span>🥤 Receita bebidas</span><strong class="pos">${eur(t.recB)}</strong></div>
+    <div class="tot-row"><span>— Custo bebidas (c/ IEC, sem depósitos)</span><strong class="neg">${eur(t.bebidas)}</strong></div>
+    <div class="tot-row"><span><b>= Margem bebidas</b></span><strong class="${t.margemB>=0?'pos':'neg'}">${eur(t.margemB)} ${t.recB?`(${Math.round(t.margemB/t.recB*100)}%)`:''}</strong></div>
+    <div class="tot-row big" style="margin-top:8px"><span><b>Total faturado ao cliente</b></span><strong class="pk">${eur(t.rec)}</strong></div>
+    <div class="tot-row big"><span><b>Custo total do evento</b></span><strong class="neg">${eur(t.custoEvento)}</strong></div>
+    <div class="tot-row big"><span><b>Margem</b></span><strong class="${t.margem>=0?'pos':'neg'}">${eur(t.margem)} ${t.rec?`(${Math.round(t.margem/t.rec*100)}%)`:''}</strong></div>
+    <div class="tot-row" style="margin-top:6px"><span>Custo por convidado (${pax||0})</span><strong>${pc(t.custoEvento)}</strong></div>
+    <div class="tot-row"><span>Receita por convidado</span><strong class="pk">${pc(t.rec)}</strong></div>`;
+
+  $('notaDep').innerHTML=`<b>Nota:</b> pagaste <b>${eur(t.pagoMakro)}</b> no Makro. Desses, <b>${eur(t.deposito)}</b> são depósitos de embalagens — voltam quando devolveres as garrafas e a grade, por isso não entram no custo do evento. <b>${eur(t.pessoal)}</b> ficaram marcados como sendo para vocês. Os preços são sem IVA (dedutível).`;
+
+  // KPIs
+  $('kRec').textContent=eur(t.rec);
+  $('kRecSub').textContent=`${eur(t.recC)} comida + ${eur(t.recB)} bebidas`;
+  $('kCus').textContent=eur(t.custoEvento);
+  $('kCusSub').textContent=`${eur(t.comida)} comida + ${eur(t.bebidas)} bebidas`;
+  $('kMar').textContent=eur(t.margem);
+  $('kMarSub').textContent=t.rec?`${Math.round(t.margem/t.rec*100)}% de margem`:'—';
+  $('kPax').textContent=pc(t.custoEvento);
+  $('kPaxSub').textContent=`receita ${pc(t.rec)}`;
+
+  save();
+}
+
+function togGrp(k){abertos[k]=!(abertos[k]!==false);render();}
+function setDest(id,d){const i=itens.find(x=>x.id===id);if(!i)return;i.dest=d;render();}
+function togFalta(id){const f=falta.find(x=>x.id===id);if(!f)return;f.ok=!f.ok;render();}
+function setFalta(id,v){const f=falta.find(x=>x.id===id);if(!f)return;
+  f.val=parseFloat(String(v).replace(',','.'))||0;
+  const nf=falta.filter(x=>!x.ok).length,vf=falta.reduce((s,x)=>s+(+x.val||0),0);
+  $('faltaChip').textContent=nf?`${nf} por comprar · ${eur(vf)} já lançado`:`tudo comprado · ${eur(vf)}`;
+  renderResumo();}
+['recComida','recBebidas','pax'].forEach(id=>$(id).addEventListener('input',renderResumo));
+
+function reset(){
+  if(!confirm('Repor a fatura original e limpar os valores por comprar?'))return;
+  try{localStorage.removeItem(LS);}catch(e){}
+  itens=FATURA.map(f=>({...f}));falta=FALTA_BASE.map(f=>({...f}));abertos={};
+  $('recComida').value=420;$('recBebidas').value=50;$('pax').value=50;
+  render();toast('Reposto','ok');
+}
+
+/* Eventos (Google Sheet via JSONP) ---------------------------------------- */
+const normEvDate=s=>{
+  if(!s)return'';s=String(s).trim().split(/[T ]/)[0];
+  let m=s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);if(m)return`${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
+  m=s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);if(m)return`${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
+  return s;};
+const evKey=e=>(e.dataFesta||'')+'__'+(e.cliente||'');
+const fmtPT=iso=>{const m=String(iso||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?`${m[3]}/${m[2]}`:iso;};
+
+function loadEventos(){
+  const cb='cpcat_'+Date.now();
+  window[cb]=data=>{
+    delete window[cb];document.getElementById('_evs')?.remove();
+    if(!Array.isArray(data)){$('evSel').innerHTML='<option value="">— sem ligação à folha —</option>';return;}
+    eventos=data.map(e=>({...e,dataFesta:normEvDate(e.dataFesta)})).filter(e=>e.dataFesta&&e.cliente)
+      .sort((a,b)=>a.dataFesta.localeCompare(b.dataFesta));
+    const alvo=window._evKeySalvo||'';
+    $('evSel').innerHTML='<option value="">— Selecionar evento —</option>'+eventos.map(e=>{
+      const k=evKey(e);
+      return`<option value="${esc(k)}" ${k===alvo?'selected':''}>${fmtPT(e.dataFesta)} — ${esc(e.cliente)}</option>`;}).join('');
+    if(!alvo){
+      const ev=eventos.find(e=>e.dataFesta==='2026-09-20')||eventos.find(e=>e.dataFesta>=hojeISO());
+      if(ev)$('evSel').value=evKey(ev);
+    }
+    onEv();
+  };
+  const s=document.createElement('script');s.id='_evs';
+  s.src=`${SCRIPT_URL}?page=dados&callback=${cb}`;
+  s.onerror=()=>{delete window[cb];$('evSel').innerHTML='<option value="">— sem ligação à folha —</option>';};
+  document.head.appendChild(s);
+}
+const hojeISO=()=>{const d=new Date();return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;};
+function onEv(){
+  const k=$('evSel').value;const ev=eventos.find(e=>evKey(e)===k);
+  $('evChip').textContent=ev?`${fmtPT(ev.dataFesta)} · ${ev.cliente}`:'sem evento';
+  save();
+}
+$('evSel').addEventListener('change',onEv);
+
+/* Supabase ---------------------------------------------------------------- */
+async function estadoSessao(){
+  const{data:{session}}=await sb.auth.getSession();
+  if(session){$('sbChip').textContent='ligado · '+(session.user?.email||'');$('login').style.display='none';return true;}
+  $('sbChip').textContent='precisa de login';$('login').style.display='block';return false;
+}
+async function fazerLogin(){
+  const email=$('lEmail').value.trim(),password=$('lPass').value;
+  if(!email||!password){toast('Preenche email e palavra-passe.','err');return;}
+  const b=$('loginBtn');b.disabled=true;b.textContent='A entrar…';
+  const{error}=await sb.auth.signInWithPassword({email,password});
+  b.disabled=false;b.textContent='Entrar';
+  if(error){toast('Erro: '+(error.message||'login inválido'),'err');return;}
+  $('lPass').value='';await estadoSessao();toast('✓ Ligado','ok');
+}
+async function gravar(){
+  const k=$('evSel').value;
+  if(!k){toast('Escolhe o evento primeiro.','err');return;}
+  if(!await estadoSessao()){toast('Faz login para gravar.','err');return;}
+  const ev=eventos.find(e=>evKey(e)===k);
+  const t=totais(),m=t.m;
+  const b=$('saveBtn');b.disabled=true;b.textContent='A gravar…';
+
+  // read-modify-write: manter custos que não sejam desta ferramenta
+  let actuais=[];
+  try{
+    const{data}=await sb.from('cp_event_costs').select('custos').eq('event_key',k).maybeSingle();
+    if(data?.custos){try{actuais=JSON.parse(data.custos)||[];}catch(e){actuais=[];}}
+  }catch(e){}
+  actuais=actuais.filter(c=>!String(c.descricao||'').startsWith('Catering ·'));
+
+  ORDEM.filter(x=>x!=='pessoal'&&x!=='deposito').forEach(kk=>{
+    const v=(m[kk]||{}).total||0;if(!v)return;
+    actuais.push({categoria:'Catering',descricao:`Catering · ${COMPS[kk].nome}`,valor:+v.toFixed(2)});
+  });
+
+  const{error}=await sb.from('cp_event_costs').upsert({
+    event_key:k,event_cliente:ev?.cliente||'',event_data:ev?.dataFesta||'',
+    custos:JSON.stringify(actuais),updated_at:new Date().toISOString()
+  },{onConflict:'event_key'});
+  b.disabled=false;b.textContent='Gravar custos no evento';
+  if(error){toast('Erro ao gravar: '+error.message,'err');return;}
+  toast('✓ '+eur(t.custoEvento)+' gravado no evento','ok');
+}
+
+/* Export / print ---------------------------------------------------------- */
+function exportCSV(){
+  const t=totais();
+  const linhas=[['Secção','Item','Qtd','Preço un (€)','Total (€)','Destino']];
+  itens.forEach(i=>linhas.push([COMPS[i.dest==='pe'?'pessoal':i.comp].nome,i.nome,i.q,i.pu.toFixed(3),i.tot.toFixed(2),i.dest==='pe'?'Nós':'Evento']));
+  falta.forEach(f=>linhas.push([COMPS[f.comp].nome,f.nome+' ('+f.onde+')','','',(+f.val||0).toFixed(2),f.ok?'Comprado':'Por comprar']));
+  linhas.push([]);
+  linhas.push(['','Custo comida','','',t.comida.toFixed(2),'']);
+  linhas.push(['','Custo bebidas','','',t.bebidas.toFixed(2),'']);
+  linhas.push(['','Depósitos (recuperáveis)','','',t.deposito.toFixed(2),'']);
+  linhas.push(['','Custo total do evento','','',t.custoEvento.toFixed(2),'']);
+  linhas.push(['','Receita','','',t.rec.toFixed(2),'']);
+  linhas.push(['','Margem','','',t.margem.toFixed(2),'']);
+  const csv='﻿'+linhas.map(l=>l.map(c=>`"${String(c==null?'':c).replace(/"/g,'""')}"`).join(';')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  a.download='custos-catering-20-09.csv';a.click();
+}
+function imprimir(){window.print();}
+
+let tt;
+function toast(msg,tipo){const el=$('toast');el.textContent=msg;el.className='toast '+(tipo||'')+' show';clearTimeout(tt);tt=setTimeout(()=>el.classList.remove('show'),2800);}
+
+/* Init -------------------------------------------------------------------- */
+load();render();loadEventos();estadoSessao();
+</script>
+</body>
+</html>
