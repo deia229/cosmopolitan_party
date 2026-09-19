@@ -91,6 +91,13 @@ select:focus,input:focus{border-color:var(--pink)}
 .falta-onde{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:1px}
 .falta-it input{padding:8px 10px;font-size:14px;text-align:right;font-family:var(--mono)}
 
+.kit-it{display:grid;grid-template-columns:1fr 92px;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid #f7e6ef}
+.kit-it:last-child{border-bottom:none}
+.kit-nome{font-size:12.5px;font-weight:600}
+.kit-meta{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:2px}
+.kit-meta b{color:var(--muted)}
+.kit-meta .ex{color:var(--amber);font-weight:500}
+.kit-it input{padding:8px 10px;font-size:14px;text-align:right;font-family:var(--mono)}
 .tot-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-top:1px solid var(--border);font-size:13px}
 .tot-row:first-child{border-top:none}
 .tot-row strong{font-family:var(--mono);font-weight:700}
@@ -145,6 +152,13 @@ select:focus,input:focus{border-color:var(--pink)}
       <div class="field"><label>Nº convidados</label><input type="number" id="pax" value="50" step="1"></div>
     </div>
     <div class="hint">Valores da fatura Makro de 19/09/2026 (FAC 01215202601/030761) já carregados, <b>sem IVA</b> — é esse o custo real para a empresa, porque o IVA é dedutível.</div>
+  </div>
+
+  <!-- Kit de bebidas -->
+  <div class="card">
+    <div class="card-hdr"><span class="card-title">🥤 Kit de bebidas vendido</span><span class="card-mono" id="kitChip">–</span></div>
+    <div class="hint" style="margin-bottom:10px">O que compraste acima dos litros do kit é vosso e sai automaticamente do custo do evento.</div>
+    <div id="kitList"></div>
   </div>
 
   <!-- Fatura -->
@@ -253,17 +267,17 @@ const FATURA=[
  {id:23,nome:'Molho guacamole 950ml',              q:1, pu:10.49, tot:10.49, comp:'mexicana',     dest:'ev'},
  {id:24,nome:'Salsichas Frankfurt 10 un',          q:1, pu:1.19,  tot:1.19,  comp:'hotdogs',      dest:'ev'},
  {id:25,nome:'Salsichas Frankfurt 50 un',          q:1, pu:5.59,  tot:5.59,  comp:'hotdogs',      dest:'ev'},
- {id:26,nome:'Ice tea pêssego 2L (3 × 1,89) = 6L', q:3, pu:1.89,  tot:5.67,  comp:'bebidas',      dest:'ev'},
- {id:27,nome:'  ↳ IEC bebidas açucaradas',         q:3, pu:0.139, tot:0.42,  comp:'bebidas',      dest:'ev'},
- {id:28,nome:'  ↳ Depósito 3 × 0,10',              q:3, pu:0.10,  tot:0.30,  comp:'deposito',     dest:'ev'},
- {id:29,nome:'Ice tea limão 2L (3 × 1,89) = 6L',   q:3, pu:1.89,  tot:5.67,  comp:'bebidas',      dest:'ev'},
- {id:30,nome:'  ↳ IEC bebidas açucaradas',         q:3, pu:0.139, tot:0.42,  comp:'bebidas',      dest:'ev'},
- {id:31,nome:'  ↳ Depósito 3 × 0,10',              q:3, pu:0.10,  tot:0.30,  comp:'deposito',     dest:'ev'},
- {id:32,nome:'Coca-Cola 1,5L (8 × 1,49) = 12L',    q:8, pu:1.49,  tot:11.92, comp:'bebidas',      dest:'ev'},
- {id:33,nome:'  ↳ IEC bebidas açucaradas',         q:8, pu:0.348, tot:2.80,  comp:'bebidas',      dest:'ev'},
- {id:34,nome:'  ↳ Depósito 8 × 0,10',              q:8, pu:0.10,  tot:0.80,  comp:'deposito',     dest:'ev'},
- {id:35,nome:'Água Rioba 24×50cl (grade) = 12L',   q:1, pu:3.12,  tot:3.12,  comp:'bebidas',      dest:'ev'},
- {id:36,nome:'  ↳ Depósito grade 24 × 0,10',       q:24,pu:0.10,  tot:2.40,  comp:'deposito',     dest:'ev'},
+ {id:26,nome:'Ice tea pêssego 2L (3 × 1,89) = 6L', q:3, pu:1.89,  tot:5.67,  comp:'bebidas',      dest:'ev', fam:'pessego'},
+ {id:27,nome:'  ↳ IEC bebidas açucaradas',         q:3, pu:0.139, tot:0.42,  comp:'bebidas',      dest:'ev', fam:'pessego'},
+ {id:28,nome:'  ↳ Depósito 3 × 0,10',              q:3, pu:0.10,  tot:0.30,  comp:'deposito',     dest:'ev', fam:'pessego'},
+ {id:29,nome:'Ice tea limão 2L (3 × 1,89) = 6L',   q:3, pu:1.89,  tot:5.67,  comp:'bebidas',      dest:'ev', fam:'limao'},
+ {id:30,nome:'  ↳ IEC bebidas açucaradas',         q:3, pu:0.139, tot:0.42,  comp:'bebidas',      dest:'ev', fam:'limao'},
+ {id:31,nome:'  ↳ Depósito 3 × 0,10',              q:3, pu:0.10,  tot:0.30,  comp:'deposito',     dest:'ev', fam:'limao'},
+ {id:32,nome:'Coca-Cola 1,5L (8 × 1,49) = 12L',    q:8, pu:1.49,  tot:11.92, comp:'bebidas',      dest:'ev', fam:'cola'},
+ {id:33,nome:'  ↳ IEC bebidas açucaradas',         q:8, pu:0.348, tot:2.80,  comp:'bebidas',      dest:'ev', fam:'cola'},
+ {id:34,nome:'  ↳ Depósito 8 × 0,10',              q:8, pu:0.10,  tot:0.80,  comp:'deposito',     dest:'ev', fam:'cola'},
+ {id:35,nome:'Água Rioba 24×50cl (grade) = 12L',   q:1, pu:3.12,  tot:3.12,  comp:'bebidas',      dest:'ev', fam:'agua'},
+ {id:36,nome:'  ↳ Depósito grade 24 × 0,10',       q:24,pu:0.10,  tot:2.40,  comp:'deposito',     dest:'ev', fam:'agua'},
  {id:37,nome:'Luvas descartáveis 500 un',          q:1, pu:3.99,  tot:3.99,  comp:'material',     dest:'ev'}
 ];
 
@@ -281,6 +295,19 @@ const FALTA_BASE=[
  {id:'f10',nome:'Sopa de legumes (3 L)',        onde:'Recheio',    comp:'sopa',         val:0, ok:false}
 ];
 
+/* Kit de bebidas vendido (50 €) — o que passa disto é vosso ---------------- */
+const FAMS={
+  agua:    {nome:'Água',            ic:'💧', comprado:12, kit:10},
+  cola:    {nome:'Coca-Cola',       ic:'🥤', comprado:12, kit:7.5},
+  pessego: {nome:'Ice tea pêssego', ic:'🍑', comprado:6,  kit:4.5},
+  limao:   {nome:'Ice tea limão',   ic:'🍋', comprado:6,  kit:4.5}
+};
+let kit={};Object.keys(FAMS).forEach(k=>kit[k]=FAMS[k].kit);
+// fração do custo que fica no evento (o excedente ao kit é vosso)
+const fracFam=f=>{const F=FAMS[f];if(!F||!F.comprado)return 1;
+  const k=Math.max(0,Math.min(+kit[f]||0,F.comprado));return k/F.comprado;};
+const fracItem=i=>i.dest==='pe'?0:(i.fam?fracFam(i.fam):1);
+
 let itens=[],falta=[],eventos=[],abertos={};
 
 /* Estado ------------------------------------------------------------------ */
@@ -296,6 +323,7 @@ function load(){
     if(s.recBebidas!=null)$('recBebidas').value=s.recBebidas;
     if(s.pax!=null)$('pax').value=s.pax;
     if(s.evKey)window._evKeySalvo=s.evKey;
+    if(s.kit)Object.keys(kit).forEach(k=>{if(s.kit[k]!=null)kit[k]=+s.kit[k];});
     abertos=s.abertos||{};
   }
 }
@@ -307,7 +335,7 @@ function save(){
     recBebidas:+$('recBebidas').value||0,
     pax:+$('pax').value||0,
     evKey:$('evSel').value||'',
-    abertos
+    kit,abertos
   };
   try{localStorage.setItem(LS,JSON.stringify(s));}catch(e){}
 }
@@ -316,9 +344,10 @@ function save(){
 function porComponente(){
   const m={};ORDEM.forEach(k=>m[k]={fatura:0,falta:0,total:0});
   itens.forEach(i=>{
-    const k=(i.dest==='pe')?'pessoal':i.comp;
-    if(!m[k])m[k]={fatura:0,falta:0,total:0};
-    m[k].fatura+=i.tot;m[k].total+=i.tot;
+    const fr=fracItem(i);
+    if(fr>0){const k=i.comp;if(!m[k])m[k]={fatura:0,falta:0,total:0};
+      m[k].fatura+=i.tot*fr;m[k].total+=i.tot*fr;}
+    if(fr<1){m.pessoal.fatura+=i.tot*(1-fr);m.pessoal.total+=i.tot*(1-fr);}
   });
   falta.forEach(f=>{const k=f.comp;if(!m[k])m[k]={fatura:0,falta:0,total:0};m[k].falta+=+f.val||0;m[k].total+=+f.val||0;});
   return m;
@@ -341,14 +370,16 @@ function totais(){
 }
 
 /* Render ------------------------------------------------------------------ */
-function render(){
-  const m=porComponente();
-  // grupos da fatura
+function render(){renderGrupos();renderKit(false);renderFalta();renderResumo();}
+
+function renderGrupos(){
   let h='';
   ORDEM.forEach(k=>{
-    const its=itens.filter(i=>(i.dest==='pe'?'pessoal':i.comp)===k);
+    const its=(k==='pessoal')
+      ? itens.filter(i=>fracItem(i)<1).map(i=>({...i,_v:i.tot*(1-fracItem(i))}))
+      : itens.filter(i=>i.comp===k&&fracItem(i)>0).map(i=>({...i,_v:i.tot*fracItem(i)}));
     if(!its.length)return;
-    const c=COMPS[k],tot=its.reduce((s,i)=>s+i.tot,0);
+    const c=COMPS[k],tot=its.reduce((s,i)=>s+i._v,0);
     const open=abertos[k]!==false;
     const un=c.un&&k!=='pessoal'?`<span class="grp-unit">${eur(tot/c.un)}/un</span>`:'';
     h+=`<div class="grp ${open?'open':''}" id="grp-${k}">
@@ -358,10 +389,13 @@ function render(){
       </div>
       <div class="grp-body">`;
     its.forEach(i=>{
-      h+=`<div class="it ${i.dest==='pe'?'off':''}">
+      const fr=fracItem(i);
+      const parcial=i.fam&&fr>0&&fr<1;
+      const nota=parcial?` <span class="am">· ${Math.round((k==='pessoal'?1-fr:fr)*100)}% de ${eur(i.tot)}</span>`:'';
+      h+=`<div class="it ${k==='pessoal'?'off':''}">
         <div class="it-l"><div class="it-nome">${esc(i.nome)}</div>
-          <div class="it-meta">${i.q} × ${i.pu.toLocaleString('pt-PT',{minimumFractionDigits:2,maximumFractionDigits:3})} €</div></div>
-        <div class="it-val ${i.comp==='deposito'?'dep':''}">${eur(i.tot)}</div>
+          <div class="it-meta">${i.q} × ${i.pu.toLocaleString('pt-PT',{minimumFractionDigits:2,maximumFractionDigits:3})} €${nota}</div></div>
+        <div class="it-val ${i.comp==='deposito'?'dep':''}">${eur(i._v)}</div>
         <div class="seg">
           <button class="${i.dest==='ev'?'on':''}" onclick="setDest(${i.id},'ev')">Evento</button>
           <button class="${i.dest==='pe'?'on p':''}" onclick="setDest(${i.id},'pe')">Nós</button>
@@ -374,7 +408,33 @@ function render(){
   const somaFat=itens.reduce((s,i)=>s+i.tot,0);
   $('fatChip').textContent=itens.length+' linhas · '+eur(somaFat);
 
-  // em falta
+}
+
+const metaKit=f=>{
+  const F=FAMS[f],k=Math.max(0,Math.min(+kit[f]||0,F.comprado)),exc=F.comprado-k;
+  const custoFam=itens.filter(i=>i.fam===f).reduce((s,i)=>s+i.tot,0);
+  const vosso=custoFam*(1-fracFam(f));
+  return{html:`comprados <b>${F.comprado.toLocaleString('pt-PT')} L</b> · kit ${k.toLocaleString('pt-PT')} L${exc>0?` · <span class="ex">${exc.toLocaleString('pt-PT')} L vossos (${eur(vosso)})</span>`:' · sem excedente'}`,vosso};
+};
+function renderKit(soMeta){
+  let excTot=0;
+  if(soMeta){
+    Object.keys(FAMS).forEach(f=>{const r=metaKit(f);excTot+=r.vosso;
+      const el=$('kitmeta-'+f);if(el)el.innerHTML=r.html;});
+  }else{
+    let kh='';
+    Object.keys(FAMS).forEach(f=>{const F=FAMS[f],r=metaKit(f);excTot+=r.vosso;
+      kh+=`<div class="kit-it">
+        <div><div class="kit-nome">${F.ic} ${esc(F.nome)}</div>
+          <div class="kit-meta" id="kitmeta-${f}">${r.html}</div></div>
+        <input type="number" step="0.5" min="0" value="${kit[f]}" oninput="setKit('${f}',this.value)">
+      </div>`;});
+    $('kitList').innerHTML=kh;
+  }
+  $('kitChip').textContent=excTot?`${eur(excTot)} deduzidos`:'sem excedente';
+}
+
+function renderFalta(){
   let fh='';
   falta.forEach(f=>{
     fh+=`<div class="falta-it">
@@ -387,8 +447,6 @@ function render(){
   const nFalta=falta.filter(f=>!f.ok).length;
   const vFalta=falta.reduce((s,f)=>s+(+f.val||0),0);
   $('faltaChip').textContent=nFalta?`${nFalta} por comprar · ${eur(vFalta)} já lançado`:`tudo comprado · ${eur(vFalta)}`;
-
-  renderResumo();
 }
 
 function renderResumo(){
@@ -445,6 +503,8 @@ function renderResumo(){
   save();
 }
 
+function setKit(f,v){kit[f]=Math.max(0,parseFloat(String(v).replace(',','.'))||0);
+  renderGrupos();renderKit(true);renderResumo();save();}
 function togGrp(k){abertos[k]=!(abertos[k]!==false);render();}
 function setDest(id,d){const i=itens.find(x=>x.id===id);if(!i)return;i.dest=d;render();}
 function togFalta(id){const f=falta.find(x=>x.id===id);if(!f)return;f.ok=!f.ok;render();}
@@ -550,16 +610,16 @@ async function gravar(){
 /* Export / print ---------------------------------------------------------- */
 function exportCSV(){
   const t=totais();
-  const linhas=[['Secção','Item','Qtd','Preço un (€)','Total (€)','Destino']];
-  itens.forEach(i=>linhas.push([COMPS[i.dest==='pe'?'pessoal':i.comp].nome,i.nome,i.q,i.pu.toFixed(3),i.tot.toFixed(2),i.dest==='pe'?'Nós':'Evento']));
-  falta.forEach(f=>linhas.push([COMPS[f.comp].nome,f.nome+' ('+f.onde+')','','',(+f.val||0).toFixed(2),f.ok?'Comprado':'Por comprar']));
+  const linhas=[['Secção','Item','Qtd','Preço un (€)','Fatura (€)','Evento (€)','Nosso (€)','Estado']];
+  itens.forEach(i=>{const fr=fracItem(i);
+    linhas.push([COMPS[i.comp].nome,i.nome,i.q,i.pu.toFixed(3),i.tot.toFixed(2),(i.tot*fr).toFixed(2),(i.tot*(1-fr)).toFixed(2),fr===1?'Evento':(fr===0?'Nós':'Partilhado')]);});
+  falta.forEach(f=>linhas.push([COMPS[f.comp].nome,f.nome+' ('+f.onde+')','','',(+f.val||0).toFixed(2),(+f.val||0).toFixed(2),'0.00',f.ok?'Comprado':'Por comprar']));
   linhas.push([]);
-  linhas.push(['','Custo comida','','',t.comida.toFixed(2),'']);
-  linhas.push(['','Custo bebidas','','',t.bebidas.toFixed(2),'']);
-  linhas.push(['','Depósitos (recuperáveis)','','',t.deposito.toFixed(2),'']);
-  linhas.push(['','Custo total do evento','','',t.custoEvento.toFixed(2),'']);
-  linhas.push(['','Receita','','',t.rec.toFixed(2),'']);
-  linhas.push(['','Margem','','',t.margem.toFixed(2),'']);
+  const r=(l,v)=>linhas.push(['',l,'','','',v.toFixed(2),'','']);
+  r('Custo comida',t.comida);r('Custo bebidas',t.bebidas);
+  r('Depositos recuperaveis',t.deposito);
+  linhas.push(['','Fora do evento (nosso)','','','','','',t.pessoal.toFixed(2)]);
+  r('Custo total do evento',t.custoEvento);r('Receita',t.rec);r('Margem',t.margem);
   const csv='﻿'+linhas.map(l=>l.map(c=>`"${String(c==null?'':c).replace(/"/g,'""')}"`).join(';')).join('\n');
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
