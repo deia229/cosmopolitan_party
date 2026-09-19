@@ -89,6 +89,7 @@ select:focus,input:focus{border-color:var(--pink)}
 .chk.on{background:var(--green);border-color:var(--green)}
 .falta-nome{font-size:12.5px;font-weight:500}
 .falta-onde{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:1px}
+.tag-stock{font-family:var(--mono);font-size:9px;letter-spacing:.6px;text-transform:uppercase;color:var(--amber);background:var(--amber-bg);border:1px solid #f3e0a8;border-radius:5px;padding:1px 5px;margin-left:5px;vertical-align:1px}
 .falta-it input{padding:8px 10px;font-size:14px;text-align:right;font-family:var(--mono)}
 
 .kit-it{display:grid;grid-template-columns:1fr 92px;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid #f7e6ef}
@@ -174,7 +175,7 @@ select:focus,input:focus{border-color:var(--pink)}
   <!-- Em falta -->
   <div class="card">
     <div class="card-hdr"><span class="card-title">🛒 Ainda por comprar</span><span class="card-mono" id="faltaChip">–</span></div>
-    <div class="hint" style="margin-bottom:8px">Põe o valor à medida que compras e marca ✓. Os valores entram logo no custo.</div>
+    <div class="hint" style="margin-bottom:8px">Põe o valor à medida que compras e marca ✓. Os valores entram logo no custo. O que vem de <b>stock</b> de outros eventos fica a zero até confirmares nas faturas antigas.</div>
     <div id="faltaList"></div>
   </div>
 
@@ -218,7 +219,7 @@ const SCRIPT_URL='https://script.google.com/macros/s/AKfycbx5SeYyBiSlv8pkFEg_DMj
 const SB_URL='https://fsbpakhrfkrmfgpaxyly.supabase.co';
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZzYnBha2hyZmtybWZncGF4eWx5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1NzMyMjAsImV4cCI6MjA4OTE0OTIyMH0.fkF9Ch9QvX2lecY1B2FxuDWxD4DmH4T6WAg6ggYBVlY';
 const sb=supabase.createClient(SB_URL,SB_KEY);
-const LS='cp_catering_2009_v1';
+const LS='cp_catering_2009_v2';
 const $=id=>document.getElementById(id);
 const eur=n=>(+n||0).toLocaleString('pt-PT',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -286,15 +287,14 @@ const FATURA=[
 
 /* Ainda por comprar ------------------------------------------------------- */
 const FALTA_BASE=[
- {id:'f1', nome:'Pães mini hot dog',            onde:'Continente', comp:'hotdogs',      val:0, ok:false},
- {id:'f3', nome:'Hambúrgueres (50)',            onde:'Talho',      comp:'hamburgueres', val:0, ok:false},
- {id:'f4', nome:'Batata palha',                 onde:'—',          comp:'hotdogs',      val:0, ok:false},
- {id:'f5', nome:'Cebola',                       onde:'—',          comp:'hotdogs',      val:0, ok:false},
- {id:'f6', nome:'Pão para tábua de queijos',    onde:'Aldi',       comp:'queijos',      val:0, ok:false},
- {id:'f7', nome:'Queijos pequenos',             onde:'Aldi',       comp:'queijos',      val:0, ok:false},
- {id:'f8', nome:'Tostas',                       onde:'—',          comp:'queijos',      val:0, ok:false},
- {id:'f9', nome:'Nachos',                       onde:'—',          comp:'mexicana',     val:0, ok:false},
- {id:'f11',nome:'Sopa — 1 pack extra 600g (chegar aos 3 L)', onde:'Recheio', comp:'sopa',   val:0, ok:false}
+ {id:'f1', nome:'Pães mini hot dog',            onde:'Continente', comp:'hotdogs',      val:0,    ok:false},
+ {id:'f3', nome:'Hambúrgueres (50)',            onde:'Talho',      comp:'hamburgueres', val:0,    ok:false},
+ {id:'f11',nome:'Sopa — 1 pack extra 600g (chegar aos 3 L)', onde:'Recheio', comp:'sopa', val:0,  ok:false},
+ {id:'f6', nome:'Pão da tábua de queijos',      onde:'2 × 0,89 €', comp:'queijos',      val:1.78, ok:true},
+ {id:'f4', nome:'Batata palha',                 onde:'stock',      comp:'hotdogs',      val:0,    ok:true, stock:true},
+ {id:'f5', nome:'Cebola',                       onde:'stock',      comp:'hotdogs',      val:0,    ok:true, stock:true},
+ {id:'f8', nome:'Tostas',                       onde:'stock',      comp:'queijos',      val:0,    ok:true, stock:true},
+ {id:'f9', nome:'Nachos',                       onde:'stock',      comp:'mexicana',     val:0,    ok:true, stock:true}
 ];
 
 /* Kit de bebidas vendido (50 €) — o que passa disto é vosso ---------------- */
@@ -442,14 +442,20 @@ function renderFalta(){
   falta.forEach(f=>{
     fh+=`<div class="falta-it">
       <div class="chk ${f.ok?'on':''}" onclick="togFalta('${f.id}')">${f.ok?'✓':''}</div>
-      <div><div class="falta-nome">${COMPS[f.comp].ic} ${esc(f.nome)}</div><div class="falta-onde">${esc(f.onde)} · ${esc(COMPS[f.comp].nome)}</div></div>
+      <div><div class="falta-nome">${COMPS[f.comp].ic} ${esc(f.nome)}${f.stock?' <span class="tag-stock">de stock</span>':''}</div>
+        <div class="falta-onde">${esc(f.onde)} · ${esc(COMPS[f.comp].nome)}${f.stock?' · a rever nas faturas antigas':''}</div></div>
       <input type="number" step="0.01" value="${f.val||''}" placeholder="0,00" oninput="setFalta('${f.id}',this.value)">
     </div>`;
   });
   $('faltaList').innerHTML=fh;
-  const nFalta=falta.filter(f=>!f.ok).length;
-  const vFalta=falta.reduce((s,f)=>s+(+f.val||0),0);
-  $('faltaChip').textContent=nFalta?`${nFalta} por comprar · ${eur(vFalta)} já lançado`:`tudo comprado · ${eur(vFalta)}`;
+  $('faltaChip').textContent=chipFalta();
+}
+function chipFalta(){
+  const n=falta.filter(f=>!f.ok).length;
+  const v=falta.reduce((s,f)=>s+(+f.val||0),0);
+  const st=falta.filter(f=>f.stock).length;
+  const ex=st?` · ${st} de stock`:'';
+  return(n?`${n} por comprar · ${eur(v)} lançado`:`tudo tratado · ${eur(v)}`)+ex;
 }
 
 function renderResumo(){
@@ -513,8 +519,7 @@ function setDest(id,d){const i=itens.find(x=>x.id===id);if(!i)return;i.dest=d;re
 function togFalta(id){const f=falta.find(x=>x.id===id);if(!f)return;f.ok=!f.ok;render();}
 function setFalta(id,v){const f=falta.find(x=>x.id===id);if(!f)return;
   f.val=parseFloat(String(v).replace(',','.'))||0;
-  const nf=falta.filter(x=>!x.ok).length,vf=falta.reduce((s,x)=>s+(+x.val||0),0);
-  $('faltaChip').textContent=nf?`${nf} por comprar · ${eur(vf)} já lançado`:`tudo comprado · ${eur(vf)}`;
+  $('faltaChip').textContent=chipFalta();
   renderResumo();}
 ['recComida','recBebidas','pax'].forEach(id=>$(id).addEventListener('input',renderResumo));
 
