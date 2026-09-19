@@ -151,7 +151,7 @@ select:focus,input:focus{border-color:var(--pink)}
       <div class="field"><label>Receita bebidas €</label><input type="number" id="recBebidas" value="50" step="5"></div>
       <div class="field"><label>Nº convidados</label><input type="number" id="pax" value="50" step="1"></div>
     </div>
-    <div class="hint">Valores da fatura Makro de 19/09/2026 (FAC 01215202601/030761) já carregados, <b>sem IVA</b> — é esse o custo real para a empresa, porque o IVA é dedutível.</div>
+    <div class="hint">Faturas carregadas: <b>Makro</b> 19/09 (FAC 01215202601/030761) e <b>Recheio</b> 19/09 (FR 26202604/0000075198). Valores <b>sem IVA</b> — é esse o custo real para a empresa, porque o IVA é dedutível.</div>
   </div>
 
   <!-- Kit de bebidas -->
@@ -164,7 +164,7 @@ select:focus,input:focus{border-color:var(--pink)}
   <!-- Fatura -->
   <div class="card">
     <div class="card-hdr">
-      <span class="card-title">🧾 Fatura Makro · 19/09</span>
+      <span class="card-title">🧾 Faturas · Makro + Recheio (19/09)</span>
       <span class="card-mono" id="fatChip">–</span>
     </div>
     <div class="hint" style="margin-bottom:10px">Toca em <b>Evento</b> / <b>Pessoal</b> para tirar do cálculo o que é para vocês.</div>
@@ -278,13 +278,15 @@ const FATURA=[
  {id:34,nome:'  ↳ Depósito 8 × 0,10',              q:8, pu:0.10,  tot:0.80,  comp:'deposito',     dest:'ev', fam:'cola'},
  {id:35,nome:'Água Rioba 24×50cl (grade) = 12L',   q:1, pu:3.12,  tot:3.12,  comp:'bebidas',      dest:'ev', fam:'agua'},
  {id:36,nome:'  ↳ Depósito grade 24 × 0,10',       q:24,pu:0.10,  tot:2.40,  comp:'deposito',     dest:'ev', fam:'agua'},
- {id:37,nome:'Luvas descartáveis 500 un',          q:1, pu:3.99,  tot:3.99,  comp:'material',     dest:'ev'}
+ {id:37,nome:'Luvas descartáveis 500 un',          q:1, pu:3.99,  tot:3.99,  comp:'material',     dest:'ev'},
+ // Recheio Cash & Carry · 19/09/2026 · FR 26202604/0000075198 (sem IVA; c/ IVA 33,10 €)
+ {id:38,nome:'Buitoni Piccolinis queijo/fiambre 270g', q:5, pu:2.99, tot:14.95, comp:'pizzas', dest:'ev', fonte:'Recheio'},
+ {id:39,nome:'Creme abóbora e cenoura Iglo 600g (4 × 600g = 2,4 L)', q:4, pu:2.99, tot:11.96, comp:'sopa', dest:'ev', fonte:'Recheio'}
 ];
 
 /* Ainda por comprar ------------------------------------------------------- */
 const FALTA_BASE=[
  {id:'f1', nome:'Pães mini hot dog',            onde:'Continente', comp:'hotdogs',      val:0, ok:false},
- {id:'f2', nome:'Mini pizzas (50)',             onde:'Recheio',    comp:'pizzas',       val:0, ok:false},
  {id:'f3', nome:'Hambúrgueres (50)',            onde:'Talho',      comp:'hamburgueres', val:0, ok:false},
  {id:'f4', nome:'Batata palha',                 onde:'—',          comp:'hotdogs',      val:0, ok:false},
  {id:'f5', nome:'Cebola',                       onde:'—',          comp:'hotdogs',      val:0, ok:false},
@@ -292,7 +294,7 @@ const FALTA_BASE=[
  {id:'f7', nome:'Queijos pequenos',             onde:'Aldi',       comp:'queijos',      val:0, ok:false},
  {id:'f8', nome:'Tostas',                       onde:'—',          comp:'queijos',      val:0, ok:false},
  {id:'f9', nome:'Nachos',                       onde:'—',          comp:'mexicana',     val:0, ok:false},
- {id:'f10',nome:'Sopa de legumes (3 L)',        onde:'Recheio',    comp:'sopa',         val:0, ok:false}
+ {id:'f11',nome:'Sopa — 1 pack extra 600g (chegar aos 3 L)', onde:'Recheio', comp:'sopa',   val:0, ok:false}
 ];
 
 /* Kit de bebidas vendido (50 €) — o que passa disto é vosso ---------------- */
@@ -314,7 +316,7 @@ let itens=[],falta=[],eventos=[],abertos={};
 function load(){
   let s=null;
   try{s=JSON.parse(localStorage.getItem(LS)||'null');}catch(e){}
-  itens=FATURA.map(f=>({...f}));
+  itens=FATURA.map(f=>({fonte:'Makro',...f}));
   falta=FALTA_BASE.map(f=>({...f}));
   if(s){
     (s.dest||[]).forEach(d=>{const it=itens.find(i=>i.id===d.id);if(it){it.dest=d.dest;if(d.comp)it.comp=d.comp;}});
@@ -394,7 +396,7 @@ function renderGrupos(){
       const nota=parcial?` <span class="am">· ${Math.round((k==='pessoal'?1-fr:fr)*100)}% de ${eur(i.tot)}</span>`:'';
       h+=`<div class="it ${k==='pessoal'?'off':''}">
         <div class="it-l"><div class="it-nome">${esc(i.nome)}</div>
-          <div class="it-meta">${i.q} × ${i.pu.toLocaleString('pt-PT',{minimumFractionDigits:2,maximumFractionDigits:3})} €${nota}</div></div>
+          <div class="it-meta">${esc(i.fonte||'Makro')} · ${i.q} × ${i.pu.toLocaleString('pt-PT',{minimumFractionDigits:2,maximumFractionDigits:3})} €${nota}</div></div>
         <div class="it-val ${i.comp==='deposito'?'dep':''}">${eur(i._v)}</div>
         <div class="seg">
           <button class="${i.dest==='ev'?'on':''}" onclick="setDest(${i.id},'ev')">Evento</button>
@@ -405,8 +407,9 @@ function renderGrupos(){
     h+='</div></div>';
   });
   $('grupos').innerHTML=h;
-  const somaFat=itens.reduce((s,i)=>s+i.tot,0);
-  $('fatChip').textContent=itens.length+' linhas · '+eur(somaFat);
+  const porFonte={};
+  itens.forEach(i=>{const f=i.fonte||'Makro';porFonte[f]=(porFonte[f]||0)+i.tot;});
+  $('fatChip').textContent=Object.keys(porFonte).map(f=>`${f} ${eur(porFonte[f])}`).join(' · ');
 
 }
 
@@ -488,7 +491,7 @@ function renderResumo(){
     <div class="tot-row" style="margin-top:6px"><span>Custo por convidado (${pax||0})</span><strong>${pc(t.custoEvento)}</strong></div>
     <div class="tot-row"><span>Receita por convidado</span><strong class="pk">${pc(t.rec)}</strong></div>`;
 
-  $('notaDep').innerHTML=`<b>Nota:</b> pagaste <b>${eur(t.pagoMakro)}</b> no Makro. Desses, <b>${eur(t.deposito)}</b> são depósitos de embalagens — voltam quando devolveres as garrafas e a grade, por isso não entram no custo do evento. <b>${eur(t.pessoal)}</b> ficaram marcados como sendo para vocês. Os preços são sem IVA (dedutível).`;
+  $('notaDep').innerHTML=`<b>Nota:</b> as duas faturas somam <b>${eur(t.pagoMakro)}</b> sem IVA. Desses, <b>${eur(t.deposito)}</b> são depósitos de embalagens — voltam quando devolveres as garrafas e a grade, por isso não entram no custo do evento. <b>${eur(t.pessoal)}</b> ficaram marcados como sendo para vocês. Os preços são sem IVA (dedutível).`;
 
   // KPIs
   $('kRec').textContent=eur(t.rec);
@@ -610,15 +613,15 @@ async function gravar(){
 /* Export / print ---------------------------------------------------------- */
 function exportCSV(){
   const t=totais();
-  const linhas=[['Secção','Item','Qtd','Preço un (€)','Fatura (€)','Evento (€)','Nosso (€)','Estado']];
+  const linhas=[['Fonte','Secção','Item','Qtd','Preço un (€)','Fatura (€)','Evento (€)','Nosso (€)','Estado']];
   itens.forEach(i=>{const fr=fracItem(i);
-    linhas.push([COMPS[i.comp].nome,i.nome,i.q,i.pu.toFixed(3),i.tot.toFixed(2),(i.tot*fr).toFixed(2),(i.tot*(1-fr)).toFixed(2),fr===1?'Evento':(fr===0?'Nós':'Partilhado')]);});
-  falta.forEach(f=>linhas.push([COMPS[f.comp].nome,f.nome+' ('+f.onde+')','','',(+f.val||0).toFixed(2),(+f.val||0).toFixed(2),'0.00',f.ok?'Comprado':'Por comprar']));
+    linhas.push([i.fonte||'Makro',COMPS[i.comp].nome,i.nome,i.q,i.pu.toFixed(3),i.tot.toFixed(2),(i.tot*fr).toFixed(2),(i.tot*(1-fr)).toFixed(2),fr===1?'Evento':(fr===0?'Nós':'Partilhado')]);});
+  falta.forEach(f=>linhas.push([f.onde,COMPS[f.comp].nome,f.nome,'','',(+f.val||0).toFixed(2),(+f.val||0).toFixed(2),'0.00',f.ok?'Comprado':'Por comprar']));
   linhas.push([]);
-  const r=(l,v)=>linhas.push(['',l,'','','',v.toFixed(2),'','']);
+  const r=(l,v)=>linhas.push(['','',l,'','','',v.toFixed(2),'','']);
   r('Custo comida',t.comida);r('Custo bebidas',t.bebidas);
   r('Depositos recuperaveis',t.deposito);
-  linhas.push(['','Fora do evento (nosso)','','','','','',t.pessoal.toFixed(2)]);
+  linhas.push(['','','Fora do evento (nosso)','','','','','',t.pessoal.toFixed(2)]);
   r('Custo total do evento',t.custoEvento);r('Receita',t.rec);r('Margem',t.margem);
   const csv='﻿'+linhas.map(l=>l.map(c=>`"${String(c==null?'':c).replace(/"/g,'""')}"`).join(';')).join('\n');
   const a=document.createElement('a');
