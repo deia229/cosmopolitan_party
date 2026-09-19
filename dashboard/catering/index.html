@@ -192,6 +192,22 @@ select:focus,input:focus{border-color:var(--pink)}
     <div class="note" id="notaDep"></div>
   </div>
 
+  <!-- Simulador -->
+  <div class="card">
+    <div class="card-hdr"><span class="card-title">🔮 Simulador — próximo evento</span><span class="card-mono" id="simChip">–</span></div>
+    <div class="hint" style="margin-bottom:12px">Muda as unidades de finger food. As tábuas, a sopa e as bebidas ficam iguais (são para os mesmos convidados) — só escala o que é servido à unidade.</div>
+    <div class="row3">
+      <div class="field"><label>🌭 Hot dogs</label><input type="number" id="simHot" value="25" step="5" min="0"></div>
+      <div class="field"><label>🍕 Pizzas</label><input type="number" id="simPiz" value="25" step="5" min="0"></div>
+      <div class="field"><label>🍔 Hambúrgueres</label><input type="number" id="simHam" value="25" step="5" min="0"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>Receita comida €</label><input type="number" id="simRecC" value="420" step="10"></div>
+      <div class="field"><label>Receita bebidas €</label><input type="number" id="simRecB" value="50" step="5"></div>
+    </div>
+    <div id="simOut"></div>
+  </div>
+
   <!-- Gravar -->
   <div class="card">
     <div class="card-hdr"><span class="card-title">☁️ Gravar no evento</span><span class="card-mono" id="sbChip">—</span></div>
@@ -235,7 +251,7 @@ const COMPS={
   sopa:         {ic:'🥣', nome:'Sopa de legumes 3L', un:0,  tipo:'comida'},
   bebidas:      {ic:'🥤', nome:'Kit de bebidas',     un:0,  tipo:'bebidas'},
   material:     {ic:'🧤', nome:'Material / consumíveis', un:0, tipo:'comida'},
-  deposito:     {ic:'♻️', nome:'Depósitos (recuperáveis)', un:0, tipo:'deposito'},
+  deposito:     {ic:'♻️', nome:'Depósitos de embalagens', un:0, tipo:'bebidas'},
   pessoal:      {ic:'🏠', nome:'Para nós (fora do evento)', un:0, tipo:'pessoal'}
 };
 const ORDEM=['hotdogs','pizzas','hamburgueres','queijos','mexicana','frutas','sopa','bebidas','material','deposito','pessoal'];
@@ -355,23 +371,23 @@ function porComponente(){
 }
 function totais(){
   const m=porComponente();
-  let comida=0,bebidas=0,deposito=0,pessoal=0;
+  let comida=0,bebidas=0,pessoal=0;
   Object.keys(m).forEach(k=>{
     const t=(COMPS[k]||{}).tipo||'comida';
     if(t==='comida')comida+=m[k].total;
     else if(t==='bebidas')bebidas+=m[k].total;
-    else if(t==='deposito')deposito+=m[k].total;
     else if(t==='pessoal')pessoal+=m[k].total;
   });
+  const deposito=(m.deposito||{}).total||0;         // já incluído nas bebidas
   const recC=+$('recComida').value||0,recB=+$('recBebidas').value||0;
-  const custoEvento=comida+bebidas;                 // depósitos não contam (voltam)
+  const custoEvento=comida+bebidas;
   const pagoMakro=itens.reduce((s,i)=>s+i.tot,0);   // tudo o que saiu da carteira
   return {m,comida,bebidas,deposito,pessoal,recC,recB,rec:recC+recB,custoEvento,pagoMakro,
           margem:(recC+recB)-custoEvento,margemC:recC-comida,margemB:recB-bebidas};
 }
 
 /* Render ------------------------------------------------------------------ */
-function render(){renderGrupos();renderKit(false);renderFalta();renderResumo();}
+function render(){renderGrupos();renderKit(false);renderFalta();renderResumo();renderSim();}
 
 function renderGrupos(){
   let h='';
@@ -436,6 +452,37 @@ function renderKit(soMeta){
   $('kitChip').textContent=excTot?`${eur(excTot)} deduzidos`:'sem excedente';
 }
 
+const SIM_UN={hotdogs:'simHot',pizzas:'simPiz',hamburgueres:'simHam'};
+function renderSim(){
+  const t=totais(),m=t.m;
+  let custo=0,lin='';
+  ORDEM.filter(k=>k!=='pessoal').forEach(k=>{
+    const v=(m[k]||{}).total||0;
+    const ref=COMPS[k].un||0;
+    const inp=SIM_UN[k];
+    let novo=v,nota='';
+    if(inp&&ref){
+      const n=Math.max(0,+$(inp).value||0);
+      novo=ref?v/ref*n:v;
+      nota=` · ${n} un × ${eur(ref?v/ref:0)}`;
+    }else if(v){nota=' · igual';}
+    if(!v&&!inp)return;
+    custo+=novo;
+    lin+=`<div class="tot-row"><span>${COMPS[k].ic} ${esc(COMPS[k].nome)}<span class="hint">${nota}</span></span><strong>${eur(novo)}</strong></div>`;
+  });
+  const rec=(+$('simRecC').value||0)+(+$('simRecB').value||0);
+  const mar=rec-custo;
+  const pax=+$('pax').value||0;
+  lin+=`<div class="tot-row big" style="margin-top:8px"><span><b>Custo total</b></span><strong class="neg">${eur(custo)}</strong></div>
+    <div class="tot-row big"><span><b>Receita</b></span><strong class="pk">${eur(rec)}</strong></div>
+    <div class="tot-row big"><span><b>Lucro</b></span><strong class="${mar>=0?'pos':'neg'}">${eur(mar)} ${rec?`(${Math.round(mar/rec*100)}%)`:''}</strong></div>
+    ${pax?`<div class="tot-row"><span>Por convidado (${pax})</span><strong>${eur(custo/pax)} de custo · ${eur(mar/pax)} de lucro</strong></div>`:''}
+    <div class="note" style="margin-top:10px"><b>Atenção às embalagens:</b> metade das unidades não é exatamente metade do custo — caixas de pão, packs de salsichas e de queijo vendem-se fechados, por isso conta mais 5 a 8 € do que este cálculo proporcional.</div>`;
+  $('simOut').innerHTML=lin;
+  $('simChip').textContent=`${eur(custo)} de custo · ${eur(mar)} de lucro`;
+}
+['simHot','simPiz','simHam','simRecC','simRecB'].forEach(id=>$(id).addEventListener('input',renderSim));
+
 function renderFalta(){
   let fh='';
   falta.forEach(f=>{
@@ -461,7 +508,7 @@ function renderResumo(){
   const m=porComponente();
   const t=totais();
   let rh='';
-  ORDEM.filter(k=>k!=='pessoal'&&k!=='deposito').forEach(k=>{
+  ORDEM.filter(k=>k!=='pessoal').forEach(k=>{
     const v=m[k]||{fatura:0,falta:0,total:0};
     if(!v.total&&!COMPS[k].un)return;
     const c=COMPS[k];
@@ -475,7 +522,6 @@ function renderResumo(){
     </div>`;
   });
   rh+=`<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
-    <div class="tot-row"><span>♻️ Depósitos de embalagens (voltam ao devolver)</span><strong class="am">${eur(t.deposito)}</strong></div>
     <div class="tot-row"><span>🏠 Para nós (fora do evento)</span><strong>${eur(t.pessoal)}</strong></div>
   </div>`;
   $('resumoComp').innerHTML=rh;
@@ -488,7 +534,7 @@ function renderResumo(){
     <div class="tot-row"><span>— Custo comida${''}</span><strong class="neg">${eur(t.comida)}</strong></div>
     <div class="tot-row"><span><b>= Margem comida</b></span><strong class="${t.margemC>=0?'pos':'neg'}">${eur(t.margemC)} ${t.recC?`(${Math.round(t.margemC/t.recC*100)}%)`:''}</strong></div>
     <div class="tot-row" style="margin-top:6px"><span>🥤 Receita bebidas</span><strong class="pos">${eur(t.recB)}</strong></div>
-    <div class="tot-row"><span>— Custo bebidas (c/ IEC, sem depósitos)</span><strong class="neg">${eur(t.bebidas)}</strong></div>
+    <div class="tot-row"><span>— Custo bebidas (c/ IEC e depósitos)</span><strong class="neg">${eur(t.bebidas)}</strong></div>
     <div class="tot-row"><span><b>= Margem bebidas</b></span><strong class="${t.margemB>=0?'pos':'neg'}">${eur(t.margemB)} ${t.recB?`(${Math.round(t.margemB/t.recB*100)}%)`:''}</strong></div>
     <div class="tot-row big" style="margin-top:8px"><span><b>Total faturado ao cliente</b></span><strong class="pk">${eur(t.rec)}</strong></div>
     <div class="tot-row big"><span><b>Custo total do evento</b></span><strong class="neg">${eur(t.custoEvento)}</strong></div>
@@ -496,7 +542,7 @@ function renderResumo(){
     <div class="tot-row" style="margin-top:6px"><span>Custo por convidado (${pax||0})</span><strong>${pc(t.custoEvento)}</strong></div>
     <div class="tot-row"><span>Receita por convidado</span><strong class="pk">${pc(t.rec)}</strong></div>`;
 
-  $('notaDep').innerHTML=`<b>Nota:</b> as duas faturas somam <b>${eur(t.pagoMakro)}</b> sem IVA. Desses, <b>${eur(t.deposito)}</b> são depósitos de embalagens — voltam quando devolveres as garrafas e a grade, por isso não entram no custo do evento. <b>${eur(t.pessoal)}</b> ficaram marcados como sendo para vocês. Os preços são sem IVA (dedutível).`;
+  $('notaDep').innerHTML=`<b>Nota:</b> as duas faturas somam <b>${eur(t.pagoMakro)}</b> sem IVA. Os <b>${eur(t.deposito)}</b> de depósitos contam como custo — as bebidas ficam no espaço e as garrafas não voltam para devolução. <b>${eur(t.pessoal)}</b> ficaram marcados como sendo para vocês. Os preços são sem IVA (dedutível).`;
 
   // KPIs
   $('kRec').textContent=eur(t.rec);
@@ -512,15 +558,15 @@ function renderResumo(){
 }
 
 function setKit(f,v){kit[f]=Math.max(0,parseFloat(String(v).replace(',','.'))||0);
-  renderGrupos();renderKit(true);renderResumo();save();}
+  renderGrupos();renderKit(true);renderResumo();renderSim();save();}
 function togGrp(k){abertos[k]=!(abertos[k]!==false);render();}
 function setDest(id,d){const i=itens.find(x=>x.id===id);if(!i)return;i.dest=d;render();}
 function togFalta(id){const f=falta.find(x=>x.id===id);if(!f)return;f.ok=!f.ok;render();}
 function setFalta(id,v){const f=falta.find(x=>x.id===id);if(!f)return;
   f.val=parseFloat(String(v).replace(',','.'))||0;
   $('faltaChip').textContent=chipFalta();
-  renderResumo();}
-['recComida','recBebidas','pax'].forEach(id=>$(id).addEventListener('input',renderResumo));
+  renderResumo();renderSim();}
+['recComida','recBebidas','pax'].forEach(id=>$(id).addEventListener('input',()=>{renderResumo();renderSim();}));
 
 function reset(){
   if(!confirm('Repor a fatura original e limpar os valores por comprar?'))return;
@@ -600,7 +646,7 @@ async function gravar(){
   }catch(e){}
   actuais=actuais.filter(c=>!String(c.descricao||'').startsWith('Catering ·'));
 
-  ORDEM.filter(x=>x!=='pessoal'&&x!=='deposito').forEach(kk=>{
+  ORDEM.filter(x=>x!=='pessoal').forEach(kk=>{
     const v=(m[kk]||{}).total||0;if(!v)return;
     actuais.push({categoria:'Catering',descricao:`Catering · ${COMPS[kk].nome}`,valor:+v.toFixed(2)});
   });
@@ -624,7 +670,7 @@ function exportCSV(){
   linhas.push([]);
   const r=(l,v)=>linhas.push(['','',l,'','','',v.toFixed(2),'','']);
   r('Custo comida',t.comida);r('Custo bebidas',t.bebidas);
-  r('Depositos recuperaveis',t.deposito);
+  r('  dos quais depositos',t.deposito);
   linhas.push(['','','Fora do evento (nosso)','','','','','',t.pessoal.toFixed(2)]);
   r('Custo total do evento',t.custoEvento);r('Receita',t.rec);r('Margem',t.margem);
   const csv='﻿'+linhas.map(l=>l.map(c=>`"${String(c==null?'':c).replace(/"/g,'""')}"`).join(';')).join('\n');
