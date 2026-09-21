@@ -3862,7 +3862,7 @@ function msgReservaDispon(r){
   const valor=r.total||'-';
   const num=+r.total_num||0;
   const sinal=num?eur(num*0.5):'metade do valor';
-  return `Olá ${nome}! ✨ Obrigada pelo interesse na Cosmopolitan Party.
+  return `Olá ${nome}! Obrigada pelo interesse na Cosmopolitan Party.
 
 Ainda temos disponibilidade para o dia ${data}! Para o turno ${horario}, o valor do espaço é de ${valor} (+ IVA à taxa legal) e já inclui a limpeza.
 
@@ -3877,7 +3877,7 @@ function msgReservaPagamento(r){
   const data=r.data_festa?fmtD(r.data_festa):'-';
   const num=+r.total_num||0;
   const sinal=num?eur(num*0.5):'50% do valor';
-  return `Que bom, ${nome}! 🎉 Vamos então garantir o dia ${data}.
+  return `Que bom, ${nome}! Vamos então garantir o dia ${data}.
 
 Para confirmar a reserva, basta fazer o pagamento do sinal:
 
@@ -3915,7 +3915,7 @@ function msgReservaConfirm(r){
   const data=r.data_festa?fmtD(r.data_festa):'-';
   const num=+r.total_num||0;
   const restante=num?eur(num*0.5):'-';
-  return `Está reservado! 🎉 Recebemos o sinal e o dia ${data} é oficialmente seu.
+  return `Está reservado! Recebemos o sinal e o dia ${data} é oficialmente seu.
 
 O valor restante (${restante}) deverá ser liquidado até 7 dias antes do evento, também por MBWay.
 
@@ -3993,7 +3993,7 @@ function enviarTemplateEv(){
     if(c&&c.linkPDF)window.open(_driveDownloadUrl(c.linkPDF),'_blank');
     else showToast('⚠️ Template de contrato mas sem PDF associado — anexa manualmente');
   }
-  window.open(`https://wa.me/${num}?text=${encodeURIComponent(msg)}`,'_blank');
+  window.open(`https://api.whatsapp.com/send?phone=${num}&text=${encodeURIComponent(msg)}`,'_blank');
 }
 async function copiarTemplateEv(){
   const ev=eventos.find(e=>e.rowIndex===curEvIdx);if(!ev){showToast('Evento não encontrado');return;}
@@ -4012,7 +4012,7 @@ function enviarMsgRes(tipo){
   if(!tel){showToast('Sem contacto');return;}
   const num=tel.length===9?'351'+tel:tel;
   const msg=tipo==='dispon'?msgReservaDispon(r):tipo==='pagamento'?msgReservaPagamento(r):tipo==='lembrete'?msgReservaLembrete(r):msgReservaConfirm(r);
-  window.open(`https://wa.me/${num}?text=${encodeURIComponent(msg)}`,'_blank');
+  window.open(`https://api.whatsapp.com/send?phone=${num}&text=${encodeURIComponent(msg)}`,'_blank');
 }
 async function apagarReserva(){
   if(!curResId||!sb)return;
