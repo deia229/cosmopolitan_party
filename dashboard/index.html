@@ -1865,7 +1865,7 @@ Cosmopolitan Party`
   {
     titulo:'Envio do PIN de entrada (dia do evento)',
     sub:'A enviar no dia da festa, com o contrato já assinado.',
-    corpo:`Olá [Nome], bom dia! ✨
+    corpo:`Olá [Nome], boa tarde
 
 Aqui fica o PIN de entrada no espaço para a festa de hoje, [Data]:
 
@@ -1875,7 +1875,8 @@ Aqui fica o PIN de entrada no espaço para a festa de hoje, [Data]:
 
 Por favor não partilhe o PIN com terceiros e confirme que a porta fica bem fechada à saída.
 
-Qualquer questão contactar o Ivo · 964 505 429.
+Qualquer questão contactar:
+Ivo 964 505 429.
 
 Desejamos uma festa fantástica! 🎉
 Cosmopolitan Party`
@@ -3950,7 +3951,8 @@ Cosmopolitan Party`;
 function _preencherTemplate(corpo,ev){
   const nome=String(ev.cliente||'').trim().split(/\s+/)[0]||'';
   const data=ev.dataFesta?fmtD(ev.dataFesta):'';
-  const horario=(ev.horaInicio||'-')+' às '+(ev.horaFim||'-');
+  const hhmm=h=>h?String(h).slice(0,5):'-';
+  const horario=hhmm(ev.horaInicio)+' às '+hhmm(ev.horaFim);
   const c=findContrato(ev);
   const link=(c&&c.linkPDF)?c.linkPDF:'[Link do contrato]';
   return String(corpo)
