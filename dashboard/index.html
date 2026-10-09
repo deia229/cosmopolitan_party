@@ -1367,26 +1367,34 @@ async function doLogin(e){
 async function doLogout(){await sb.auth.signOut();location.reload();}
 
 // ─── CONTRATOS PENDENTES ───
-let contratosPend=[],contratosAll=[],contratoByPhone={},contratoByNameDate={};
+let contratosPend=[],contratosAll=[],contratoByPhone={},contratoByNameDate={},contratoByPhoneDate={};
 // Telefone normalizado: apenas dígitos, últimos 9 (PT mobile = 9 dígitos, ignora prefixo 351)
 function normPhone9(p){const d=String(p||'').replace(/\D/g,'');return d.length>=9?d.slice(-9):d;}
 // Nome normalizado: sem acentos, minúsculas, espaços colapsados
 function normName(s){return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim().replace(/\s+/g,' ');}
 function buildContratoIndex(){
-  contratoByPhone={};contratoByNameDate={};
-  contratosAll.forEach(c=>{
-    const ph=normPhone9(c.telefone);if(ph)contratoByPhone[ph]=c;
-    const nm=normName(c.cliente),dt=normEvDate(c.dataEvento);
+  contratoByPhone={};contratoByNameDate={};contratoByPhoneDate={};
+  // Confirmados têm prioridade sobre pendentes na mesma chave
+  const _ord=[...contratosAll].sort((a,b)=>(a.confirmado?1:0)-(b.confirmado?1:0));
+  _ord.forEach(c=>{
+    const ph=normPhone9(c.telefone),dt=normEvDate(c.dataEvento);
+    if(ph){contratoByPhone[ph]=c;if(dt)contratoByPhoneDate[ph+'|'+dt]=c;}
+    const nm=normName(c.cliente);
     if(nm&&dt)contratoByNameDate[nm+'|'+dt]=c;
   });
 }
-// Match festa↔contrato: telefone primeiro (estável); nome+data como fallback
+// Match festa↔contrato: telefone+data, depois nome+data; telefone sozinho só se
+// a data do contrato não pertencer a outra festa do mesmo cliente (data alterada)
 function findContrato(ev){
   if(!ev)return null;
-  const ph=normPhone9(ev.telefone);
-  if(ph&&contratoByPhone[ph])return contratoByPhone[ph];
-  const nm=normName(ev.cliente),dt=normEvDate(ev.dataFesta);
-  if(nm&&dt)return contratoByNameDate[nm+'|'+dt]||null;
+  const ph=normPhone9(ev.telefone),dt=normEvDate(ev.dataFesta);
+  if(ph&&dt&&contratoByPhoneDate[ph+'|'+dt])return contratoByPhoneDate[ph+'|'+dt];
+  const nm=normName(ev.cliente);
+  if(nm&&dt&&contratoByNameDate[nm+'|'+dt])return contratoByNameDate[nm+'|'+dt];
+  if(ph&&!(eventos||[]).some(e=>e!==ev&&normPhone9(e.telefone)===ph&&!e.arquivado)){
+    const l=contratosAll.filter(x=>normPhone9(x.telefone)===ph&&!x.substituidoPor);
+    return l.length?l[l.length-1]:null;
+  }
   return null;
 }
 // Status do contrato: 'ok' (confirmado) | 'pend' (criado, por assinar) | 'none' (sem contrato)
