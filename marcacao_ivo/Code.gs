@@ -384,6 +384,12 @@ Qualquer dúvida estamos ao dispor.`;
   });
 }
 
+/***** MANUAL: reprocessa uma linha (cria o evento no calendário) — correr a partir do editor *****/
+function sincronizarLinha139() {
+  const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+  onFormSubmit({ range: sh.getRange(139, 1) });
+}
+
 // ─── Helpers para o pedido de dados ───
 function normalizePtPhone_(raw) {
   const digits = String(raw || '').replace(/\D/g, '');
