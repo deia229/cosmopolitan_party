@@ -675,7 +675,7 @@ function readContratoFromRow_(sh, row) {
     email: null,
     data_evento: toDateIso_(disp_(sh, row, CONFIG.COLS.dataEvento)),
     hora_inicio: disp_(sh, row, CONFIG.COLS.horaInicio) || null,
-    hora_fim: disp_(sh, row, CONFIG.COLS.horaFim) || null,
+    hora_fim: (disp_(sh, row, CONFIG.COLS.horaFim) || '').replace(/^24:/, '00:') || null,
     max_pessoas: toNumNullable_(disp_(sh, row, CONFIG.COLS.maxPessoas)),
     valor_aluguer: toNumNullable_(disp_(sh, row, CONFIG.COLS.valorBase)),
     caucao: toNumNullable_(disp_(sh, row, CONFIG.COLS.caucao)),

@@ -702,6 +702,7 @@ function normalizeTime_(v) {
   const m = s.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
   if (!m) return null;
   const h = Number(m[1]), mi = Number(m[2]), se = m[3] ? Number(m[3]) : 0;
+  if (h === 24 && mi === 0 && se === 0) return { hours: 0, minutes: 0, seconds: 0 }; // 24:00 = 00:00
   if (h > 23 || mi > 59 || se > 59) return null;
   return { hours: h, minutes: mi, seconds: se };
 }
