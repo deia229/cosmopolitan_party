@@ -382,6 +382,40 @@ Qualquer dúvida estamos ao dispor.`;
     // GmailApp.sendEmail só aceita assinatura posicional (recipient, subject, body, options)
     GmailApp.sendEmail(to, subj, bodyText, { htmlBody: htmlBody, name: 'Cosmopolitan Party' });
   });
+
+  // ─── SMS automático de confirmação ao cliente ───
+  try {
+    enviarSmsConfirmacao_(telNorm, dataPt);
+  } catch (err) {
+    console.error('SMS confirmação falhou: ' + err);
+  }
+}
+
+// ─── SMS de confirmação (Twilio) ───
+// Credenciais em Project Settings > Script Properties:
+//   TWILIO_SID, TWILIO_TOKEN, TWILIO_FROM (ex.: CosmoParty ou +351...)
+// SMS_ATIVO = 'true' liga o envio; qualquer outro valor (ou ausente) desliga.
+function enviarSmsConfirmacao_(telNorm, dataPt) {
+  const props = PropertiesService.getScriptProperties();
+  if (props.getProperty('SMS_ATIVO') !== 'true') return;
+  if (!telNorm) return;
+  const sid = props.getProperty('TWILIO_SID');
+  const token = props.getProperty('TWILIO_TOKEN');
+  const from = props.getProperty('TWILIO_FROM');
+  if (!sid || !token || !from) throw new Error('Faltam TWILIO_SID / TWILIO_TOKEN / TWILIO_FROM.');
+
+  // Sem acentos para caber num único SMS (GSM-7)
+  const body = `Cosmopolitan Party: a sua reserva para o dia ${dataPt} ficou registada. Entraremos em contacto em breve. Obrigado!`;
+
+  const res = UrlFetchApp.fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
+    method: 'post',
+    payload: { To: '+' + telNorm, From: from, Body: body },
+    headers: { Authorization: 'Basic ' + Utilities.base64Encode(`${sid}:${token}`) },
+    muteHttpExceptions: true
+  });
+  if (res.getResponseCode() >= 300) {
+    throw new Error(`Twilio ${res.getResponseCode()}: ${res.getContentText()}`);
+  }
 }
 
 // ─── Helpers para o pedido de dados ───
