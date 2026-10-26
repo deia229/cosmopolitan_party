@@ -53,6 +53,10 @@ input[type=range]{width:100%}
     <h2>Peças do inventário</h2>
     <div class="sub">Medidas reais (L × A em cm). Clica para adicionar ao palco. Cores e vinis são alteráveis.</div>
     <div id="catalog"></div>
+    <div class="lab">Inspiração do cliente</div>
+    <label class="item" style="margin-bottom:6px"><span style="font-size:22px">🖼️</span><span><b>Carregar inspiração</b><small>a IA sugere peças nossas</small></span><input type="file" accept="image/*" id="inspFile" hidden></label>
+    <img id="inspImg" style="display:none;width:100%;border-radius:10px;margin-bottom:6px">
+    <div id="inspNote" class="sub" style="display:none"></div>
     <div class="lab">Extras</div>
     <button class="item" onclick="addPiece('baloes')"><svg width="30" height="30"><circle cx="10" cy="11" r="8" fill="#e0187a"/><circle cx="20" cy="9" r="7" fill="#fce4ec" stroke="#e0187a"/><circle cx="17" cy="21" r="7" fill="#ff4da6"/></svg><span><b>Grupo de balões</b><small>cores à escolha</small></span></button>
   </div>
@@ -311,11 +315,41 @@ async function polish(){
   sel=s;draw();
   btn.disabled=true;btn.textContent='A gerar… (até 1 min)';
   try{
-    const r=await fetch('/.netlify/functions/gerar-inspiracao',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+session.access_token},body:JSON.stringify({image:t.toDataURL('image/jpeg',.88)})});
+    const r=await fetch('/.netlify/functions/gerar-inspiracao',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+session.access_token},body:JSON.stringify({image:t.toDataURL('image/jpeg',.88),ref:inspData})});
     const d=await r.json();if(!r.ok)throw new Error(d.error||r.status);
     $('aiImg').src=d.image;$('aiDl').href=d.image;$('aiOut').style.display='block';$('aiImg').scrollIntoView({behavior:'smooth'});
   }catch(e){alert('Erro: '+e.message);}
   btn.disabled=false;btn.textContent='Polir com IA';
+}
+
+// ───── Inspiração → sugestão automática de peças ─────
+let inspData=null;
+function toJpeg(img,maxW){const t=document.createElement('canvas'),k=Math.min(1,maxW/img.width);t.width=Math.round(img.width*k);t.height=Math.round(img.height*k);t.getContext('2d').drawImage(img,0,0,t.width,t.height);return t.toDataURL('image/jpeg',.88);}
+$('inspFile').onchange=async e=>{
+  const f=e.target.files[0];if(!f)return;
+  const {data:{session}}=await sb.auth.getSession();
+  if(!session){alert('Entra primeiro no dashboard (mesmo browser) e volta a abrir esta página.');return;}
+  const img=new Image();img.src=URL.createObjectURL(f);await img.decode();
+  inspData=toJpeg(img,1000);$('inspImg').src=inspData;$('inspImg').style.display='block';
+  const n=$('inspNote');n.style.display='block';n.textContent='A analisar a inspiração…';
+  try{
+    const r=await fetch('/.netlify/functions/gerar-inspiracao',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+session.access_token},body:JSON.stringify({mode:'sugerir',image:inspData})});
+    const d=await r.json();if(!r.ok)throw new Error(d.error||r.status);
+    applySuggestion(d);n.textContent=d.notes||'Composição sugerida. Ajusta à vontade.';
+  }catch(err){n.textContent='Erro: '+err.message;}
+  e.target.value='';
+};
+function applySuggestion(d){
+  pieces=[];sel=null;
+  (d.pieces||[]).forEach(s=>{
+    const c=CAT.find(x=>x.id===s.cat);if(!c||used(c.id)>=c.stock)return;
+    addPiece(c.id);const p=pieces[pieces.length-1];
+    if(s.color&&!c.tex)p.color=s.color;if(s.text)p.text=s.text;if(s.textColor)p.textColor=s.textColor;
+    p.flip=!!s.flip;p.x=bgInfo.cx+(+s.xcm||0)*bgInfo.ppc;
+  });
+  (d.balloons||[]).forEach(b=>{addPiece('baloes');const p=pieces[pieces.length-1];
+    p.color=b.color||p.color;p.color2=b.color2||p.color2;p.color3=b.color3||p.color3;p.scale=+b.scale||100;p.x=bgInfo.cx+(+b.xcm||0)*bgInfo.ppc;});
+  sel=null;renderCatalog();syncCtl();draw();
 }
 renderCatalog();
 // as fontes do canvas só ficam disponíveis depois de carregadas
