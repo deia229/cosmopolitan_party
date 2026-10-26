@@ -1,16 +1,16 @@
-// Polimento com IA da composição de decoração (Gemini).
-// Requer variável de ambiente GEMINI_API_KEY no Netlify. Só aceita pedidos de utilizadores autenticados no Supabase.
+// Polimento com IA da composição de decoração (OpenAI).
+// Requer variável de ambiente OPENAI_API_KEY no Netlify. Só aceita pedidos de utilizadores autenticados no Supabase.
 const SB_URL = "https://fsbpakhrfkrmfgpaxyly.supabase.co";
 const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZzYnBha2hyZmtybWZncGF4eWx5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1NzMyMjAsImV4cCI6MjA4OTE0OTIyMH0.fkF9Ch9QvX2lecY1B2FxuDWxD4DmH4T6WAg6ggYBVlY"; // anon key — pública por design
 
-const MODEL = process.env.GEMINI_IMAGE_MODEL || "gemini-2.5-flash-image";
+const IMAGE_MODEL = process.env.OPENAI_IMAGE_MODEL || "gpt-image-1";
 
 const PROMPT = `Esta imagem é uma maquete de decoração de festa montada no nosso espaço, com painéis e arcos reais.
 Transforma-a numa fotografia realista MANTENDO EXACTAMENTE: o espaço, o palco, a posição, o tamanho, a forma e a cor de cada painel e arco.
 Podes apenas: acrescentar luz e sombras naturais, ajustar o realismo dos materiais, tornar os balões e o texto de vinil mais naturais.
 NÃO adiciones, removas nem alteres peças. NÃO mudes cores nem proporções. NÃO inventes elementos novos.`;
 
-const TEXT_MODEL = process.env.GEMINI_TEXT_MODEL || "gemini-2.5-flash";
+const TEXT_MODEL = process.env.OPENAI_TEXT_MODEL || "gpt-4.1-mini";
 
 const SUGGEST = `És designer de decoração de festas. O cliente enviou uma imagem de inspiração. Recria-a usando APENAS o nosso inventário, num palco com 352 cm de largura (centro = 0).
 Inventário (id | medidas L x A cm | quantidade | notas):
@@ -31,7 +31,8 @@ const json = (status, body) => ({ statusCode: status, headers: { "Content-Type":
 
 exports.handler = async (event) => {
   if (event.httpMethod !== "POST") return json(405, { error: "método não permitido" });
-  if (!process.env.GEMINI_API_KEY) return json(500, { error: "GEMINI_API_KEY não configurada no Netlify" });
+  const KEY = process.env.OPENAI_API_KEY;
+  if (!KEY) return json(500, { error: "OPENAI_API_KEY não configurada no Netlify" });
 
   // só utilizadores autenticados (evita gastos por terceiros)
   const token = (event.headers.authorization || "").replace(/^Bearer /i, "");
@@ -44,33 +45,44 @@ exports.handler = async (event) => {
   const parse = (x) => /^data:(image\/\w+);base64,(.+)$/.exec(x || "");
   const m = parse(b.image);
   if (!m) return json(400, { error: "imagem em falta" });
+  const errMsg = (d) => (d && d.error && d.error.message) || "erro da OpenAI";
 
+  // 1) sugerir peças a partir de uma inspiração
   if (b.mode === "sugerir") {
-    const rs = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + TEXT_MODEL + ":generateContent", {
+    const r = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-goog-api-key": process.env.GEMINI_API_KEY },
-      body: JSON.stringify({ contents: [{ parts: [{ text: SUGGEST }, { inline_data: { mime_type: m[1], data: m[2] } }] }], generationConfig: { responseMimeType: "application/json" } }),
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + KEY },
+      body: JSON.stringify({
+        model: TEXT_MODEL,
+        response_format: { type: "json_object" },
+        messages: [{ role: "user", content: [{ type: "text", text: SUGGEST }, { type: "image_url", image_url: { url: b.image } }] }],
+      }),
     });
-    const ds = await rs.json();
-    if (!rs.ok) return json(502, { error: (ds.error && ds.error.message) || "erro do Gemini" });
-    try {
-      const txt = ds.candidates[0].content.parts.map((p) => p.text || "").join("");
-      return json(200, JSON.parse(txt));
-    } catch { return json(502, { error: "resposta do Gemini ilegível" }); }
+    const d = await r.json();
+    if (!r.ok) return json(502, { error: errMsg(d) });
+    try { return json(200, JSON.parse(d.choices[0].message.content)); }
+    catch { return json(502, { error: "resposta da OpenAI ilegível" }); }
   }
 
-  const parts = [{ text: PROMPT + (b.extra ? "\nNotas do cliente: " + String(b.extra).slice(0, 500) : "") }, { inline_data: { mime_type: m[1], data: m[2] } }];
+  // 2) polir a maquete com IA (edição de imagem)
+  const toBlob = (mm) => new Blob([Buffer.from(mm[2], "base64")], { type: mm[1] });
+  const ext = (mm) => mm[1].split("/")[1].replace("jpeg", "jpg");
+  const fd = new FormData();
+  fd.append("model", IMAGE_MODEL);
+  fd.append("prompt", PROMPT + (b.extra ? "\nNotas do cliente: " + String(b.extra).slice(0, 500) : ""));
+  fd.append("image[]", toBlob(m), "maquete." + ext(m));
   const ref = parse(b.ref);
-  if (ref) parts.push({ text: "Imagem de referência do cliente: serve só para o ambiente, luz e acabamento. NÃO copies as peças dela; mantém as peças da maquete." }, { inline_data: { mime_type: ref[1], data: ref[2] } });
-  const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + MODEL + ":generateContent", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "x-goog-api-key": process.env.GEMINI_API_KEY },
-    body: JSON.stringify({ contents: [{ parts }] }),
-  });
+  if (ref) {
+    fd.set("prompt", fd.get("prompt") + "\nA segunda imagem é uma referência do cliente: serve só para o ambiente, luz e acabamento. NÃO copies as peças dela; mantém as peças da maquete (primeira imagem).");
+    fd.append("image[]", toBlob(ref), "referencia." + ext(ref));
+  }
+  fd.append("size", "1024x1536");
+  fd.append("quality", process.env.OPENAI_IMAGE_QUALITY || "medium");
+  if (/^gpt-image-1/.test(IMAGE_MODEL)) fd.append("input_fidelity", "high");
+  const r = await fetch("https://api.openai.com/v1/images/edits", { method: "POST", headers: { Authorization: "Bearer " + KEY }, body: fd });
   const d = await r.json();
-  if (!r.ok) return json(502, { error: (d.error && d.error.message) || "erro do Gemini" });
-  const out = ((d.candidates || [])[0]?.content?.parts || []).find((p) => (p.inlineData || p.inline_data));
-  const img = out && (out.inlineData || out.inline_data);
-  if (!img) return json(502, { error: "o Gemini não devolveu imagem" });
-  return json(200, { image: "data:" + (img.mimeType || img.mime_type || "image/png") + ";base64," + img.data });
+  if (!r.ok) return json(502, { error: errMsg(d) });
+  const img = d.data && d.data[0] && d.data[0].b64_json;
+  if (!img) return json(502, { error: "a OpenAI não devolveu imagem" });
+  return json(200, { image: "data:image/png;base64," + img });
 };
