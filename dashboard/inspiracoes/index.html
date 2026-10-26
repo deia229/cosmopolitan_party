@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Cosmopolitan Party — Inspirações</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Dancing+Script:wght@600&family=Great+Vibes&family=Playfair+Display:wght@600&family=Montserrat:wght@700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{--pink:#e0187a;--pink2:#ff4da6;--pink3:#fce4ec;--dark:#1a0010;--text:#2d0020;--muted:#8a5a70;--border:#f0c8dc;--bg:#f8f0f5;--card:#fff;--font:'DM Sans',Arial,sans-serif}
@@ -63,8 +64,9 @@ input[type=range]{width:100%}
       <label class="btn" style="margin:0">Trocar fundo<input type="file" accept="image/*" id="bgfile" hidden></label>
       <button class="btn" onclick="resetBg()">Fundo: palco</button>
       <button class="btn p" onclick="exportPng()">Descarregar imagem</button>
-      <button class="btn" disabled title="Falta ligar a chave da API de imagem">Polir com IA (em breve)</button>
+      <button class="btn p" id="aiBtn" onclick="polish()">Polir com IA</button>
     </div>
+    <div id="aiOut" style="display:none;margin-top:12px;text-align:center"><img id="aiImg" style="max-width:100%;border-radius:10px"><div class="bar"><a class="btn" id="aiDl" download="inspiracao-ia.png">Descarregar versão IA</a></div></div>
     <div class="tip" style="text-align:center">Arrasta as peças. Setas do teclado mexem a peça seleccionada (Shift = 10 cm). Delete remove.</div>
   </div>
 
@@ -296,6 +298,24 @@ function clearAll(){if(pieces.length&&!confirm('Remover todas as peças?'))retur
 function exportPng(){
   const s=sel;sel=null;draw();
   cv.toBlob(b=>{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='inspiracao-cosmopolitan.png';a.click();sel=s;draw();},'image/png');
+}
+
+// ───── Polir com IA (função Netlify → Gemini) ─────
+const sb=window.supabase.createClient('https://fsbpakhrfkrmfgpaxyly.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZzYnBha2hyZmtybWZncGF4eWx5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1NzMyMjAsImV4cCI6MjA4OTE0OTIyMH0.fkF9Ch9QvX2lecY1B2FxuDWxD4DmH4T6WAg6ggYBVlY');
+async function polish(){
+  const btn=$('aiBtn');
+  const {data:{session}}=await sb.auth.getSession();
+  if(!session){alert('Entra primeiro no dashboard (mesmo browser) e volta a abrir esta página.');return;}
+  const s=sel;sel=null;draw();
+  const t=document.createElement('canvas');t.width=1000;t.height=Math.round(1000*cv.height/cv.width);t.getContext('2d').drawImage(cv,0,0,t.width,t.height);
+  sel=s;draw();
+  btn.disabled=true;btn.textContent='A gerar… (até 1 min)';
+  try{
+    const r=await fetch('/.netlify/functions/gerar-inspiracao',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+session.access_token},body:JSON.stringify({image:t.toDataURL('image/jpeg',.88)})});
+    const d=await r.json();if(!r.ok)throw new Error(d.error||r.status);
+    $('aiImg').src=d.image;$('aiDl').href=d.image;$('aiOut').style.display='block';$('aiImg').scrollIntoView({behavior:'smooth'});
+  }catch(e){alert('Erro: '+e.message);}
+  btn.disabled=false;btn.textContent='Polir com IA';
 }
 renderCatalog();
 // as fontes do canvas só ficam disponíveis depois de carregadas
