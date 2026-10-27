@@ -1,3 +1,14 @@
 [functions]
   directory = "netlify/functions"
   node_bundler = "esbuild"
+
+[[redirects]]
+  from = "/decoracao/"
+  to = "/decoracao"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/decoracao"
+  to = "/index.html"
+  status = 200

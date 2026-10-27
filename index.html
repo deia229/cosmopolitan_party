@@ -534,9 +534,9 @@
       <h3>Catálogo de <span class="serif-i">decoração</span></h3>
       <p class="cat-sub">Decorações de palco, de mesas e extras opcionais. Cores e detalhes ajustáveis ao teu estilo — carrega numa imagem para ampliar.</p>
       <div class="deco-cat-grid">
-        <a href="catalogo/palco-classico.jpg" data-lb><img src="catalogo/palco-classico.jpg" alt="Decorações de palco — aniversário (350€ a 550€)" loading="lazy"></a>
-        <a href="catalogo/palco-rose.jpg" data-lb><img src="catalogo/palco-rose.jpg" alt="Decorações de palco rosé (250€ a 575€)" loading="lazy"></a>
-        <a href="catalogo/mesas.jpg" data-lb><img src="catalogo/mesas.jpg" alt="Decoração de mesas (55€ a 95€ por mesa)" loading="lazy"></a>
+        <a href="catalogo/palco-classico.jpg" data-lb><img src="catalogo/palco-classico.jpg" alt="Decorações de palco — aniversário" loading="lazy"></a>
+        <a href="catalogo/palco-rose.jpg" data-lb><img src="catalogo/palco-rose.jpg" alt="Decorações de palco rosé" loading="lazy"></a>
+        <a href="catalogo/mesas.jpg" data-lb><img src="catalogo/mesas.jpg" alt="Decoração de mesas" loading="lazy"></a>
         <a href="catalogo/extras-suportes.jpg" data-lb><img src="catalogo/extras-suportes.jpg" alt="Extras opcionais — suportes de bolo" loading="lazy"></a>
       </div>
     </div>
@@ -696,7 +696,8 @@
     });
   });
   window.addEventListener('hashchange',function(){showPage((location.hash||'#p-inicio').replace('#',''));});
-  showPage((location.hash||'#p-inicio').replace('#',''));
+  var porCaminho=/^\/decoracao\/?$/i.test(location.pathname)?'p-decoracao':'';
+  showPage(location.hash?location.hash.replace('#',''):(porCaminho||'p-inicio'));
 })();
 </script>
 </body>
