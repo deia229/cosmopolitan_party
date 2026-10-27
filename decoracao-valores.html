@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Catálogo de Decoração com valores — Cosmopolitan Party</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--cream:#ECE6DE;--coral:#EE9C8F;--rose:#D4537E;--ink:#3a2e2a;--muted:#8a7a72}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Montserrat',sans-serif;color:var(--ink);background:var(--cream);font-weight:300;line-height:1.7;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1000px;margin:0 auto;padding:48px 20px 64px}
+  .eyebrow{text-align:center;font-size:12px;letter-spacing:3px;text-transform:uppercase;color:var(--rose);font-weight:500}
+  h1{font-family:'Cormorant Garamond',serif;font-weight:500;font-size:clamp(32px,6vw,48px);text-align:center;line-height:1.1;margin-top:8px}
+  h1 i{font-weight:400}
+  .sub{text-align:center;color:var(--muted);font-size:14px;margin:12px auto 32px;max-width:560px}
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px}
+  .grid a{display:block;border-radius:14px;overflow:hidden;box-shadow:0 6px 24px rgba(36,26,19,.12);transition:transform .25s,box-shadow .25s;cursor:zoom-in}
+  .grid a:hover{transform:translateY(-3px);box-shadow:0 10px 30px rgba(36,26,19,.18)}
+  .grid img{display:block;width:100%;height:auto}
+  .foot{text-align:center;margin-top:36px;font-size:12px;color:var(--muted)}
+  .lb{position:fixed;inset:0;background:rgba(20,14,10,.92);display:none;align-items:center;justify-content:center;z-index:200;padding:20px;cursor:zoom-out}
+  .lb.on{display:flex}
+  .lb img{max-width:100%;max-height:100%;border-radius:8px}
+  .lb button{position:absolute;top:14px;right:18px;background:none;border:none;color:#fff;font-size:36px;line-height:1;cursor:pointer}
+  @media(max-width:700px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Cosmopolitan Party</div>
+  <h1>Catálogo de <i>decoração</i></h1>
+  <p class="sub">Decorações de palco, de mesas e extras opcionais, com valores. Cores e detalhes ajustáveis ao teu estilo — carrega numa imagem para ampliar.</p>
+  <div class="grid">
+    <a href="/catalogo/valores-palco-classico.jpg" data-lb><img src="/catalogo/valores-palco-classico.jpg" alt="Decorações de palco — aniversário" loading="lazy"></a>
+    <a href="/catalogo/valores-palco-rose.jpg" data-lb><img src="/catalogo/valores-palco-rose.jpg" alt="Decorações de palco rosé" loading="lazy"></a>
+    <a href="/catalogo/valores-mesas.jpg" data-lb><img src="/catalogo/valores-mesas.jpg" alt="Decoração de mesas" loading="lazy"></a>
+    <a href="/catalogo/extras-suportes.jpg" data-lb><img src="/catalogo/extras-suportes.jpg" alt="Extras opcionais — suportes de bolo" loading="lazy"></a>
+  </div>
+  <p class="foot">Cosmopolitan Party · Flamenga, Loures · WhatsApp 964 505 429</p>
+</div>
+<div class="lb" id="lb" role="dialog" aria-label="Catálogo ampliado"><button type="button" aria-label="Fechar">&times;</button><img alt=""></div>
+<script>
+(function(){
+  var lb=document.getElementById('lb'),im=lb.querySelector('img');
+  document.querySelectorAll('[data-lb]').forEach(function(a){a.addEventListener('click',function(e){e.preventDefault();im.src=a.getAttribute('href');im.alt=a.querySelector('img').alt;lb.classList.add('on');});});
+  lb.addEventListener('click',function(){lb.classList.remove('on');});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')lb.classList.remove('on');});
+})();
+</script>
+</body>
+</html>

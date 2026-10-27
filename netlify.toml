@@ -6,3 +6,8 @@
   from = "/decoracao"
   to = "/index.html"
   status = 200
+
+[[redirects]]
+  from = "/decoracao-valores"
+  to = "/decoracao-valores.html"
+  status = 200
