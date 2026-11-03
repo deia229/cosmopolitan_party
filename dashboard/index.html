@@ -3978,7 +3978,7 @@ function openResModal(id){
     row('Data da festa',r.data_festa?fmtD(r.data_festa):'')+
     row('Turno',r.turno)+
     row('Horário',(r.entrada||'—')+' → '+(r.saida||'—'))+
-    row('Barris',r.barris)+
+    row('Discriminação',resLinhasValor(r).replace(/• /g,'').replace(/\n/g,' · ')+' · Caução: 100€')+
     row('Total',r.total)+
     row('Recebido',r.created_at?new Date(r.created_at).toLocaleString('pt-PT'):'');
   $('resStatus').value=r.status||'novo';
@@ -4001,46 +4001,69 @@ function abrirContactoRes(){
 // Mensagens pré-preenchidas para envio via WhatsApp.
 // Template aprovado: ver memory/reference_telegram_reservas.md
 const LINK_DECORACAO='https://cosmopolitanparty.netlify.app/decoracao_personalizada';
+// Discriminação do valor — espelha o simulador do site e netlify/functions/reserva.js.
+const RES_TURNOS={'11h–16h':{nome:'Tarde',v:300,ini:11,fim:16},'18h–23h':{nome:'Noite',v:300,ini:18,fim:23},'08h–meia-noite':{nome:'Dia inteiro',v:650,ini:8,fim:24}};
+function resBreakdown(r){
+  const t=RES_TURNOS[r.turno];if(!t)return null;
+  const hh=v=>{if(!v)return null;const p=String(v).split(':');return +p[0]+(+p[1]||0)/60;};
+  const ent=hh(r.entrada),s0=hh(r.saida);
+  let he=0;
+  if(ent!==null&&s0!==null){const sai=s0<=ent?s0+24:s0;he=Math.max(0,Math.ceil(Math.max(0,t.ini-ent)+Math.max(0,sai-t.fim)-1e-9));}
+  const barris=(r.barris&&r.barris!=='nenhum'?String(r.barris).split(', '):[]).map(b=>({nome:b.replace(/\s*\d+€$/,'').trim(),v:+((b.match(/(\d+)€$/)||[])[1])||0}));
+  return{t,he,heTotal:he*50,barris};
+}
+function resLinhasValor(r){
+  const e=n=>n+'€';
+  const b=resBreakdown(r);
+  if(!b)return`• Valor do espaço: ${r.total||'-'}`;
+  const l=[`• Espaço (${b.t.nome}, ${r.turno}): ${e(b.t.v)}`];
+  l.push(b.he?`• Horas extra (${b.he}h × 50€): ${e(b.heTotal)}`:'• Horas extra: sem horas extra');
+  b.barris.forEach(x=>l.push(`• Barril ${x.nome}: ${e(x.v)}`));
+  l.push('• Limpeza: 125€');
+  return l.join('\n');
+}
 function msgReservaDispon(r){
   const nome=String(r.nome||'cliente').trim().split(/\s+/)[0];
   const data=r.data_festa?fmtD(r.data_festa):'-';
-  const horario=(r.entrada||'-')+' às '+(r.saida||'-');
   const valor=r.total||'-';
   const num=+r.total_num||0;
   const sinal=num?eur(num*0.5):'metade do valor';
-  return `Olá ${nome}! Obrigada pelo interesse na Cosmopolitan Party.
+  return `Olá ${nome}! 😊 Obrigada pelo interesse na Cosmopolitan Party.
 
-Ainda temos disponibilidade para o dia ${data}! Para o turno ${horario}, o valor do espaço é de ${valor} (+ IVA à taxa legal) e já inclui a limpeza.
+Temos disponibilidade para *${data}*, das ${r.entrada||'-'} às ${r.saida||'-'}!
 
-A caução é de 100€, devolvida após o evento se estiver tudo em conformidade.
+*Orçamento*
+${resLinhasValor(r)}
+• Caução: 100€ (devolvida após o evento, se estiver tudo em conformidade)
 
-Para garantir a data, é necessário o pagamento de 50% — ${sinal} — por MBWay.
+*Total: ${valor}* (+ IVA)
 
-Vai querer avançar?`;
+Para garantir a data, pedimos um sinal de *50%: ${sinal}*.
+
+Quer avançar ou agendar uma visita ao espaço?`;
 }
 function msgReservaPagamento(r){
   const nome=String(r.nome||'cliente').trim().split(/\s+/)[0];
   const data=r.data_festa?fmtD(r.data_festa):'-';
   const num=+r.total_num||0;
   const sinal=num?eur(num*0.5):'50% do valor';
-  return `Que bom, ${nome}! Vamos então garantir o dia ${data}.
+  return `Ótimo, ${nome}! Vamos garantir o dia *${data}* 🎉
 
-Para confirmar a reserva, basta fazer o pagamento do sinal:
-
+*Para confirmar a data:*
 • Valor: ${sinal}
 • MBWay: 964 505 429
-• Na descrição, indique o seu nome e a data da festa
+• Descrição: o seu nome e a data da festa
 
-Depois de fazer o pagamento, envie-nos o comprovativo para esta conversa. A data fica reservada assim que o recebermos.
+Depois envie-nos aqui o comprovativo. A data fica reservada assim que o recebermos.
 
-Para prepararmos o contrato, envie-nos também, por favor:
+*Para o contrato, precisamos de:*
 • Nome completo
-• Foto/cópia do documento de identificação (CC ou passaporte)
+• Foto do CC ou passaporte
 • NIF
 • Morada
-• Número máximo de convidados
+• Nº máximo de convidados
 
-Qualquer dúvida, estamos aqui.
+Qualquer dúvida, diga-nos!
 Cosmopolitan Party`;
 }
 function msgReservaLembrete(r){
@@ -4048,31 +4071,30 @@ function msgReservaLembrete(r){
   const data=r.data_festa?fmtD(r.data_festa):'-';
   const num=+r.total_num||0;
   const restante=num?eur(num*0.5):'o valor restante';
-  return `Olá ${nome}!
+  return `Olá ${nome}! 👋
 
-A sua festa é daqui a 7 dias — ${data}. Apenas um pequeno lembrete: falta liquidar ${restante}.
+A sua festa é daqui a 7 dias, a *${data}*. Um lembrete simples: falta liquidar *${restante}*.
 
-Pode enviar por MBWay para o 964 505 429 e mandar-nos o comprovativo.
+• MBWay: 964 505 429
+• Envie-nos o comprovativo por aqui
 
-Qualquer dúvida, estamos aqui.
+Qualquer dúvida, diga-nos!
 Cosmopolitan Party`;
 }
 function msgReservaConfirm(r){
   const data=r.data_festa?fmtD(r.data_festa):'-';
   const num=+r.total_num||0;
   const restante=num?eur(num*0.5):'-';
-  return `Está reservado! Recebemos o sinal e o dia ${data} é oficialmente seu.
+  return `Está reservado! 🎉 Recebemos o sinal e o dia *${data}* é oficialmente seu.
 
-O valor restante (${restante}) deverá ser liquidado até 7 dias antes do evento, também por MBWay.
+*Restante valor:*
+• ${restante}, até 7 dias antes do evento, por MBWay
 
-E se quiser ter tudo tratado de uma vez, ficamos felizes em ajudar:
+*Se quiser ter tudo tratado de uma vez:*
+• *Decoração à medida*: temas, cores, mesa posta e pormenores. Peça orçamento aqui: ${LINK_DECORACAO} (pode anexar fotos de inspiração)
+• *Catering* desde 25€/pessoa, com menus e finger food
 
-• Decoração à medida — temas, cores, mesa posta e os pormenores que tornam a festa única. Pode pedir orçamento aqui: ${LINK_DECORACAO}
-Conte-nos com detalhe o que tem em mente e, se quiser, pode anexar fotos de inspiração.
-
-• Catering completo desde 25€/pessoa, com várias opções de menu e finger food. Assim no dia da festa só tem de se preocupar em aproveitar.
-
-Qualquer dúvida, estamos aqui. Obrigada.
+Qualquer dúvida, diga-nos!
 Cosmopolitan Party`;
 }
 function _preencherTemplate(corpo,ev){
