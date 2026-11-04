@@ -352,7 +352,10 @@
     var b=this;b.disabled=true;b.textContent='A preparar…';
     render().then(function(c){$('prev').src=c.toDataURL('image/png');$('msg').textContent='';$('modal').classList.add('on')}).catch(function(){}).then(function(){b.disabled=false;b.textContent='Ver resumo e enviar'});
   });
-  $('closeBtn').addEventListener('click',function(){$('modal').classList.remove('on')});
+  function closeModal(){$('modal').classList.remove('on')}
+  $('closeBtn').addEventListener('click',closeModal);
+  $('modal').addEventListener('click',function(e){if(e.target===this)closeModal()});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')closeModal()});
 
   function fname(ext){return 'menu-catering-'+($('nome').value.trim().toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'cosmopolitan')+'.'+ext}
   function blobOf(){return new Promise(function(res){canvasCache.toBlob(res,'image/png')})}
@@ -384,18 +387,16 @@
       nome:$('nome').value,contacto:$('contacto').value,data:$('data').value,pax:r.pax,total:eur(r.grand),resumo:textSummary,imagem:canvasCache.toDataURL('image/jpeg',0.92)
     })}).then(function(x){return x.json()}).then(function(j){
       if(!j.ok)throw new Error('send');
-      m.innerHTML='✅ Pedido enviado! Entramos em contacto brevemente.<br><small>Se quiseres, envia também a imagem pelo WhatsApp:</small>';
+      m.innerHTML='✅ Pedido enviado! Entramos em contacto brevemente.<br><small>Se preferires, fala connosco também por WhatsApp (a imagem do menu é guardada para a anexares):</small>';
       return blobOf().then(function(blob){
-        var file=new File([blob],fname('png'),{type:'image/png'});
-        var wa=document.createElement('button');wa.className='btn o';wa.style.marginTop='8px';wa.textContent='Partilhar imagem por WhatsApp';
-        wa.onclick=function(){
-          if(navigator.canShare&&navigator.canShare({files:[file]})){navigator.share({files:[file],text:'Pedido de catering — Cosmopolitan Party'}).catch(function(){})}
-          else{dl(blob,fname('png'));window.open('https://wa.me/'+WA+'?text='+encodeURIComponent(textSummary),'_blank')}
-        };
+                var short='Olá! Acabei de enviar um pedido de catering pelo site. Nome: '+$('nome').value+' · Data: '+fmtDate($('data').value)+' · '+r.pax+' pessoas · Total com IVA: '+eur(r.grand)+'.';
+        var wa=document.createElement('a');wa.className='btn o';wa.style.cssText='margin-top:8px;text-decoration:none';wa.textContent='Falar por WhatsApp';
+        wa.href='https://wa.me/'+WA+'?text='+encodeURIComponent(short);wa.target='_blank';wa.rel='noopener';
+        wa.addEventListener('click',function(){dl(blob,fname('png'))});
         m.appendChild(document.createElement('br'));m.appendChild(wa);
       });
     }).catch(function(){
-      m.innerHTML='Não foi possível enviar automaticamente. Guarda a imagem e envia-nos por <a href="https://wa.me/'+WA+'?text='+encodeURIComponent(textSummary)+'" target="_blank" rel="noopener">WhatsApp</a> ou por email.';
+      m.innerHTML='Não foi possível enviar automaticamente. Guarda a imagem e envia-nos por <a href="https://wa.me/'+WA+'?text='+encodeURIComponent('Olá! Quero pedir orçamento de catering. Nome: '+$('nome').value+' · Data: '+fmtDate($('data').value)+' · '+r.pax+' pessoas · Total com IVA: '+eur(r.grand))+'" target="_blank" rel="noopener">WhatsApp</a> ou por email.';
     }).then(function(){b.disabled=false});
   });
 
