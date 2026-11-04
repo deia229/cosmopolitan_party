@@ -337,20 +337,26 @@
     $('ticket').innerHTML=h;
   }
 
-  var canvasCache=null,textSummary='';
+  var canvasCache=null,textSummary='',lastSig='';
   function render(){
     var r=calc();
     if(!r.lines.length){alert('Escolhe pelo menos um item do menu.');return Promise.reject()}
     if(!$('nome').value.trim()||!$('contacto').value.trim()||!$('data').value||!r.pax){alert('Preenche o nome, contacto, data e nº de pessoas.');return Promise.reject()}
     buildTicket(r);
     textSummary=['Pedido de catering — Cosmopolitan Party','Nome: '+$('nome').value,'Contacto: '+$('contacto').value,'Data: '+fmtDate($('data').value),'Pessoas: '+r.pax,''].concat(r.lines.map(function(l){return '• '+l.n+' — '+(l.u?l.u+' · ':'')+l.d+' = '+eur(l.v)})).concat(['','Valor: '+eur(r.total),'IVA ('+Math.round(IVA*100)+'%): '+eur(r.iva),'TOTAL com IVA: '+eur(r.grand)]).concat($('notas').value.trim()?['Notas: '+$('notas').value.trim()]:[]).join('\n');
-    var go=function(){return html2canvas($('ticket'),{scale:2,backgroundColor:'#EE9C8F',useCORS:true})};
+    var sig=JSON.stringify([r,$('nome').value,$('contacto').value,$('data').value,$('notas').value]);
+    if(canvasCache&&sig===lastSig)return Promise.resolve(canvasCache);
+    var go=function(){
+      var work=html2canvas($('ticket'),{scale:2,backgroundColor:'#EE9C8F',useCORS:true,imageTimeout:8000,scrollX:0,scrollY:0,windowWidth:800}).then(function(c){lastSig=sig;return c});
+      var tmo=new Promise(function(_,rej){setTimeout(function(){rej(new Error('timeout'))},20000)});
+      return Promise.race([work,tmo]);
+    };
     return(document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(go).then(function(c){canvasCache=c;return c});
   }
 
   $('goBtn').addEventListener('click',function(){
     var b=this;b.disabled=true;b.textContent='A preparar…';
-    render().then(function(c){$('prev').src=c.toDataURL('image/png');$('msg').textContent='';$('modal').classList.add('on')}).catch(function(){}).then(function(){b.disabled=false;b.textContent='Ver resumo e enviar'});
+    render().then(function(c){$('prev').src=c.toDataURL('image/png');$('msg').textContent='';$('modal').classList.add('on')}).catch(function(e){if(e&&e.message)alert('Não foi possível gerar o resumo. Tenta novamente.')}).then(function(){b.disabled=false;b.textContent='Ver resumo e enviar'});
   });
   function closeModal(){$('modal').classList.remove('on')}
   $('closeBtn').addEventListener('click',closeModal);
