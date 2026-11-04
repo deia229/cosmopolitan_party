@@ -10,6 +10,18 @@ async function notifyTelegram(d) {
   });
   const j = await r.json();
   if (!j.ok) throw new Error("telegram: " + j.description);
+  // Imagem do menu como ficheiro (mantém a qualidade)
+  const m = /^data:image\/(png|jpeg);base64,(.+)$/.exec(d.imagem || "");
+  if (m) {
+    const bytes = Uint8Array.from(atob(m[2]), (c) => c.charCodeAt(0));
+    const fd = new FormData();
+    fd.append("chat_id", chat);
+    fd.append("caption", "Menu de " + (d.nome || "cliente") + " · " + (d.total || ""));
+    fd.append("document", new Blob([bytes], { type: "image/" + m[1] }), "menu-catering." + (m[1] === "png" ? "png" : "jpg"));
+    const r2 = await fetch("https://api.telegram.org/bot" + token + "/sendDocument", { method: "POST", body: fd });
+    const j2 = await r2.json();
+    if (!j2.ok) throw new Error("telegram-doc: " + j2.description);
+  }
 }
 
 export default async (req) => {

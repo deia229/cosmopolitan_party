@@ -13,6 +13,11 @@
   status = 200
 
 [[redirects]]
+  from = "/catering-simulacao"
+  to = "/catering.html"
+  status = 200
+
+[[redirects]]
   from = "/catering"
   to = "/catering.html"
   status = 200
