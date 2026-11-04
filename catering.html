@@ -65,27 +65,6 @@
   .mbox img{width:100%;display:block;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,.15)}
   .macts{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;justify-content:center}
   .msg{text-align:center;font-size:13px;margin-top:10px;color:var(--ink)}
-  /* Ticket (renderizado para imagem/PDF) */
-  #ticketHost{position:fixed;left:-10000px;top:0;width:800px}
-  #ticket{width:800px;background:#EE9C8F;padding:20px;font-family:'Montserrat',sans-serif;color:#3a2e2a}
-  #ticket .in{background:#ECE6DE}
-  #ticket .hd{background:#111;text-align:center;padding:14px}
-  #ticket .hd img{height:120px}
-  #ticket .bd{padding:28px 36px 20px}
-  #ticket .ey{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#D4537E;font-weight:500}
-  #ticket h3{font-family:'Cormorant Garamond',serif;font-weight:500;font-size:36px;line-height:1.1;margin:4px 0 14px}
-  #ticket h3 i{color:#B48A44;font-weight:400}
-  #ticket .info{font-size:13px;line-height:1.7;border-top:1px solid #EE9C8F;border-bottom:1px solid #EE9C8F;padding:10px 0;margin-bottom:6px}
-  #ticket h4{font-family:'Cormorant Garamond',serif;font-weight:500;font-size:22px;color:#D4537E;margin:16px 0 4px}
-  #ticket .li{display:flex;justify-content:space-between;gap:16px;font-size:13.5px;padding:5px 0;border-bottom:1px dotted #cdbfb0}
-  #ticket .li span:last-child{white-space:nowrap;font-weight:500}
-  #ticket .li small{display:block;color:#8a7a72;font-size:11.5px;font-weight:300}
-  #ticket .tot{display:flex;justify-content:space-between;align-items:baseline;margin-top:18px;padding-top:12px;border-top:2px solid #D4537E}
-  #ticket .tot span:first-child{font-family:'Cormorant Garamond',serif;font-size:24px;color:#D4537E}
-  #ticket .tot b{font-family:'Cormorant Garamond',serif;font-size:36px;color:#D4537E}
-  #ticket .nt{font-size:11.5px;color:#8a7a72;font-style:italic;margin-top:12px;line-height:1.6}
-  #ticket .ft{text-align:center;font-size:11px;color:#8a7a72;border-top:1px solid #d9cfc3;margin:18px 36px 0;padding:12px 0 18px}
-  #ticket .ft b{display:block;font-family:'Cormorant Garamond',serif;font-size:16px;letter-spacing:2px;color:#3a2e2a;font-weight:500}
   @media(max-width:560px){.row img{width:56px;height:56px}.g2{grid-template-columns:1fr}.row .pr{margin-left:auto}.row .qty{margin-left:auto}.bar .tt b{font-size:24px}.btn{padding:12px 16px}}
 </style>
 </head>
@@ -110,7 +89,7 @@
   </div>
 
   <h2>Canapés &amp; Finger Food</h2>
-  <p class="hint">Preço por peça · mínimo 6 unidades de cada canapé · contamos 8 peças por pessoa (menu pensado para eventos a partir de 30 pessoas). Imagens ilustrativas.</p>
+  <p class="hint">Preço por peça · mínimo 6 unidades de cada canapé · contamos 8 peças por pessoa, mas podes pedir as quantidades que quiseres. Imagens ilustrativas.</p>
   <div class="card" id="canapes"></div>
 
   <h2>Kits</h2>
@@ -185,9 +164,7 @@
   <div class="msg" id="msg"></div>
 </div></div>
 
-<div id="ticketHost"><div id="ticket"></div></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 (function(){
@@ -283,8 +260,6 @@
     add(TABUAS,'Tábuas',function(n,x){return n+' × '+eur(x.p)});
     add(BARRIS,'Barris',function(n,x){return n+' × '+eur(x.p)});
     lines.forEach(function(l){total+=l.v});
-    if(canTotal>0&&pax>0&&pax<30)problems.push('Os canapés são pensados para eventos a partir de 30 pessoas.');
-    if(canTotal>0&&pax>0){var per=canTotal/pax;if(per<8)problems.push('Tens '+canTotal+' canapés para '+pax+' pessoas ('+per.toFixed(1).replace('.',',')+' por pessoa). Recomendamos 8 por pessoa.');}
     if(total>0&&total<150)problems.push('Encomenda mínima: 150 €.');
     var dt=$('data').value;
     if(dt){var days=Math.ceil((new Date(dt+'T00:00:00')-new Date())/864e5);if(days<15)problems.push('Antecedência mínima de 15 dias (a data escolhida está a '+Math.max(days,0)+' dias). Contacta-nos para confirmar disponibilidade.');}
@@ -320,39 +295,94 @@
 
   function fmtDate(s){if(!s)return '-';var a=s.split('-');return a[2]+'/'+a[1]+'/'+a[0]}
 
-  function buildTicket(r){
+  var LOGO=null;
+  function loadLogo(){
+    if(LOGO)return Promise.resolve(LOGO);
+    return new Promise(function(res){var im=new Image();im.onload=function(){LOGO=im;res(im)};im.onerror=function(){res(null)};im.src='/catering-img/logo.jpg'});
+  }
+  function fontsReady(){
+    var f=["500 13px Montserrat","400 13px Montserrat","500 36px 'Cormorant Garamond'","italic 400 36px 'Cormorant Garamond'","600 30px 'Cormorant Garamond'"];
+    if(!document.fonts||!document.fonts.load)return Promise.resolve();
+    return Promise.race([Promise.all(f.map(function(x){return document.fonts.load(x).catch(function(){})})),new Promise(function(r){setTimeout(r,3000)})]);
+  }
+  var FM="Montserrat,Arial,sans-serif",FC="'Cormorant Garamond',Georgia,serif";
+  function wrap(ctx,text,w){
+    var words=String(text).split(/\s+/),lines=[],cur='';
+    words.forEach(function(wd){var t=cur?cur+' '+wd:wd;if(cur&&ctx.measureText(t).width>w){lines.push(cur);cur=wd}else cur=t});
+    if(cur)lines.push(cur);return lines;
+  }
+  // desenha o resumo; com dry=true só mede a altura
+  var TH=0;
+  function drawTicket(ctx,r,dry){
+    var W=800,X=56,CW=W-2*X,y=0,ink='#3a2e2a',rose='#D4537E',muted='#8a7a72';
+    function T(txt,x,yy,font,color,align){if(dry)return;ctx.font=font;ctx.fillStyle=color;ctx.textAlign=align||'left';ctx.textBaseline='alphabetic';ctx.fillText(txt,x,yy)}
+    function rect(x,yy,w,h,c){if(dry)return;ctx.fillStyle=c;ctx.fillRect(x,yy,w,h)}
+    function dotted(yy){if(dry)return;ctx.save();ctx.strokeStyle='#cdbfb0';ctx.setLineDash([1,3]);ctx.beginPath();ctx.moveTo(X,yy);ctx.lineTo(W-X,yy);ctx.stroke();ctx.restore()}
+    function para(txt,font,lh,w,color,x0){ctx.font=font;var ls=wrap(ctx,txt,w);ls.forEach(function(l,i){T(l,x0==null?X:x0,y+lh*(i+1)-4,font,color)});y+=ls.length*lh;}
+    rect(0,0,W,TH,'#EE9C8F');rect(20,20,W-40,TH-40,'#ECE6DE');rect(20,20,W-40,150,'#111');
+    y=20+150;
+    if(!dry&&LOGO){ctx.drawImage(LOGO,W/2-60,20+15,120,120)}
+    y+=28;
+    T('PEDIDO DE CATERING',X,y+10,'500 11px '+FM,rose);y+=14;
+    ctx.font='500 36px '+FC;var m1=ctx.measureText('O meu ').width;
+    T('O meu ',X,y+36,'500 36px '+FC,ink);T('menu',X+m1,y+36,'italic 400 36px '+FC,'#B48A44');y+=52;
+    // info
+    rect(X,y,CW,1,'#EE9C8F');y+=8;
+    ctx.font='400 13px '+FM;
+    var info1=($('nome').value||'-')+' · '+($('contacto').value||'-');
+    T(info1,X,y+16,'500 13px '+FM,ink);y+=22;
+    T('Data da festa: '+fmtDate($('data').value)+' · Nº de pessoas: '+(r.pax||'-'),X,y+14,'400 13px '+FM,ink);y+=22;
+    rect(X,y,CW,1,'#EE9C8F');y+=6;
     var groups=[],map={};
     r.lines.forEach(function(l){if(!map[l.g]){map[l.g]=[];groups.push(l.g)}map[l.g].push(l)});
-    var h='<div class="in"><div class="hd"><img src="/catering-img/logo.jpg" alt=""></div><div class="bd">'+
-      '<div class="ey">Pedido de catering</div><h3>O meu <i>menu</i></h3>'+
-      '<div class="info"><b>'+esc($('nome').value||'-')+'</b> · '+esc($('contacto').value||'-')+'<br>Data da festa: <b>'+fmtDate($('data').value)+'</b> · Nº de pessoas: <b>'+(r.pax||'-')+'</b></div>';
     groups.forEach(function(g){
-      h+='<h4>'+esc(g)+'</h4>';
-      map[g].forEach(function(l){h+='<div class="li"><span>'+esc(l.n)+'<small>'+esc(l.u?l.u+' · '+l.d:l.d)+'</small></span><span>'+eur(l.v)+'</span></div>'});
+      y+=30;T(g,X,y,'500 22px '+FC,rose);y+=8;
+      map[g].forEach(function(l){
+        var det=l.u?l.u+' · '+l.d:l.d,vw=96;
+        ctx.font='400 13.5px '+FM;var nl=wrap(ctx,l.n,CW-vw);
+        var top=y;y+=6;
+        nl.forEach(function(t,i){T(t,X,y+16*(i+1)-3,'400 13.5px '+FM,ink)});
+        T(eur(l.v),W-X,top+6+13,'500 13.5px '+FM,ink,'right');
+        y+=nl.length*16;
+        ctx.font='300 11.5px '+FM;var dl=wrap(ctx,det,CW-vw);
+        dl.forEach(function(t,i){T(t,X,y+14*(i+1)-2,'300 11.5px '+FM,muted)});
+        y+=dl.length*14+6;dotted(y);
+      });
     });
-    h+='<div class="li" style="margin-top:14px"><span>Valor</span><span>'+eur(r.total)+'</span></div><div class="li"><span>IVA ('+Math.round(IVA*100)+'%)</span><span>'+eur(r.iva)+'</span></div><div class="tot"><span>Total com IVA</span><b>'+eur(r.grand)+'</b></div>';
+    y+=14;
+    T('Valor',X,y+14,'400 13.5px '+FM,ink);T(eur(r.total),W-X,y+14,'500 13.5px '+FM,ink,'right');y+=26;
+    T('IVA ('+Math.round(IVA*100)+'%)',X,y+14,'400 13.5px '+FM,ink);T(eur(r.iva),W-X,y+14,'500 13.5px '+FM,ink,'right');y+=26;
+    rect(X,y+4,CW,2,rose);y+=34;
+    T('Total com IVA',X,y+8,'500 24px '+FC,rose);T(eur(r.grand),W-X,y+10,'600 36px '+FC,rose,'right');y+=44;
     var nt=$('notas').value.trim();
-    if(nt)h+='<div class="nt"><b>Notas:</b> '+esc(nt)+'</div>';
-    h+='<div class="nt">Valores indicativos (valor + IVA), sujeitos a confirmação pela Cosmopolitan Party. Encomenda mínima 150 € · antecedência 15 dias · pagamento 50% na adjudicação e 50% até 7 dias antes do evento.</div>';
-    h+='</div><div class="ft"><b>Cosmopolitan Party</b>Rua da Ribeira 41, 2660-001 Flamenga, Loures · cosmopolitanparty.loures@gmail.com · 926 720 762</div></div>';
-    $('ticket').innerHTML=h;
+    if(nt){y+=6;para('Notas: '+nt,'italic 300 11.5px '+FM,17,CW,muted)}
+    y+=8;para('Valores indicativos (valor + IVA), sujeitos a confirmação pela Cosmopolitan Party. Encomenda mínima 150 € · antecedência 15 dias · pagamento 50% na adjudicação e 50% até 7 dias antes do evento.','italic 300 11.5px '+FM,17,CW,muted);
+    y+=16;rect(X,y,CW,1,'#d9cfc3');y+=26;
+    T('COSMOPOLITAN PARTY',W/2,y,'500 16px '+FC,ink,'center');y+=8;
+    ctx.font='300 11px '+FM;var al=wrap(ctx,'Rua da Ribeira 41, 2660-001 Flamenga, Loures · cosmopolitanparty.loures@gmail.com · 926 720 762',CW);
+    al.forEach(function(t,i){T(t,W/2,y+15*(i+1),'300 11px '+FM,muted,'center')});y+=al.length*15+26;
+    return y+20;
   }
-
+  function makeCanvas(r){
+    return Promise.all([loadLogo(),fontsReady()]).then(function(){
+      var m=document.createElement('canvas').getContext('2d');
+      var H=Math.ceil(drawTicket(m,r,true));
+      var S=Math.min(2,Math.sqrt(8e6/(800*H)));if(S<1)S=1;
+      TH=H;var c=document.createElement('canvas');c.width=Math.round(800*S);c.height=Math.round(H*S);
+      var ctx=c.getContext('2d');ctx.scale(S,S);
+      drawTicket(ctx,r,false);
+      return c;
+    });
+  }
   var canvasCache=null,cachedBlob=null,textSummary='',lastSig='';
   function render(){
     var r=calc();
     if(!r.lines.length){alert('Escolhe pelo menos um item do menu.');return Promise.reject()}
     if(!$('nome').value.trim()||!$('contacto').value.trim()||!$('data').value||!r.pax){alert('Preenche o nome, contacto, data e nº de pessoas.');return Promise.reject()}
-    buildTicket(r);
     textSummary=['Pedido de catering — Cosmopolitan Party','Nome: '+$('nome').value,'Contacto: '+$('contacto').value,'Data: '+fmtDate($('data').value),'Pessoas: '+r.pax,''].concat(r.lines.map(function(l){return '• '+l.n+' — '+(l.u?l.u+' · ':'')+l.d+' = '+eur(l.v)})).concat(['','Valor: '+eur(r.total),'IVA ('+Math.round(IVA*100)+'%): '+eur(r.iva),'TOTAL com IVA: '+eur(r.grand)]).concat($('notas').value.trim()?['Notas: '+$('notas').value.trim()]:[]).join('\n');
     var sig=JSON.stringify([r,$('nome').value,$('contacto').value,$('data').value,$('notas').value]);
     if(canvasCache&&sig===lastSig)return Promise.resolve(canvasCache);
-    var go=function(){
-      var work=html2canvas($('ticket'),{scale:2,backgroundColor:'#EE9C8F',useCORS:true,imageTimeout:8000,scrollX:0,scrollY:0,windowWidth:800}).then(function(c){lastSig=sig;return new Promise(function(res){c.toBlob(function(bl){cachedBlob=bl;res(c)},'image/png')})});
-      var tmo=new Promise(function(_,rej){setTimeout(function(){rej(new Error('timeout'))},20000)});
-      return Promise.race([work,tmo]);
-    };
-    return(document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(go).then(function(c){canvasCache=c;return c});
+    return makeCanvas(r).then(function(c){lastSig=sig;canvasCache=c;return new Promise(function(res){c.toBlob(function(bl){cachedBlob=bl;res(c)},'image/png')})});
   }
 
   $('goBtn').addEventListener('click',function(){
