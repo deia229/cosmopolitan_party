@@ -11,3 +11,8 @@
   from = "/decoracao-valores"
   to = "/decoracao-valores.html"
   status = 200
+
+[[redirects]]
+  from = "/catering"
+  to = "/catering.html"
+  status = 200

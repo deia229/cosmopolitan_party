@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Monta o teu menu de catering — Cosmopolitan Party</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--cream:#ECE6DE;--coral:#EE9C8F;--rose:#D4537E;--gold:#B48A44;--ink:#3a2e2a;--muted:#8a7a72;--card:#fff;--line:#d9cfc3}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Montserrat',sans-serif;color:var(--ink);background:var(--cream);font-weight:400;line-height:1.5;-webkit-font-smoothing:antialiased;padding-bottom:96px}
+  .wrap{max-width:820px;margin:0 auto;padding:36px 16px 24px}
+  .eyebrow{text-align:center;font-size:12px;letter-spacing:3px;text-transform:uppercase;color:var(--rose);font-weight:500}
+  h1{font-family:'Cormorant Garamond',serif;font-weight:500;font-size:clamp(32px,7vw,48px);text-align:center;line-height:1.1;margin-top:8px}
+  h1 i{color:var(--gold);font-weight:400}
+  .sub{text-align:center;color:var(--muted);font-size:14px;margin:12px auto 28px;max-width:560px;font-weight:300}
+  h2{font-family:'Cormorant Garamond',serif;font-weight:500;font-size:28px;color:var(--rose);margin:32px 0 4px}
+  .hint{font-size:12.5px;color:var(--muted);font-style:italic;margin-bottom:12px;font-weight:300}
+  .card{background:var(--card);border-radius:14px;padding:6px 16px;box-shadow:0 4px 18px rgba(36,26,19,.07)}
+  .row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+  .row:last-child{border-bottom:none}
+  .row img{width:72px;height:72px;object-fit:cover;border-radius:10px;flex:none}
+  .row .nm{flex:1;min-width:0}
+  .row .nm b{font-weight:500;font-size:15px;display:block}
+  .row .nm small{color:var(--muted);font-size:12px;display:block;font-weight:300}
+  .tag{display:inline-block;font-size:9.5px;letter-spacing:1.5px;text-transform:uppercase;padding:1px 8px;border-radius:20px;margin-top:3px;font-weight:500}
+  .tag.f{border:1px solid var(--gold);color:var(--gold)}
+  .tag.q{background:var(--rose);color:#fff}
+  .pr{font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--rose);font-weight:600;white-space:nowrap;text-align:right;min-width:70px}
+  .pr small{font-family:'Montserrat',sans-serif;font-size:10px;color:var(--muted);font-weight:300}
+  .qty{display:flex;align-items:center;gap:0;flex:none}
+  .qty button{width:34px;height:34px;border-radius:50%;border:1px solid var(--rose);background:#fff;color:var(--rose);font-size:20px;line-height:1;cursor:pointer;touch-action:manipulation}
+  .qty button:active{background:var(--rose);color:#fff}
+  .qty input{width:44px;text-align:center;border:none;background:transparent;font:500 15px 'Montserrat',sans-serif;color:var(--ink);-moz-appearance:textfield}
+  .qty input::-webkit-outer-spin-button,.qty input::-webkit-inner-spin-button{-webkit-appearance:none}
+  .warn{font-size:12px;color:#b3261e;margin-top:2px;display:none}
+  .row.bad .warn{display:block}
+  label.f{display:block;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin:10px 0 4px;font-weight:500}
+  input.t,textarea.t,select.t{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;font:400 15px 'Montserrat',sans-serif;background:#fff;color:var(--ink)}
+  textarea.t{min-height:80px;resize:vertical}
+  .g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .pad{padding:8px 0 14px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 4px}
+  .chip{padding:8px 14px;border:1px solid var(--line);border-radius:22px;font-size:13px;cursor:pointer;user-select:none;background:#fff;touch-action:manipulation}
+  .chip.on{background:var(--rose);border-color:var(--rose);color:#fff}
+  .chip.dis{opacity:.4}
+  .ctr{font-size:12px;color:var(--muted);margin-bottom:4px}
+  .btn{display:inline-block;padding:13px 22px;border-radius:30px;border:none;font:500 14px 'Montserrat',sans-serif;cursor:pointer;background:var(--rose);color:#fff;touch-action:manipulation}
+  .btn.o{background:#fff;color:var(--rose);border:1px solid var(--rose)}
+  .btn:disabled{opacity:.5}
+  .sug{margin:10px 0 0}
+  .bar{position:fixed;left:0;right:0;bottom:0;background:#fff;box-shadow:0 -4px 20px rgba(0,0,0,.12);padding:10px 16px;z-index:50}
+  .bar .in{max-width:820px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .bar .tt small{display:block;font-size:11px;color:var(--muted)}
+  .bar .tt b{font-family:'Cormorant Garamond',serif;font-size:28px;color:var(--rose);font-weight:600;line-height:1}
+  .alerts{margin-top:18px}
+  .alerts div{background:#fdecea;color:#8c1d18;border-radius:10px;padding:10px 14px;font-size:13px;margin-bottom:8px}
+  .alerts div.ok{background:#e8f5e9;color:#1b5e20}
+  .modal{position:fixed;inset:0;background:rgba(20,14,10,.75);display:none;align-items:flex-start;justify-content:center;z-index:100;overflow:auto;padding:20px 12px}
+  .modal.on{display:flex}
+  .mbox{background:var(--cream);border-radius:16px;max-width:620px;width:100%;padding:16px}
+  .mbox img{width:100%;display:block;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,.15)}
+  .macts{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;justify-content:center}
+  .msg{text-align:center;font-size:13px;margin-top:10px;color:var(--ink)}
+  /* Ticket (renderizado para imagem/PDF) */
+  #ticketHost{position:fixed;left:-10000px;top:0;width:800px}
+  #ticket{width:800px;background:#EE9C8F;padding:20px;font-family:'Montserrat',sans-serif;color:#3a2e2a}
+  #ticket .in{background:#ECE6DE}
+  #ticket .hd{background:#111;text-align:center;padding:14px}
+  #ticket .hd img{height:120px}
+  #ticket .bd{padding:28px 36px 20px}
+  #ticket .ey{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#D4537E;font-weight:500}
+  #ticket h3{font-family:'Cormorant Garamond',serif;font-weight:500;font-size:36px;line-height:1.1;margin:4px 0 14px}
+  #ticket h3 i{color:#B48A44;font-weight:400}
+  #ticket .info{font-size:13px;line-height:1.7;border-top:1px solid #EE9C8F;border-bottom:1px solid #EE9C8F;padding:10px 0;margin-bottom:6px}
+  #ticket h4{font-family:'Cormorant Garamond',serif;font-weight:500;font-size:22px;color:#D4537E;margin:16px 0 4px}
+  #ticket .li{display:flex;justify-content:space-between;gap:16px;font-size:13.5px;padding:5px 0;border-bottom:1px dotted #cdbfb0}
+  #ticket .li span:last-child{white-space:nowrap;font-weight:500}
+  #ticket .li small{display:block;color:#8a7a72;font-size:11.5px;font-weight:300}
+  #ticket .tot{display:flex;justify-content:space-between;align-items:baseline;margin-top:18px;padding-top:12px;border-top:2px solid #D4537E}
+  #ticket .tot span:first-child{font-family:'Cormorant Garamond',serif;font-size:24px;color:#D4537E}
+  #ticket .tot b{font-family:'Cormorant Garamond',serif;font-size:36px;color:#D4537E}
+  #ticket .nt{font-size:11.5px;color:#8a7a72;font-style:italic;margin-top:12px;line-height:1.6}
+  #ticket .ft{text-align:center;font-size:11px;color:#8a7a72;border-top:1px solid #d9cfc3;margin:18px 36px 0;padding:12px 0 18px}
+  #ticket .ft b{display:block;font-family:'Cormorant Garamond',serif;font-size:16px;letter-spacing:2px;color:#3a2e2a;font-weight:500}
+  @media(max-width:560px){.row img{width:56px;height:56px}.g2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Cosmopolitan Party · Catering</div>
+  <h1>Monta o teu <i>menu</i></h1>
+  <p class="sub">Escolhe o que queres, vê o valor em tempo real e envia-nos o resultado. Respondemos com a confirmação e o orçamento final.</p>
+
+  <h2>Sobre a festa</h2>
+  <div class="card pad">
+    <label class="f" for="nome">O teu nome *</label>
+    <input class="t" id="nome" autocomplete="name">
+    <div class="g2">
+      <div><label class="f" for="contacto">Telemóvel / email *</label><input class="t" id="contacto" autocomplete="tel"></div>
+      <div><label class="f" for="data">Data da festa *</label><input class="t" id="data" type="date"></div>
+    </div>
+    <div class="g2">
+      <div><label class="f" for="pax">Nº de pessoas *</label><input class="t" id="pax" type="number" inputmode="numeric" min="1" placeholder="ex.: 40"></div>
+      <div style="display:flex;align-items:flex-end"><button type="button" class="btn o" id="sugBtn" style="width:100%">Sugerir quantidades de canapés</button></div>
+    </div>
+  </div>
+
+  <h2>Canapés &amp; Finger Food</h2>
+  <p class="hint">Preço por peça · mínimo 6 unidades de cada canapé · contamos 8 peças por pessoa (menu pensado para eventos a partir de 30 pessoas). Imagens ilustrativas.</p>
+  <div class="card" id="canapes"></div>
+
+  <h2>Kits</h2>
+  <p class="hint">Kit Finger Food: hot dogs, pizzas, hambúrgueres, salgados fritos, sopa e tábuas. Kit Canapés: 8 peças por pessoa, mesma quantidade de cada canapé.</p>
+  <div class="card" id="kits"></div>
+
+  <h2>Tabuleiros quentes</h2>
+  <p class="hint">Cada tabuleiro serve cerca de 20 pessoas.</p>
+  <div class="card" id="tabuleiros"></div>
+
+  <h2>Menu Completo</h2>
+  <p class="hint">Por pessoa · mínimo 15 pessoas · bebidas incluídas (água, Icea, Coca-Cola, sumos de laranja / ananás). Entradas: paté de atum, paté de delícias do mar, miniaturas e tostas.</p>
+  <div class="card pad">
+    <div class="row" style="border:none">
+      <div class="nm"><b>Menu Completo</b><small>25 € por pessoa</small></div>
+      <div class="qty"><button type="button" data-d="-5" data-t="mcPax">−</button><input id="mcPax" type="number" inputmode="numeric" min="0" value="0"><button type="button" data-d="5" data-t="mcPax">+</button></div>
+    </div>
+    <div id="mcOpts" style="display:none">
+      <label class="f">Prato principal · escolhe 2</label>
+      <div class="chips" id="mcMain"></div>
+      <label class="f">Sobremesas · escolhe 3</label>
+      <div class="chips" id="mcDes"></div>
+      <label class="f" style="display:flex;gap:8px;align-items:center;text-transform:none;letter-spacing:0;font-size:13px;color:var(--ink)"><input type="checkbox" id="mcUp"> Upgrade premium +5 €/pessoa (troca um prato por Bacalhau Espiritual ou Lombo de Porco Assado, c/ arroz)</label>
+    </div>
+  </div>
+
+  <h2>Extras</h2>
+  <div class="card" id="extras"></div>
+  <div class="card pad" id="extrasOpts" style="margin-top:12px;display:none">
+    <div id="pdWrap" style="display:none">
+      <label class="f">Pack Sobremesas · escolhe 3 entre 8</label>
+      <div class="chips" id="pdDes"></div>
+    </div>
+    <div id="kbWrap" style="display:none">
+      <label class="f">Kit Bebidas · água incluída + 2 à escolha</label>
+      <div class="chips" id="kbBeb"></div>
+    </div>
+  </div>
+
+  <h2>Tábuas</h2>
+  <p class="hint">Cada tábua serve cerca de 25 pessoas.</p>
+  <div class="card" id="tabuas"></div>
+
+  <h2>Barris</h2>
+  <div class="card" id="barris"></div>
+
+  <h2>Notas</h2>
+  <div class="card pad">
+    <label class="f" for="notas">Alergias, restrições alimentares, pedidos especiais</label>
+    <textarea class="t" id="notas" placeholder="Ingredientes específicos e restrições alimentares fazem-se em orçamento personalizado."></textarea>
+  </div>
+
+  <div class="alerts" id="alerts"></div>
+  <p class="hint" style="margin-top:18px;text-align:center">Condições: encomenda mínima 150 € · antecedência 15 dias · pagamento 50% na adjudicação e 50% até 7 dias antes do evento. Valores sujeitos a confirmação.</p>
+</div>
+
+<div class="bar"><div class="in">
+  <div class="tt"><small>Total estimado</small><b id="total">0,00 €</b></div>
+  <button class="btn" id="goBtn" type="button">Ver resumo e enviar</button>
+</div></div>
+
+<div class="modal" id="modal"><div class="mbox">
+  <img id="prev" alt="Resumo do menu">
+  <div class="macts">
+    <button class="btn" id="sendBtn" type="button">Enviar à Cosmopolitan</button>
+    <button class="btn o" id="imgBtn" type="button">Guardar imagem</button>
+    <button class="btn o" id="pdfBtn" type="button">Guardar PDF</button>
+    <button class="btn o" id="closeBtn" type="button">Voltar e editar</button>
+  </div>
+  <div class="msg" id="msg"></div>
+</div></div>
+
+<div id="ticketHost"><div id="ticket"></div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+(function(){
+  var WA='351964505429';
+  var CANAPES=[
+    {id:'c1',n:'Espetada caprese',t:'f',p:1.40,i:'c1'},
+    {id:'c2',n:'Crostini de brie, figo e noz',t:'f',p:1.80,i:'c2'},
+    {id:'c3',n:'Crostini de ricota e tomate confitado',t:'f',p:1.80,i:'c3'},
+    {id:'c4',n:'Tartelete de queijo de cabra e cebola caramelizada',t:'f',p:1.90,i:'c4'},
+    {id:'c5',n:'Patanisca de bacalhau',t:'q',p:2.30,i:'c5'},
+    {id:'c6',n:'Folhado de brie com compota de morango',t:'q',p:1.90,i:'c6'}
+  ];
+  var KITS=[
+    {id:'k1',n:'Kit Finger Food Essencial · até 40 pessoas',d:'50 hot dogs · 50 pizzas · 25 hambúrgueres · 130 salgados · tábuas de queijo e frutas · 3L de sopa',p:420},
+    {id:'k2',n:'Kit Finger Food Festa · até 80 pessoas',d:'75 hot dogs · 75 pizzas · 50 hambúrgueres · 260 salgados · tábuas de queijo, frutas e mexicana · 8L de sopa',p:695},
+    {id:'k3',n:'Kit Canapés · até 30 pessoas',d:'240 peças · 40 de cada canapé',p:420},
+    {id:'k4',n:'Kit Canapés · até 60 pessoas',d:'480 peças · 80 de cada canapé',p:840}
+  ];
+  var TABULEIROS=[{id:'t1',n:'Arroz de pato',d:'serve cerca de 20 pessoas',p:165},{id:'t2',n:'Bacalhau com natas',d:'serve cerca de 20 pessoas',p:195}];
+  var MAINS=['Bacalhau com natas','Arroz de pato','Empadão de carne','Strogonoff de frango (c/ arroz)'];
+  var DES=['Arroz doce','Cheesecake de morangos','Crumble de maçã','Mousse de chocolate','Bolo de bolacha','Bolo brigadeiro de chocolate','Torta de laranja','Tarte de amêndoa'];
+  var BEB=['Icea','Coca-Cola','Sumos (laranja / ananás)'];
+  var EXTRAS=[{id:'e1',n:'Pack Sobremesas',d:'cerca de 20 pessoas · 3 à escolha entre 8',p:60},{id:'e2',n:'Kit Bebidas',d:'cerca de 20 pessoas · água + 2 à escolha',p:50}];
+  var TABUAS=[{id:'b1',n:'Queijos e enchidos',p:50},{id:'b2',n:'Mexicana',p:30},{id:'b3',n:'Frutas variadas',p:35}];
+  var BARRIS=[{id:'r1',n:'Cerveja 30L',p:105},{id:'r2',n:'Cerveja 50L',p:135},{id:'r3',n:'Sangria tinta 20L',p:110},{id:'r4',n:'Somersby 15L',p:75},{id:'r5',n:'Somersby 30L',p:150}];
+
+  var $=function(id){return document.getElementById(id)};
+  var q={}; // id -> qty
+  var mcMain=[],mcDes=[],pdDes=[],kbBeb=[];
+
+  function eur(n){return n.toFixed(2).replace('.',',')+' €'}
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+
+  function qtyHtml(id,step,min){
+    return '<div class="qty"><button type="button" data-d="-'+step+'" data-t="'+id+'" aria-label="menos">−</button><input id="'+id+'" type="number" inputmode="numeric" min="0" value="0"><button type="button" data-d="'+step+'" data-t="'+id+'" aria-label="mais">+</button></div>';
+  }
+  function simple(el,list,step,unit){
+    $(el).innerHTML=list.map(function(x){
+      return '<div class="row"><div class="nm"><b>'+esc(x.n)+'</b>'+(x.d?'<small>'+esc(x.d)+'</small>':'')+'</div><div class="pr">'+eur(x.p)+'</div>'+qtyHtml(x.id,step||1)+'</div>';
+    }).join('');
+  }
+  $('canapes').innerHTML=CANAPES.map(function(x){
+    return '<div class="row" id="row-'+x.id+'"><img src="/catering/'+x.i+'.jpg" alt="'+esc(x.n)+'" loading="lazy"><div class="nm"><b>'+esc(x.n)+'</b><span class="tag '+x.t+'">'+(x.t==='f'?'Frio':'Quente')+'</span><div class="warn">Mínimo 6 unidades.</div></div><div class="pr">'+eur(x.p)+'<small> /un</small></div>'+qtyHtml(x.id,6)+'</div>';
+  }).join('');
+  simple('kits',KITS);simple('tabuleiros',TABULEIROS);simple('extras',EXTRAS);simple('tabuas',TABUAS);simple('barris',BARRIS);
+
+  function chips(el,list,sel,max,onchg){
+    var box=$(el);
+    function draw(){
+      box.innerHTML=list.map(function(x){
+        var on=sel.indexOf(x)>-1;
+        return '<span class="chip'+(on?' on':(sel.length>=max?' dis':''))+'" data-v="'+esc(x)+'">'+esc(x)+'</span>';
+      }).join('');
+    }
+    box.addEventListener('click',function(e){
+      var c=e.target.closest('.chip');if(!c)return;
+      var v=c.getAttribute('data-v'),i=sel.indexOf(v);
+      if(i>-1)sel.splice(i,1);else if(sel.length<max)sel.push(v);
+      draw();onchg();
+    });
+    draw();
+  }
+
+  function get(id){var el=$(id);return el?Math.max(0,parseInt(el.value,10)||0):0}
+
+  function calc(){
+    var lines=[],problems=[],total=0,pax=parseInt($('pax').value,10)||0;
+    var canTotal=0,canTypes=0;
+    CANAPES.forEach(function(x){
+      var n=get(x.id),row=$('row-'+x.id);
+      var bad=n>0&&n<6;row.classList.toggle('bad',bad);
+      if(bad)problems.push('Canapé "'+x.n+'": mínimo 6 unidades.');
+      if(n>0){canTotal+=n;canTypes++;lines.push({g:'Canapés & Finger Food',n:x.n,d:n+' un × '+eur(x.p),v:n*x.p});}
+    });
+    function add(list,g,fmt){list.forEach(function(x){var n=get(x.id);if(n>0)lines.push({g:g,n:x.n,d:fmt(n,x),v:n*x.p});});}
+    add(KITS,'Kits',function(n,x){return n+' × '+eur(x.p)});
+    add(TABULEIROS,'Tabuleiros quentes',function(n,x){return n+' × '+eur(x.p)});
+    var mc=get('mcPax');
+    $('mcOpts').style.display=mc>0?'block':'none';
+    if(mc>0){
+      if(mc<15)problems.push('Menu Completo: mínimo 15 pessoas.');
+      var up=$('mcUp').checked,unit=25+(up?5:0);
+      var det='Principais: '+(mcMain.length?mcMain.join(', '):'(por escolher)')+' · Sobremesas: '+(mcDes.length?mcDes.join(', '):'(por escolher)')+(up?' · Upgrade premium':'');
+      if(mcMain.length<2)problems.push('Menu Completo: escolhe 2 pratos principais.');
+      if(mcDes.length<3)problems.push('Menu Completo: escolhe 3 sobremesas.');
+      lines.push({g:'Menu Completo',n:'Menu Completo · '+mc+' pessoas',d:det,v:mc*unit,u:mc+' × '+eur(unit)});
+    }
+    var pd=get('e1'),kb=get('e2');
+    $('pdWrap').style.display=pd>0?'block':'none';$('kbWrap').style.display=kb>0?'block':'none';
+    $('extrasOpts').style.display=(pd>0||kb>0)?'block':'none';
+    if(pd>0){var d='Sobremesas: '+(pdDes.length?pdDes.join(', '):'(por escolher)');if(pdDes.length<3)problems.push('Pack Sobremesas: escolhe 3 sobremesas.');lines.push({g:'Extras',n:'Pack Sobremesas',d:pd+' × '+eur(60)+' · '+d,v:pd*60});}
+    if(kb>0){var d2='Água + '+(kbBeb.length?kbBeb.join(', '):'(por escolher)');if(kbBeb.length<2)problems.push('Kit Bebidas: escolhe 2 bebidas.');lines.push({g:'Extras',n:'Kit Bebidas',d:kb+' × '+eur(50)+' · '+d2,v:kb*50});}
+    add(TABUAS,'Tábuas',function(n,x){return n+' × '+eur(x.p)});
+    add(BARRIS,'Barris',function(n,x){return n+' × '+eur(x.p)});
+    lines.forEach(function(l){total+=l.v});
+    if(canTotal>0&&pax>0&&pax<30)problems.push('Os canapés são pensados para eventos a partir de 30 pessoas.');
+    if(canTotal>0&&pax>0){var per=canTotal/pax;if(per<8)problems.push('Tens '+canTotal+' canapés para '+pax+' pessoas ('+per.toFixed(1).replace('.',',')+' por pessoa). Recomendamos 8 por pessoa.');}
+    if(total>0&&total<150)problems.push('Encomenda mínima: 150 €.');
+    var dt=$('data').value;
+    if(dt){var days=Math.ceil((new Date(dt+'T00:00:00')-new Date())/864e5);if(days<15)problems.push('Antecedência mínima de 15 dias (a data escolhida está a '+Math.max(days,0)+' dias). Contacta-nos para confirmar disponibilidade.');}
+    $('total').textContent=eur(total);
+    var al=$('alerts');
+    al.innerHTML=problems.map(function(p){return '<div>'+esc(p)+'</div>'}).join('')||(total>0?'<div class="ok">Tudo certo com as condições. Podes ver o resumo e enviar.</div>':'');
+    return{lines:lines,total:total,problems:problems,pax:pax};
+  }
+
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('.qty button');if(!b)return;
+    var el=$(b.getAttribute('data-t')),d=parseInt(b.getAttribute('data-d'),10);
+    var cur=parseInt(el.value,10)||0,min6=el.id.charAt(0)==='c'&&el.id.length===2;
+    var nv=Math.max(0,cur+d);
+    if(min6&&d>0&&cur===0)nv=6;
+    if(min6&&d<0&&nv<6)nv=0;
+    el.value=nv;calc();
+  });
+  document.addEventListener('input',function(e){if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')calc()});
+  $('mcUp').addEventListener('change',calc);
+  chips('mcMain',MAINS,mcMain,2,calc);chips('mcDes',DES,mcDes,3,calc);chips('pdDes',DES,pdDes,3,calc);chips('kbBeb',BEB,kbBeb,2,calc);
+
+  $('sugBtn').addEventListener('click',function(){
+    var p=parseInt($('pax').value,10)||0;
+    if(p<1){alert('Indica primeiro o nº de pessoas.');$('pax').focus();return}
+    var each=Math.max(6,Math.ceil(p*8/6/6)*6);
+    CANAPES.forEach(function(x){$(x.id).value=each});
+    calc();
+  });
+
+  var d0=new Date();d0.setDate(d0.getDate()+15);
+  $('data').min=d0.toISOString().slice(0,10);
+
+  function fmtDate(s){if(!s)return '-';var a=s.split('-');return a[2]+'/'+a[1]+'/'+a[0]}
+
+  function buildTicket(r){
+    var groups=[],map={};
+    r.lines.forEach(function(l){if(!map[l.g]){map[l.g]=[];groups.push(l.g)}map[l.g].push(l)});
+    var h='<div class="in"><div class="hd"><img src="/catering/logo.jpg" alt=""></div><div class="bd">'+
+      '<div class="ey">Pedido de catering</div><h3>O meu <i>menu</i></h3>'+
+      '<div class="info"><b>'+esc($('nome').value||'-')+'</b> · '+esc($('contacto').value||'-')+'<br>Data da festa: <b>'+fmtDate($('data').value)+'</b> · Nº de pessoas: <b>'+(r.pax||'-')+'</b></div>';
+    groups.forEach(function(g){
+      h+='<h4>'+esc(g)+'</h4>';
+      map[g].forEach(function(l){h+='<div class="li"><span>'+esc(l.n)+'<small>'+esc(l.u?l.u+' · '+l.d:l.d)+'</small></span><span>'+eur(l.v)+'</span></div>'});
+    });
+    h+='<div class="tot"><span>Total estimado</span><b>'+eur(r.total)+'</b></div>';
+    var nt=$('notas').value.trim();
+    if(nt)h+='<div class="nt"><b>Notas:</b> '+esc(nt)+'</div>';
+    h+='<div class="nt">Valores indicativos, sujeitos a confirmação pela Cosmopolitan Party. Encomenda mínima 150 € · antecedência 15 dias · pagamento 50% na adjudicação e 50% até 7 dias antes do evento.</div>';
+    h+='</div><div class="ft"><b>Cosmopolitan Party</b>Rua da Ribeira 41, 2660-001 Flamenga, Loures · cosmopolitanparty.loures@gmail.com · 926 720 762</div></div>';
+    $('ticket').innerHTML=h;
+  }
+
+  var canvasCache=null,textSummary='';
+  function render(){
+    var r=calc();
+    if(!r.lines.length){alert('Escolhe pelo menos um item do menu.');return Promise.reject()}
+    if(!$('nome').value.trim()||!$('contacto').value.trim()||!$('data').value||!r.pax){alert('Preenche o nome, contacto, data e nº de pessoas.');return Promise.reject()}
+    buildTicket(r);
+    textSummary=['Pedido de catering — Cosmopolitan Party','Nome: '+$('nome').value,'Contacto: '+$('contacto').value,'Data: '+fmtDate($('data').value),'Pessoas: '+r.pax,''].concat(r.lines.map(function(l){return '• '+l.n+' — '+(l.u?l.u+' · ':'')+l.d+' = '+eur(l.v)})).concat(['','TOTAL estimado: '+eur(r.total)]).concat($('notas').value.trim()?['Notas: '+$('notas').value.trim()]:[]).join('\n');
+    var go=function(){return html2canvas($('ticket'),{scale:2,backgroundColor:'#EE9C8F',useCORS:true})};
+    return(document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(go).then(function(c){canvasCache=c;return c});
+  }
+
+  $('goBtn').addEventListener('click',function(){
+    var b=this;b.disabled=true;b.textContent='A preparar…';
+    render().then(function(c){$('prev').src=c.toDataURL('image/png');$('msg').textContent='';$('modal').classList.add('on')}).catch(function(){}).then(function(){b.disabled=false;b.textContent='Ver resumo e enviar'});
+  });
+  $('closeBtn').addEventListener('click',function(){$('modal').classList.remove('on')});
+
+  function fname(ext){return 'menu-catering-'+($('nome').value.trim().toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'cosmopolitan')+'.'+ext}
+  function blobOf(){return new Promise(function(res){canvasCache.toBlob(res,'image/png')})}
+  function dl(blob,name){var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){a.remove();URL.revokeObjectURL(a.href)},1000)}
+
+  $('imgBtn').addEventListener('click',function(){blobOf().then(function(b){dl(b,fname('png'))})});
+  $('pdfBtn').addEventListener('click',function(){
+    var J=window.jspdf.jsPDF,pdf=new J({unit:'mm',format:'a4'}),W=210,H=297;
+    var c=canvasCache,ratio=W/c.width,fullH=c.height*ratio;
+    if(fullH<=H){pdf.addImage(c.toDataURL('image/jpeg',0.92),'JPEG',0,0,W,fullH)}
+    else{
+      var pageHpx=Math.floor(H/ratio),y=0;
+      while(y<c.height){
+        var sl=document.createElement('canvas');sl.width=c.width;sl.height=Math.min(pageHpx,c.height-y);
+        var ctx=sl.getContext('2d');ctx.fillStyle='#EE9C8F';ctx.fillRect(0,0,sl.width,sl.height);
+        ctx.drawImage(c,0,y,c.width,sl.height,0,0,c.width,sl.height);
+        if(y>0)pdf.addPage();
+        pdf.addImage(sl.toDataURL('image/jpeg',0.92),'JPEG',0,0,W,sl.height*ratio);
+        y+=pageHpx;
+      }
+    }
+    pdf.save(fname('pdf'));
+  });
+
+  $('sendBtn').addEventListener('click',function(){
+    var b=this,m=$('msg');b.disabled=true;m.textContent='A enviar…';
+    var r=calc();
+    fetch('/.netlify/functions/catering',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+      nome:$('nome').value,contacto:$('contacto').value,data:$('data').value,pax:r.pax,total:eur(r.total),resumo:textSummary
+    })}).then(function(x){return x.json()}).then(function(j){
+      if(!j.ok)throw new Error('send');
+      m.innerHTML='✅ Pedido enviado! Entramos em contacto brevemente.<br><small>Se quiseres, envia também a imagem pelo WhatsApp:</small>';
+      return blobOf().then(function(blob){
+        var file=new File([blob],fname('png'),{type:'image/png'});
+        var wa=document.createElement('button');wa.className='btn o';wa.style.marginTop='8px';wa.textContent='Partilhar imagem por WhatsApp';
+        wa.onclick=function(){
+          if(navigator.canShare&&navigator.canShare({files:[file]})){navigator.share({files:[file],text:'Pedido de catering — Cosmopolitan Party'}).catch(function(){})}
+          else{dl(blob,fname('png'));window.open('https://wa.me/'+WA+'?text='+encodeURIComponent(textSummary),'_blank')}
+        };
+        m.appendChild(document.createElement('br'));m.appendChild(wa);
+      });
+    }).catch(function(){
+      m.innerHTML='Não foi possível enviar automaticamente. Guarda a imagem e envia-nos por <a href="https://wa.me/'+WA+'?text='+encodeURIComponent(textSummary)+'" target="_blank" rel="noopener">WhatsApp</a> ou por email.';
+    }).then(function(){b.disabled=false});
+  });
+
+  calc();
+})();
+</script>
+</body>
+</html>
