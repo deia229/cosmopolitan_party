@@ -176,7 +176,8 @@
 <div class="modal" id="modal"><div class="mbox">
   <img id="prev" alt="Resumo do menu">
   <div class="macts">
-    <button class="btn" id="sendBtn" type="button">Enviar à Cosmopolitan</button>
+    <button class="btn" id="sendBtn" type="button">Enviar pedido</button>
+    <button class="btn" id="waBtn" type="button" style="background:#25D366">Enviar por WhatsApp</button>
     <button class="btn o" id="imgBtn" type="button">Guardar imagem</button>
     <button class="btn o" id="pdfBtn" type="button">Guardar PDF</button>
     <button class="btn o" id="closeBtn" type="button">Voltar e editar</button>
@@ -337,7 +338,7 @@
     $('ticket').innerHTML=h;
   }
 
-  var canvasCache=null,textSummary='',lastSig='';
+  var canvasCache=null,cachedBlob=null,textSummary='',lastSig='';
   function render(){
     var r=calc();
     if(!r.lines.length){alert('Escolhe pelo menos um item do menu.');return Promise.reject()}
@@ -347,7 +348,7 @@
     var sig=JSON.stringify([r,$('nome').value,$('contacto').value,$('data').value,$('notas').value]);
     if(canvasCache&&sig===lastSig)return Promise.resolve(canvasCache);
     var go=function(){
-      var work=html2canvas($('ticket'),{scale:2,backgroundColor:'#EE9C8F',useCORS:true,imageTimeout:8000,scrollX:0,scrollY:0,windowWidth:800}).then(function(c){lastSig=sig;return c});
+      var work=html2canvas($('ticket'),{scale:2,backgroundColor:'#EE9C8F',useCORS:true,imageTimeout:8000,scrollX:0,scrollY:0,windowWidth:800}).then(function(c){lastSig=sig;return new Promise(function(res){c.toBlob(function(bl){cachedBlob=bl;res(c)},'image/png')})});
       var tmo=new Promise(function(_,rej){setTimeout(function(){rej(new Error('timeout'))},20000)});
       return Promise.race([work,tmo]);
     };
@@ -386,23 +387,35 @@
     pdf.save(fname('pdf'));
   });
 
+  function waText(r,full){
+    var short='Olá! Fiz uma simulação de catering no site. Nome: '+$('nome').value+' · Data: '+fmtDate($('data').value)+' · '+r.pax+' pessoas · Total com IVA: '+eur(r.grand)+'.';
+    if(!full)return short;
+    var t=short+'\n\n'+textSummary;
+    return encodeURIComponent(t).length<1800?t:short;
+  }
+  $('waBtn').addEventListener('click',function(){
+    var r=calc(),blob=cachedBlob;
+    var file=blob&&new File([blob],fname('png'),{type:'image/png'});
+    if(file&&navigator.canShare&&navigator.canShare({files:[file]})){
+      navigator.share({files:[file],text:waText(r,false)}).catch(function(){});
+    }else{
+      window.open('https://wa.me/'+WA+'?text='+encodeURIComponent(waText(r,true)),'_blank');
+      if(blob)dl(blob,fname('png'));
+    }
+  });
+
   $('sendBtn').addEventListener('click',function(){
     var b=this,m=$('msg');b.disabled=true;m.textContent='A enviar…';
     var r=calc();
     fetch('/.netlify/functions/catering',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-      nome:$('nome').value,contacto:$('contacto').value,data:$('data').value,pax:r.pax,total:eur(r.grand),resumo:textSummary,imagem:canvasCache.toDataURL('image/jpeg',0.92)
+      nome:$('nome').value,contacto:$('contacto').value,data:$('data').value,pax:r.pax,
+      valor:r.total,iva:r.iva,grand:r.grand,totalTxt:eur(r.grand),notas:$('notas').value,resumo:textSummary,
+      itens:r.lines.map(function(l){return{grupo:l.g,nome:l.n,detalhe:(l.u?l.u+' · ':'')+l.d,valor:l.v}})
     })}).then(function(x){return x.json()}).then(function(j){
       if(!j.ok)throw new Error('send');
-      m.innerHTML='✅ Pedido enviado! Entramos em contacto brevemente.<br><small>Se preferires, fala connosco também por WhatsApp (a imagem do menu é guardada para a anexares):</small>';
-      return blobOf().then(function(blob){
-                var short='Olá! Acabei de enviar um pedido de catering pelo site. Nome: '+$('nome').value+' · Data: '+fmtDate($('data').value)+' · '+r.pax+' pessoas · Total com IVA: '+eur(r.grand)+'.';
-        var wa=document.createElement('a');wa.className='btn o';wa.style.cssText='margin-top:8px;text-decoration:none';wa.textContent='Falar por WhatsApp';
-        wa.href='https://wa.me/'+WA+'?text='+encodeURIComponent(short);wa.target='_blank';wa.rel='noopener';
-        wa.addEventListener('click',function(){dl(blob,fname('png'))});
-        m.appendChild(document.createElement('br'));m.appendChild(wa);
-      });
+      m.textContent='✅ Pedido enviado! Entramos em contacto brevemente.';
     }).catch(function(){
-      m.innerHTML='Não foi possível enviar automaticamente. Guarda a imagem e envia-nos por <a href="https://wa.me/'+WA+'?text='+encodeURIComponent('Olá! Quero pedir orçamento de catering. Nome: '+$('nome').value+' · Data: '+fmtDate($('data').value)+' · '+r.pax+' pessoas · Total com IVA: '+eur(r.grand))+'" target="_blank" rel="noopener">WhatsApp</a> ou por email.';
+      m.textContent='Não foi possível enviar agora. Usa o botão WhatsApp para nos enviares o resumo.';
     }).then(function(){b.disabled=false});
   });
 

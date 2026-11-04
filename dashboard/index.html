@@ -595,6 +595,7 @@ header{background:linear-gradient(135deg,var(--dark),var(--dark2));padding:0 20p
       <div style="display:flex;gap:0">
         <button class="et-btn on" id="pedSub-deco-btn" onclick="swPed('pedSub-deco',this)">🎨 Decoração <span id="pedDecoBadge" style="margin-left:4px;font-size:10px;color:var(--muted)"></span></button>
         <button class="et-btn" id="pedSub-reservas-btn" onclick="swPed('pedSub-reservas',this)">📅 Reservas <span id="pedResBadge" style="margin-left:4px;font-size:10px;color:var(--muted)"></span></button>
+        <button class="et-btn" id="pedSub-catering-btn" onclick="swPed('pedSub-catering',this)">🍽️ Catering <span id="pedCatBadge" style="margin-left:4px;font-size:10px;color:var(--muted)"></span></button>
       </div>
     </div>
 
@@ -646,6 +647,26 @@ header{background:linear-gradient(135deg,var(--dark),var(--dark2));padding:0 20p
         <table class="tbl">
           <thead><tr><th>Recebido</th><th>Cliente</th><th>Data festa</th><th>Turno</th><th>Total</th><th>Estado</th><th></th></tr></thead>
           <tbody id="resBody"><tr><td colspan="7" class="empty-row">A carregar…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="et-panel" id="pedSub-catering" style="margin-top:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+        <span style="font-size:11px;color:var(--muted)">Simulações de catering enviadas pelo site (valores sem IVA + IVA).</span>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <select id="catFiltroStatus" onchange="loadCatering()" style="border:1px solid var(--border);border-radius:9px;padding:8px 10px;font-size:12px;font-family:var(--font);outline:none;min-height:36px">
+            <option value="">Todos</option><option value="novo">Novo</option><option value="contactado">Contactado</option><option value="orcamentado">Orçamentado</option><option value="confirmado">Confirmado</option><option value="descartado">Descartado</option>
+          </select>
+          <input id="catSearch" placeholder="Pesquisar…" style="border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:12px;font-family:var(--font);outline:none;width:130px;min-height:36px" oninput="filterCatering()"/>
+          <button class="btn btn-g" onclick="loadCatering()">↻</button>
+          <a href="https://cosmopolitanpartyfestas.netlify.app/catering-simulacao" target="_blank" class="btn btn-p">↗ Simulador</a>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="tbl">
+          <thead><tr><th>Recebido</th><th>Cliente</th><th>Data festa</th><th>Pessoas</th><th>Total c/ IVA</th><th>Estado</th><th></th></tr></thead>
+          <tbody id="catBody"><tr><td colspan="7" class="empty-row">A carregar…</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -1025,6 +1046,23 @@ header{background:linear-gradient(135deg,var(--dark),var(--dark2));padding:0 20p
 </div>
 
 <!-- MODAL RESERVA DO SITE -->
+<div class="overlay" id="catModal" onclick="closeOverlay('catModal',event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="drag-bar" onclick="closeModal('catModal')"></div>
+    <h2 id="catModalTitle">Pedido de catering</h2>
+    <div id="catContent" style="font-size:13px;line-height:1.6"></div>
+    <label class="f-lbl" style="margin-top:14px">Estado</label>
+    <select id="catStatus" class="f-inp">
+      <option value="novo">Novo</option><option value="contactado">Contactado</option><option value="orcamentado">Orçamentado</option><option value="confirmado">Confirmado</option><option value="descartado">Descartado</option>
+    </select>
+    <div class="modal-actions">
+      <button class="btn btn-p" onclick="saveCatStatus()">✓ Atualizar estado</button>
+      <button class="btn btn-g" onclick="abrirContactoCat()">💬 WhatsApp</button>
+      <button class="btn btn-g" onclick="apagarCatering()" style="color:var(--red)">🗑️ Apagar</button>
+      <button class="btn btn-g" onclick="closeModal('catModal')">Fechar</button>
+    </div>
+  </div>
+</div>
 <div class="overlay" id="resModal" onclick="closeOverlay('resModal',event)">
   <div class="modal" onclick="event.stopPropagation()">
     <div class="drag-bar" onclick="closeModal('resModal')"></div>
@@ -1244,6 +1282,7 @@ let CONTRATOS_URL=localStorage.getItem(LS_CURL)||CONTRATOS_DEF;
 let eventos=[],orcFull=[],orcamentos=[],curEvIdx=null,curOrcId=null;
 let pedFull=[],pedidos=[],curPedId=null;
 let resFull=[],reservas=[],curResId=null;
+let catFull=[],catList=[],curCatId=null;
 let fin={mes:getMes(),itemsByMonth:{},meses:[],metas:[{label:'Meta CP',meta:4000}]},mesIdx=0;
 let tasks=[],ckData=null;
 let curEvExtras={espaco:[],decoracao:[],catering:[],outros:[]};
@@ -1338,7 +1377,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
   const {data:{session}}=await sb.auth.getSession();
   if(!session){$('loginOv').classList.add('on');return;}
   applyAccessControl(session.user?.email||'');
-  loadOrcamentos();loadEventos();loadTasks();loadContratosPendentes();loadPedidos();loadReservas();renderFin();
+  loadOrcamentos();loadEventos();loadTasks();loadContratosPendentes();loadPedidos();loadReservas();loadCatering();renderFin();
 });
 // ─── ACESSO RESTRITO À ABA FINANCEIRO ───
 const ALLOWED_FIN_EMAILS=['ramalheiroa@gmail.com'];
@@ -1708,7 +1747,7 @@ async function showTab(name,btn){
   });
   if(name==='eventos')loadEventos();
   if(name==='orcamentos')loadOrcamentos();
-  if(name==='pedidos'){loadPedidos();loadReservas();}
+  if(name==='pedidos'){loadPedidos();loadReservas();loadCatering();}
   if(name==='calendario')loadCalTasks();
   if(name==='financeiro')renderFin();
   if(name==='checklist')renderCkSel();
@@ -3722,7 +3761,7 @@ async function loadPedidos(){
   updatePedidosTabBadge();
 }
 function updatePedidosTabBadge(){
-  const novos=(pedFull||[]).filter(p=>p.status==='novo').length+(resFull||[]).filter(r=>r.status==='novo').length;
+  const novos=(pedFull||[]).filter(p=>p.status==='novo').length+(resFull||[]).filter(r=>r.status==='novo').length+(catFull||[]).filter(r=>r.status==='novo').length;
   const btn=document.querySelector('.tab-btn[onclick*="pedidos"]');
   if(btn) btn.textContent=novos>0?`Pedidos (${novos})`:'Pedidos';
 }
@@ -3805,6 +3844,75 @@ async function apagarPedido(){
   const{error}=await sb.from('cp_decoracao_pedidos').delete().eq('id',curPedId);
   if(error){showToast('Erro: '+error.message);return;}
   closeModal('pedModal');loadPedidos();showToast('✓ Pedido apagado');
+}
+
+
+// CATERING (simulador do site)
+const CAT_ST_LBL={novo:'Novo',contactado:'Contactado',orcamentado:'Orçamentado',confirmado:'Confirmado',descartado:'Descartado'};
+const CAT_ST_CLS={novo:'pendente',contactado:'enviado',orcamentado:'enviado',confirmado:'confirmado',descartado:'cancelado'};
+const fmtEur=n=>(Number(n)||0).toFixed(2).replace('.',',')+' €';
+async function loadCatering(){
+  if(!sb){$('catBody').innerHTML='<tr><td colspan="7" class="empty-row">Sem Supabase.</td></tr>';return;}
+  const st=$('catFiltroStatus')?.value||'';
+  let q=sb.from('cp_catering_pedidos').select('*').order('created_at',{ascending:false}).limit(200);
+  if(st) q=q.eq('status',st);
+  const{data,error}=await q;
+  if(error){$('catBody').innerHTML=`<tr><td colspan="7" class="empty-row">Erro: ${esc(error.message)}</td></tr>`;return;}
+  catFull=data||[];
+  filterCatering();
+  const novos=catFull.filter(r=>r.status==='novo').length;
+  const l=$('pedCatBadge');if(l)l.textContent=novos>0?`(${novos})`:'';
+  updatePedidosTabBadge();
+}
+function filterCatering(){
+  const q=($('catSearch')?.value||'').trim().toLowerCase();
+  catList=catFull.filter(r=>!q||(r.nome||'').toLowerCase().includes(q)||(r.contacto||'').toLowerCase().includes(q)||(r.data_festa||'').includes(q));
+  $('catBody').innerHTML=catList.length?catList.map(r=>{
+    const recv=r.created_at?new Date(r.created_at).toLocaleDateString('pt-PT'):'—';
+    return`<tr onclick="openCatModal('${r.id}')">
+      <td data-lbl="Recebido" style="font-family:var(--mono);font-size:12px">${recv}</td>
+      <td data-lbl="Cliente"><strong>${esc(r.nome||'—')}</strong><br><span style="font-size:11px;color:var(--muted)">${esc(r.contacto||'')}</span></td>
+      <td data-lbl="Data festa" style="font-family:var(--mono);font-size:12px">${r.data_festa?fmtD(r.data_festa):'—'}</td>
+      <td data-lbl="Pessoas" style="font-size:12px">${r.pessoas||'—'}</td>
+      <td data-lbl="Total" style="font-family:var(--mono);font-size:13px;font-weight:600;color:var(--pink)">${r.total_num!=null?fmtEur(r.total_num):'—'}</td>
+      <td data-lbl="Estado"><span class="bst ${CAT_ST_CLS[r.status]||'rascunho'}">${CAT_ST_LBL[r.status]||r.status}</span></td>
+      <td data-lbl="" class="td-act" style="color:var(--pink)">→</td>
+    </tr>`;}).join(''):'<tr><td colspan="7" class="empty-row">Sem pedidos de catering.</td></tr>';
+}
+function openCatModal(id){
+  const r=catFull.find(x=>x.id===id);if(!r)return;
+  curCatId=id;
+  $('catModalTitle').textContent=r.nome||'Pedido de catering';
+  const row=(lbl,val)=>val?`<div style="margin-bottom:6px"><span style="font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)">${lbl}</span><div style="font-size:13px">${esc(val)}</div></div>`:'';
+  const itens=Array.isArray(r.itens)?r.itens:[];
+  const lista=itens.length?'<div style="margin:10px 0;border-top:1px solid var(--border)">'+itens.map(i=>`<div style="display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--border)"><div><strong style="font-weight:500">${esc(i.nome||'')}</strong><br><span style="font-size:11px;color:var(--muted)">${esc(i.detalhe||'')}</span></div><div style="font-family:var(--mono);white-space:nowrap">${fmtEur(i.valor)}</div></div>`).join('')+'</div>':'';
+  $('catContent').innerHTML=
+    row('Contacto',r.contacto)+row('Data da festa',r.data_festa?fmtD(r.data_festa):'')+row('Pessoas',r.pessoas?String(r.pessoas):'')+
+    lista+
+    row('Valor (sem IVA)',r.valor_num!=null?fmtEur(r.valor_num):'')+row('IVA',r.iva_num!=null?fmtEur(r.iva_num):'')+row('Total com IVA',r.total_num!=null?fmtEur(r.total_num):'')+
+    row('Notas do cliente',r.notas)+row('Recebido',r.created_at?new Date(r.created_at).toLocaleString('pt-PT'):'');
+  $('catStatus').value=r.status||'novo';
+  $('catModal').classList.add('on');
+}
+async function saveCatStatus(){
+  if(!curCatId||!sb)return;
+  const s=$('catStatus').value;
+  const{error}=await sb.from('cp_catering_pedidos').update({status:s,updated_at:new Date().toISOString()}).eq('id',curCatId);
+  if(error){showToast('Erro: '+error.message);return;}
+  closeModal('catModal');loadCatering();showToast('✓ Estado: '+CAT_ST_LBL[s]);
+}
+function abrirContactoCat(){
+  const r=catFull.find(x=>x.id===curCatId);if(!r)return;
+  const tel=(r.contacto||'').replace(/\D/g,'');
+  if(!tel){showToast('Sem contacto');return;}
+  window.open(`https://wa.me/${tel.length===9?'351'+tel:tel}`,'_blank');
+}
+async function apagarCatering(){
+  if(!curCatId||!sb)return;
+  if(!confirm('Apagar este pedido de catering?'))return;
+  const{error}=await sb.from('cp_catering_pedidos').delete().eq('id',curCatId);
+  if(error){showToast('Erro: '+error.message);return;}
+  closeModal('catModal');loadCatering();showToast('✓ Pedido apagado');
 }
 
 // RESERVAS DO SITE
@@ -4066,7 +4174,7 @@ function saveNota(){localStorage.setItem(LS_NOTA,$('notaArea').value);$('notaTs'
 
 // MODAL
 function closeOverlay(id,e){if(e&&e.target!==$(id))return;closeModal(id);}
-function closeModal(id){$(id).classList.remove('on');if(id==='evModal')curEvIdx=null;if(id==='orcModal')curOrcId=null;if(id==='pedModal')curPedId=null;if(id==='resModal')curResId=null;if(id==='calDayModal')curCalDay=null;}
+function closeModal(id){$(id).classList.remove('on');if(id==='evModal')curEvIdx=null;if(id==='orcModal')curOrcId=null;if(id==='pedModal')curPedId=null;if(id==='resModal')curResId=null;if(id==='catModal')curCatId=null;if(id==='calDayModal')curCalDay=null;}
 
 // TOAST
 function showToast(msg){const c=$('toastCont'),t=document.createElement('div');t.className='toast';t.innerHTML=`<span>${esc(msg)}</span><button class="tc" onclick="this.closest('.toast').remove()">✕</button>`;c.appendChild(t);setTimeout(()=>t.remove(),5000);}
