@@ -1910,6 +1910,17 @@ Qualquer dúvida estamos ao dispor.
 Cosmopolitan Party`
   },
   {
+    titulo:'Pagamento restante (para enviar o PIN)',
+    sub:'Se a festa é hoje diz "é hoje", se é amanhã "é amanhã", senão "aproxima-se". Preencher o n.º MBWay (Andreia ou Ivo) antes de enviar.',
+    corpo:`Olá [Nome], aqui [Érica/Andreia] da Cosmopolitan Party. [Quando], às [Hora início].
+
+Falta receber [Valor em falta] do pagamento. Para podermos enviar o PIN de acesso é necessário o pagamento do valor restante até à hora de início da festa ([Hora início]).
+
+Pode enviar por MBWay para [N.º MBWay] e mandar-nos o comprovativo.
+
+Qualquer dúvida estamos ao dispor.`
+  },
+  {
     titulo:'Envio do PIN de entrada (dia do evento)',
     sub:'A enviar no dia da festa, com o contrato já assinado.',
     corpo:`Olá [Nome], boa tarde
@@ -4071,7 +4082,18 @@ function _preencherTemplate(corpo,ev){
   const horario=hhmm(ev.horaInicio)+' às '+hhmm(ev.horaFim);
   const c=findContrato(ev);
   const link=(c&&c.linkPDF)?c.linkPDF:'[Link do contrato]';
+  const hoje0=new Date();hoje0.setHours(0,0,0,0);
+  const dp=String(ev.dataFesta||'').split('-');
+  const diaFesta=dp.length===3?new Date(+dp[0],+dp[1]-1,+dp[2]):null;
+  const dd=diaFesta?Math.round((diaFesta-hoje0)/86400000):null;
+  const quando=dd===0?'A sua festa é hoje':dd===1?'A sua festa é amanhã':'A sua festa aproxima-se ('+data+')';
+  const horaIni=hhmm(ev.horaInicio);
+  const emFalta=Math.max(0,totalBaseEv(ev)-paidTotal(ev));
+  const valorFalta=emFalta>0?eur(emFalta):'o valor restante';
   return String(corpo)
+    .replace(/\[Quando\]/g,quando)
+    .replace(/\[Hora início\]/g,horaIni)
+    .replace(/\[Valor em falta\]/g,valorFalta)
     .replace(/\[Nome\]/g,nome)
     .replace(/\[Data\]/g,data)
     .replace(/\[Horário\]/g,horario)
