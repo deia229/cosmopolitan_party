@@ -357,9 +357,17 @@ Qualquer dúvida estamos ao dispor.`;
   const telNorm = normalizePtPhone_(tel);
   const waLink = telNorm ? `https://wa.me/${telNorm}?text=${encodeURIComponent(msgPedido)}` : '';
 
+  const hojeZero = new Date(); hojeZero.setHours(0, 0, 0, 0);
+  const diaFesta = new Date(start.getTime()); diaFesta.setHours(0, 0, 0, 0);
+  const diffFesta = Math.round((diaFesta.getTime() - hojeZero.getTime()) / 86400000);
+  const msgPagamento = msgPagamentoRestante_(primeiroNome, diffFesta, dataPt, horaIniLbl, emFaltaCal);
+  const waLinkPagamento = (telNorm && emFaltaCal > 0)
+    ? `https://wa.me/${telNorm}?text=${encodeURIComponent(msgPagamento)}` : '';
+
   const subj = `Festa criada no calendário: ${titulo}`;
   const bodyText = `${descricao}\n\nLink do evento: ${linkEvento}` +
-    (waLink ? `\n\nPedido de dados ao cliente (1 clique):\n${waLink}` : '\n\nSem telefone válido — pedido de dados tem de ser enviado manualmente.');
+    (waLink ? `\n\nPedido de dados ao cliente (1 clique):\n${waLink}` : '\n\nSem telefone válido — pedido de dados tem de ser enviado manualmente.') +
+    (waLinkPagamento ? `\n\nPedir pagamento restante (1 clique):\n${waLinkPagamento}` : '');
 
   const htmlBody =
     '<div style="font-family:Arial,sans-serif;max-width:560px;color:#1a0010">' +
@@ -374,6 +382,9 @@ Qualquer dúvida estamos ao dispor.`;
         (waLink
           ? `<div style="margin-top:18px;padding-top:14px;border-top:1px solid #f0c8dc"><p style="margin:0 0 8px;font-size:12px;color:#8a5a70">Próximo passo — pedido de dados ao cliente:</p><a href="${waLink}" style="display:inline-block;background:#25D366;color:#fff;text-decoration:none;padding:11px 18px;border-radius:9px;font-weight:600;font-size:13px">Enviar WhatsApp (mensagem pronta)</a></div>`
           : '<p style="margin-top:14px;color:#c0143c;font-size:12px">Sem telefone válido — pedido de dados tem de ser enviado manualmente.</p>') +
+        (waLinkPagamento
+          ? `<div style="margin-top:18px;padding-top:14px;border-top:1px solid #f0c8dc"><p style="margin:0 0 8px;font-size:12px;color:#8a5a70">Falta ${escapeHtml_(fmtMoney_(emFaltaCal))} — pedido do pagamento restante (preencher o n.º MBWay antes de enviar):</p><a href="${waLinkPagamento}" style="display:inline-block;background:#25D366;color:#fff;text-decoration:none;padding:11px 18px;border-radius:9px;font-weight:600;font-size:13px">Pedir pagamento restante (WhatsApp)</a></div>`
+          : '') +
       '</div>' +
     '</div>';
 
@@ -418,6 +429,22 @@ function enviarSmsConfirmacao_(telNorm, dataPt) {
   }
 }
 
+// ─── Pedido do pagamento restante (PIN só depois de pago) ───
+// "[N.º MBWay]" fica no texto para preencheres antes de enviar (é o da Andreia ou o do Ivo).
+function msgPagamentoRestante_(primeiroNome, diffDays, dataPt, horaIni, emFalta) {
+  const quando = diffDays === 0 ? 'A sua festa é hoje'
+    : diffDays === 1 ? 'A sua festa é amanhã'
+    : `A sua festa aproxima-se (${dataPt})`;
+  const valor = emFalta > 0 ? emFalta.toFixed(2).replace('.', ',') + ' €' : 'o valor restante';
+  return `Olá ${primeiroNome}, aqui Andreia da Cosmopolitan Party. ${quando}, às ${horaIni}.
+
+Falta receber ${valor} do pagamento. Para podermos enviar o PIN de acesso é necessário o pagamento do valor restante até à hora de início da festa (${horaIni}).
+
+Pode enviar por MBWay para [N.º MBWay] e mandar-nos o comprovativo.
+
+Qualquer dúvida estamos ao dispor.`;
+}
+
 // ─── Helpers para o pedido de dados ───
 function normalizePtPhone_(raw) {
   const digits = String(raw || '').replace(/\D/g, '');
@@ -450,6 +477,7 @@ function escapeHtml_(s) {
  *       D-14: confirmar nº de convidados
  *       D-7:  cobrar pagamento em falta (só dispara se valor em falta > 0)
  *       D-1:  confirmação do dia seguinte (+ cobrança se em falta)
+ *       D-0:  dia da festa — pedir pagamento restante para enviar o PIN (só se em falta > 0)
  *****/
 const LEMBRETES_EMAIL_TO = ['ramalheiroa@gmail.com'];
 const LEMBRETES_MBWAY = '964 505 429';
@@ -470,7 +498,7 @@ function enviarLembretesDiarios() {
 
   const today = new Date(); today.setHours(0, 0, 0, 0);
 
-  const lembretes = { d14: [], d7: [], d1: [] };
+  const lembretes = { d14: [], d7: [], d1: [], d0: [] };
 
   rows.forEach(row => {
     const nome = String(colOf(row, HDR_NOME) || '').trim();
@@ -481,7 +509,7 @@ function enviarLembretesDiarios() {
     if (!evDate) return;
     evDate.setHours(0, 0, 0, 0);
     const diffDays = Math.round((evDate.getTime() - today.getTime()) / 86400000);
-    if (![14, 7, 1].includes(diffDays)) return;
+    if (![14, 7, 1, 0].includes(diffDays)) return;
 
     const horaIni = vst_normHora_(colOf(row, HDR_INICIO));
     const horaFim = vst_normHora_(colOf(row, HDR_FIM));
@@ -520,6 +548,9 @@ Qualquer dúvida estamos ao dispor.`;
 `Olá ${primeiroNome}, aqui Andreia da Cosmopolitan Party. A sua festa é amanhã, ${dataPt} das ${horaIni} às ${horaFim}.${linhaPag}
 
 Qualquer assunto urgente é só ligar — 964 505 429 (Ivo) ou 930 666 370 (Érica).`;
+    } else if (diffDays === 0) {
+      if (emFalta <= 0) return; // só avisa no dia se houver valor em falta
+      msg = msgPagamentoRestante_(primeiroNome, 0, dataPt, horaIni, emFalta);
     }
     if (!msg) return;
 
@@ -529,6 +560,7 @@ Qualquer assunto urgente é só ligar — 964 505 429 (Ivo) ou 930 666 370 (Éri
     if (diffDays === 14) lembretes.d14.push(item);
     else if (diffDays === 7) lembretes.d7.push(item);
     else if (diffDays === 1) lembretes.d1.push(item);
+    else if (diffDays === 0) lembretes.d0.push(item);
   });
 
   // Reservas do site (Supabase) a 7 dias, com sinal pago, que ainda não estão
@@ -565,7 +597,7 @@ Cosmopolitan Party`;
     });
   });
 
-  const total = lembretes.d14.length + lembretes.d7.length + lembretes.d1.length;
+  const total = lembretes.d14.length + lembretes.d7.length + lembretes.d1.length + lembretes.d0.length;
   if (total === 0) return; // sem ruído nos dias sem lembretes
 
   const seccao = (titulo, sub, arr) => {
@@ -595,6 +627,7 @@ Cosmopolitan Party`;
         seccao(`D-14 (${lembretes.d14.length})`, 'Confirmar número de convidados', lembretes.d14) +
         seccao(`D-7 (${lembretes.d7.length})`, 'Cobrar pagamento em falta', lembretes.d7) +
         seccao(`D-1 (${lembretes.d1.length})`, 'Confirmação do dia seguinte', lembretes.d1) +
+        seccao(`Hoje (${lembretes.d0.length})`, 'Festa hoje — pedir pagamento restante para enviar o PIN (preencher o n.º MBWay antes de enviar)', lembretes.d0) +
         '<p style="font-size:11px;color:#8a5a70;margin-top:14px;border-top:1px solid #f0c8dc;padding-top:10px">Clica em cada botão verde para abrir o WhatsApp com a mensagem pronta. Não envia automaticamente — tens de carregar em Enviar.</p>' +
       '</div>' +
     '</div>';
@@ -612,6 +645,10 @@ Cosmopolitan Party`;
   if (lembretes.d1.length) {
     textParts.push(`\nD-1 — Festa amanhã (${lembretes.d1.length}):`);
     lembretes.d1.forEach(i => textParts.push(`  ${i.nome} · ${i.dataPt}` + (i.waLink ? `\n    ${i.waLink}` : '')));
+  }
+  if (lembretes.d0.length) {
+    textParts.push(`\nHoje — Pedir pagamento restante / PIN (${lembretes.d0.length}):`);
+    lembretes.d0.forEach(i => textParts.push(`  ${i.nome} · ${i.dataPt} · ${i.emFalta.toFixed(2)} € em falta` + (i.waLink ? `\n    ${i.waLink}` : '')));
   }
   const bodyText = textParts.join('\n');
 
