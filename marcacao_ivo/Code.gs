@@ -323,11 +323,18 @@ Limpeza: ${quemLimpa || '-'}
 Observações:
 ${obs || '-'}`.trim();
 
+  // Template do pagamento restante dentro do evento (copiar para o WhatsApp; no dia, trocar para "é hoje")
+  const primeiroNomeEv = String(nome || '').trim().split(/\s+/)[0] || 'cliente';
+  const descricaoEvento = emFaltaCal > 0
+    ? descricao + `\n\n— MENSAGEM PAGAMENTO RESTANTE (preencher n.º MBWay) —\n` +
+      msgPagamentoRestante_(primeiroNomeEv, 7, formatarDataPt_(dataFesta), horaIniLbl, emFaltaCal)
+    : descricao;
+
   const cal = CalendarApp.getCalendarById(CAL_ID);
   if (!cal) throw new Error(`Não consegui aceder ao calendário: ${CAL_ID}`);
 
   const ev = cal.createEvent(titulo, start, end, {
-    description: descricao,
+    description: descricaoEvento,
     timeZone: TZ
   });
 
