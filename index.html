@@ -356,8 +356,9 @@
           <li><span>18h – 23h</span><span>300€</span></li>
           <li><span>Dia inteiro · 08h – 24h</span><span>650€</span></li>
           <li><span>Hora extra</span><span>50€</span></li>
+          <li><span>Hora extra noturna · 23h – 02h <small>(inclui licença de ruído)</small></span><span>75€</span></li>
         </ul>
-        <p class="cat-note">Sem limite de horário, mediante gestão de horas extra.</p>
+        <p class="cat-note">Horário limite: 02h. Das 23h às 02h aplica-se a hora extra noturna de 75€/h (50€ + 25€ de licença de ruído, que tratamos junto da câmara). Licença válida para som no interior do espaço.</p>
       </div>
       <div>
         <div class="subhead">Barris</div>
@@ -432,7 +433,7 @@
           </div>
         </div>
         <div class="sim-group">
-          <label>Horário <small>(extra fora do turno: 50€/h)</small></label>
+          <label>Horário <small>(extra fora do turno: 50€/h · licença de ruído após as 23h: 25€/h · limite 02h)</small></label>
           <div class="sim-times">
             <div class="tfield"><span>Entrada</span><input type="time" id="simEntrada" value="11:00" step="3600"></div>
             <div class="tfield"><span>Saída</span><input type="time" id="simSaida" value="16:00" step="3600"></div>
@@ -598,16 +599,23 @@
     var t=turnos[turnoKey];
     var ent=pt(entrada.value), sai=pt(saida.value);
     if(sai<=ent) sai+=24;                       // passou a meia-noite
+    var LIMITE=26, NOITE=23;                    // limite 02h; hora extra noturna a partir das 23h
+    var limitado=false;
+    if(sai>LIMITE){sai=LIMITE;saida.value=hStr(LIMITE);limitado=true;}
     var antes=Math.max(0,t.ini-ent);
     var depois=Math.max(0,sai-t.fim);
     var horasExtra=Math.max(0,Math.ceil(antes+depois-1e-9));
-    var he=horasExtra*50, barris=0;
+    var horasNoite=Math.max(0,Math.ceil(sai-NOITE-1e-9));   // horas entre as 23h e a saída: licença de ruído (25€/h)
+    var he=horasExtra*50+horasNoite*25, barris=0;
     document.querySelectorAll('#simBarris input:checked').forEach(function(c){barris+=+c.dataset.v;});
     var total=t.v+he+barris+125+100;
-    hint.textContent='Incluído no turno: '+t.label;
+    hint.textContent='Incluído no turno: '+t.label+(limitado?' · limite de horário: 02h':'');
     document.getElementById('rAluguer').textContent=eur(t.v);
     document.getElementById('rHoras').textContent=eur(he);
-    document.getElementById('rHorasN').textContent=horasExtra?('('+horasExtra+'h)'):'';
+    var partes=[];
+    if(horasExtra)partes.push(horasExtra+'h');
+    if(horasNoite)partes.push('licença de ruído '+eur(horasNoite*25));
+    document.getElementById('rHorasN').textContent=partes.length?('('+partes.join(' + ')+')'):'';
     document.getElementById('rBarris').textContent=eur(barris);
     document.getElementById('rTotal').textContent=eur(total);
   }
