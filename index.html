@@ -605,7 +605,7 @@
     var antes=Math.max(0,t.ini-ent);
     var depois=Math.max(0,sai-t.fim);
     var horasExtra=Math.max(0,Math.ceil(antes+depois-1e-9));
-    var horasNoite=Math.max(0,Math.ceil(sai-NOITE-1e-9));   // horas entre as 23h e a saída: licença de ruído (25€/h)
+    var horasNoite=Math.max(0,Math.ceil(sai-Math.max(t.fim,NOITE)-1e-9));   // horas noturnas fora do turno (após as 23h): licença de ruído 25€/h
     var he=horasExtra*50+horasNoite*25, barris=0;
     document.querySelectorAll('#simBarris input:checked').forEach(function(c){barris+=+c.dataset.v;});
     var total=t.v+he+barris+125+100;
