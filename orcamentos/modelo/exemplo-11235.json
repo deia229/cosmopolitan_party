@@ -1,0 +1,232 @@
+{
+ "titulo": "Orçamento · Pedido #11235",
+ "subtitulo": "Cosmopolitan Party · Espaço de eventos privados · Flamenga, Loures",
+ "logo": "../../catering-img/logo.jpg",
+ "saida": "../orcamento-11235.pdf",
+ "info": [
+  [
+   "Evento",
+   "Aniversário de 30 anos"
+  ],
+  [
+   "Data",
+   "Sábado, 26/06/2027"
+  ],
+  [
+   "Horário",
+   "17h00 – 01h00 (horário limite)"
+  ],
+  [
+   "Convidados",
+   "55 pessoas (50 adultos + 5 crianças), todas sentadas"
+  ]
+ ],
+ "seccoes": [
+  {
+   "titulo": "Espaço (igual nas duas opções)",
+   "tabela": {
+    "larguras": [
+     134,
+     40
+    ],
+    "alinhamento": [
+     "l",
+     "r"
+    ],
+    "destaque": [
+     5
+    ],
+    "linhas": [
+     [
+      "Item",
+      "Valor"
+     ],
+     [
+      "Turno noite 18h–23h",
+      "300 €"
+     ],
+     [
+      "1 hora extra (17h–18h)",
+      "50 €"
+     ],
+     [
+      "2 horas extra noturnas (23h–01h), licença de ruído incluída",
+      "150 €"
+     ],
+     [
+      "Limpeza (obrigatória, assegurada pela nossa equipa)",
+      "125 €"
+     ],
+     [
+      "Subtotal espaço",
+      "625 €"
+     ]
+    ]
+   },
+   "nota": "Inclui cozinha equipada, máquina de café Nespresso, pratos, copos e talheres, arca congeladora, forno, máquina da loiça, snooker e matraquilhos. Os 55 lugares sentados estão incluídos no preço."
+  },
+  {
+   "titulo": "Catering: duas opções",
+   "tabela": {
+    "larguras": [
+     28,
+     73,
+     73
+    ],
+    "alinhamento": [
+     "l",
+     "l",
+     "l"
+    ],
+    "destaque": [
+     4
+    ],
+    "linhas": [
+     [
+      "",
+      "Opção 1: Finger Food",
+      "Opção 2: Buffet à mesa"
+     ],
+     [
+      "O que inclui",
+      "Kit Finger Food Festa: 75 hot dogs, 75 pizzas, 50 hambúrgueres, 260 salgados, tábuas de queijo, fruta e mexicana, 8 L de sopa",
+      "Entradas, 2 pratos principais, 3 sobremesas e bebidas (água, Icea, Coca-Cola, sumos)"
+     ],
+     [
+      "Bebidas",
+      "3 Kits Bebidas (água + 2 à escolha cada)",
+      "Incluídas"
+     ],
+     [
+      "Cálculo",
+      "695 € + 150 €",
+      "55 × 25 €"
+     ],
+     [
+      "Catering",
+      "845 €",
+      "1.375 €"
+     ]
+    ]
+   }
+  },
+  {
+   "titulo": "Decoração de mesas (preto, branco e nudes)",
+   "tabela": {
+    "larguras": [
+     134,
+     40
+    ],
+    "alinhamento": [
+     "l",
+     "r"
+    ],
+    "destaque": [
+     1
+    ],
+    "linhas": [
+     [
+      "5 mesas quadradas 1,60 × 1,60 m (8 lugares) + 1 mesa corrida para 15 pessoas",
+      "Valor"
+     ],
+     [
+      "Opção 1: com velas · runner e guardanapos, pratos brancos ou pretos, centros com velas (5 mesas 250 € + mesa corrida 110 €)",
+      "360 €"
+     ],
+     [
+      "Opção 2: com flores (5 mesas 350 € + mesa corrida 150 €) · upgrade",
+      "500 €"
+     ],
+     [
+      "Opção 3: com velas e flores (5 mesas 450 € + mesa corrida 190 €) · upgrade",
+      "640 €"
+     ]
+    ]
+   },
+   "nota": "Mesa corrida calculada como 2 mesas. Runner e guardanapos de cor à escolha; cadeiras com capa branca ou preta. Totais com a Opção 1."
+  },
+  {
+   "titulo": "Totais",
+   "tabela": {
+    "larguras": [
+     64,
+     50,
+     30,
+     30
+    ],
+    "alinhamento": [
+     "l",
+     "r",
+     "r",
+     "r"
+    ],
+    "linhas": [
+     [
+      "",
+      "Espaço + catering + decoração",
+      "Caução*",
+      "Total"
+     ],
+     [
+      "Opção 1: Finger Food",
+      "1.830 €",
+      "100 €",
+      "1.930 €"
+     ],
+     [
+      "Opção 2: Buffet à mesa",
+      "2.360 €",
+      "100 €",
+      "2.460 €"
+     ]
+    ]
+   },
+   "nota": "* Caução reembolsável, devolvida após verificação do espaço. Upgrade de decoração: Opção 2 +140 € · Opção 3 +280 €."
+  },
+  {
+   "titulo": "Pagamento",
+   "tabela": {
+    "larguras": [
+     64,
+     50,
+     60
+    ],
+    "alinhamento": [
+     "l",
+     "r",
+     "r"
+    ],
+    "linhas": [
+     [
+      "",
+      "Reserva de data (50%)",
+      "Até 7 dias antes do evento (50%)"
+     ],
+     [
+      "Opção 1: Finger Food",
+      "965 €",
+      "965 €"
+     ],
+     [
+      "Opção 2: Buffet à mesa",
+      "1.230 €",
+      "1.230 €"
+     ]
+    ]
+   },
+   "negrito": "Aos valores apresentados acresce IVA à taxa legal em vigor (23%)."
+  },
+  {
+   "titulo": "Condições",
+   "lista": [
+    "Caução de 100 € paga no ato da reserva, devolvida após verificação do espaço.",
+    "Decoração de palco opcional: Essencial 350 € · Clássica (tons neutros) 450 € · Elegante 425 € · Moderna, Harmonia e Sofisticada 550 €.",
+    "Barris opcionais: cerveja 30L 105 € · cerveja 50L 135 € · sangria tinta 20L 110 € · Somersby 15L 75 € · Somersby 30L 150 €.",
+    "Catering com antecedência mínima de 15 dias.",
+    "O tempo de decoração está incluído dentro do horário reservado. Não efetuamos devoluções.",
+    "Não é permitido utilizar agrafos nas mesas nem fita-cola nas paredes, sob pena de perda da caução. Material deixado no espaço poderá implicar retenção da caução.",
+    "Sujeito a disponibilidade para 26/06/2027."
+   ]
+  }
+ ]
+}
