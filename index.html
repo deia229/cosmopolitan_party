@@ -344,7 +344,7 @@
       </div>
       <div>
         <div class="subhead">Capacidade</div>
-        <p class="capacity"><strong>45 lugares sentados</strong>até 100 pessoas com aluguer de mesas e cadeiras.</p>
+        <p class="capacity"><strong>Cerca de 45 lugares sentados</strong>pensado para adultos e crianças aproveitarem o evento de forma confortável.</p>
       </div>
     </div>
 
@@ -356,9 +356,9 @@
           <li><span>18h – 23h</span><span>300€</span></li>
           <li><span>Dia inteiro · 08h – 24h</span><span>650€</span></li>
           <li><span>Hora extra</span><span>50€/h</span></li>
-          <li><span>Hora extra noturna · 23h – 02h <small>(inclui licença de ruído)</small></span><span>75€/h</span></li>
+          <li><span>Hora extra noturna · 23h – 01h <small>(inclui licença de ruído)</small></span><span>75€/h</span></li>
         </ul>
-        <p class="cat-note">Horário limite: 02h.</p>
+        <p class="cat-note">Horário limite: 01h.</p>
       </div>
       <div>
         <div class="subhead">Barris</div>
@@ -385,7 +385,7 @@
 
     <div class="subhead" style="margin-top:44px">A ter em conta</div>
     <ul class="conditions">
-      <li>O horário reservado inclui o tempo de preparação e decoração do cliente.</li>
+      <li>O tempo de decoração está incluído dentro do horário reservado.</li>
       <li class="hl">Se a decoração for feita pela Cosmopolitan Party, a montagem é por nossa conta — não consome o teu horário.</li>
       <li>Não efetuamos devoluções.</li>
       <li>Material deixado no espaço pode implicar retenção da caução.</li>
@@ -433,7 +433,7 @@
           </div>
         </div>
         <div class="sim-group">
-          <label>Horário <small>(extra fora do turno: 50€/h · após as 23h: 75€/h · limite 02h)</small></label>
+          <label>Horário <small>(extra fora do turno: 50€/h · após as 23h: 75€/h · limite 01h)</small></label>
           <div class="sim-times">
             <div class="tfield"><span>Entrada</span><input type="time" id="simEntrada" value="11:00" step="3600"></div>
             <div class="tfield"><span>Saída</span><input type="time" id="simSaida" value="16:00" step="3600"></div>
@@ -500,12 +500,12 @@
   <div class="wrap">
     <div class="eyebrow">Catering</div>
     <h2>Comida que faz dizer <span class="serif-i">"uau"</span></h2>
-    <p class="lead">Menu completo ou finger food, sempre adaptados ao teu evento. Opções fora do menu em orçamento personalizado.</p>
+    <p class="lead">Finger food ou buffet à mesa, sempre adaptados ao teu evento. Opções fora do menu em orçamento personalizado.</p>
     <div class="cat-grid">
       <div class="cat-card">
-        <h3>Menu Completo</h3>
+        <h3>Buffet à mesa</h3>
         <div class="cat-price">25€ <small>/ pessoa</small></div>
-        <p style="font-size:14px;color:var(--ink);margin-top:6px">Entradas, prato principal, sobremesas e bebidas — tudo incluído.</p>
+        <p style="font-size:14px;color:var(--ink);margin-top:6px">Entradas, pratos principais, sobremesas e bebidas em buffet servido à mesa — tudo incluído.</p>
         <p class="cat-note">Pratos variados todas as semanas.</p>
       </div>
       <div class="cat-card">
@@ -599,7 +599,7 @@
     var t=turnos[turnoKey];
     var ent=pt(entrada.value), sai=pt(saida.value);
     if(sai<=ent) sai+=24;                       // passou a meia-noite
-    var LIMITE=26, NOITE=23;                    // limite 02h; hora extra noturna a partir das 23h
+    var LIMITE=25, NOITE=23;                    // limite 01h; hora extra noturna a partir das 23h
     var limitado=false;
     if(sai>LIMITE){sai=LIMITE;saida.value=hStr(LIMITE);limitado=true;}
     var antes=Math.max(0,t.ini-ent);
@@ -609,7 +609,7 @@
     var he=horasExtra*50+horasNoite*25, barris=0;
     document.querySelectorAll('#simBarris input:checked').forEach(function(c){barris+=+c.dataset.v;});
     var total=t.v+he+barris+125+100;
-    hint.textContent='Incluído no turno: '+t.label+(limitado?' · limite de horário: 02h':'');
+    hint.textContent='Incluído no turno: '+t.label+(limitado?' · limite de horário: 01h':'');
     document.getElementById('rAluguer').textContent=eur(t.v);
     document.getElementById('rHoras').textContent=eur(he);
     var partes=[];
