@@ -2552,6 +2552,21 @@ function delExtItem(cat,i){
 function addExtRow(cat){abrirNovoSrv(cat,'');}
 function delExtRow(cat,i){delExtItem(cat,i);}
 
+// Ao registar decoração/catering num evento, cria logo os lembretes (1 mês, 2 semanas, 2 dias, dia do evento) — sem ter de abrir a checklist
+async function garantirTarefasDecCat(ev,silencioso){
+  if(!sb||!evHasCateringOuDecoracao(ev))return;
+  const key=evKey(ev);
+  const{data}=await sb.from('cp_event_costs').select('pack_items').eq('event_key',key).maybeSingle();
+  let tarefas=[];try{tarefas=JSON.parse(data?.pack_items||'[]')||[];}catch(e){}
+  if(tarefas.some(t=>t.tipo==='deccat'))return;
+  tarefas=[...tarefas,...aplicarModeloDecCatEv(ev)];
+  const{error}=await sb.from('cp_event_costs').upsert({event_key:key,pack_items:JSON.stringify(tarefas),updated_at:new Date().toISOString()},{onConflict:'event_key'});
+  if(error){showToast('Erro nos lembretes: '+error.message);return;}
+  tarefasByKey[key]=tarefas;
+  renderAlertas();
+  showToast('⏰ Lembretes criados: 1 mês, 2 semanas e 2 dias antes + dia do evento');
+}
+
 async function saveEvExtras(silencioso=false){
   const ev=eventos.find(e=>e.rowIndex===curEvIdx);if(!ev||!sb)return;
   if(!silencioso){const btn=document.querySelector('[onclick="saveEvExtras()"]');if(btn){btn.textContent='A guardar…';btn.disabled=true;setTimeout(()=>{btn.textContent='💾 Guardar serviços';btn.disabled=false;},1500);}}
@@ -2562,6 +2577,7 @@ async function saveEvExtras(silencioso=false){
   if(error){showToast('Erro: '+error.message);return;}
   // Atualizar cache global de extras + refrescar seletor da Checklist
   extrasByKey[evKey(ev)]={espaco:[],decoracao:[],catering:[],outros:[],...curEvExtras};
+  await garantirTarefasDecCat(ev,silencioso);
   renderCkSel();
   renderExtRows();
   renderPagHistorico();
