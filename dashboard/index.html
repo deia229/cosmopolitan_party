@@ -958,9 +958,25 @@ header{background:linear-gradient(135deg,var(--dark),var(--dark2));padding:0 20p
           <button class="btn btn-g" onclick="cancelarNovoSrv()">Cancelar</button>
         </div>
       </div>
+      <!-- CATÁLOGO DE DECORAÇÃO BASE -->
+      <div id="catDecoForm" style="display:none;background:var(--pink3);border-radius:10px;padding:12px;margin-bottom:10px">
+        <div style="font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--pink);margin-bottom:8px">🎨 Decoração base do catálogo</div>
+        <select id="catDecoSel" onchange="catDecoMudou()" style="width:100%;border:1px solid var(--border);border-radius:9px;padding:9px 12px;font-size:13px;font-family:var(--font);outline:none;min-height:42px;margin-bottom:8px;background:var(--card)"></select>
+        <div style="display:grid;grid-template-columns:1fr 90px 90px;gap:8px;margin-bottom:8px">
+          <input id="catDecoCores" placeholder="Cores escolhidas (ex: verde salva + dourado)" style="border:1px solid var(--border);border-radius:9px;padding:9px 12px;font-size:13px;font-family:var(--font);outline:none;min-height:42px"/>
+          <input id="catDecoQtd" type="number" min="1" value="1" title="Nº de mesas" oninput="catDecoMudou(true)" style="display:none;border:1px solid var(--border);border-radius:9px;padding:9px 8px;font-size:13px;font-family:var(--mono);outline:none;text-align:center;min-height:42px"/>
+          <input id="catDecoValor" type="number" placeholder="€" style="grid-column:3;border:1px solid var(--border);border-radius:9px;padding:9px 12px;font-size:13px;font-family:var(--mono);outline:none;text-align:right;min-height:42px"/>
+        </div>
+        <div id="catDecoHint" style="font-size:11px;color:var(--muted);margin-bottom:8px"></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-p" onclick="confirmarCatDeco()" style="flex:1">✓ Adicionar ao evento</button>
+          <button class="btn btn-g" onclick="$('catDecoForm').style.display='none'">Cancelar</button>
+        </div>
+      </div>
       <!-- BOTÕES PARA ADICIONAR -->
       <div style="display:flex;gap:6px;flex-wrap:wrap">
         <button class="btn btn-g" onclick="abrirNovoSrv('espaco','🏠 Espaço')">+ Espaço</button>
+        <button class="btn btn-p" onclick="abrirCatDeco()">🎨 Decoração do catálogo</button>
         <button class="btn btn-g" onclick="abrirNovoSrv('decoracao','🎨 Decoração')">+ Decoração</button>
         <button class="btn btn-g" onclick="abrirNovoSrv('catering','🍽️ Catering')">+ Catering</button>
         <button class="btn btn-g" onclick="abrirNovoSrv('outros','➕ Outro')">+ Outro</button>
@@ -2467,6 +2483,62 @@ async function confirmarNovoSrv(){
   curEvExtras[_srvCat].push({nome,valor});
   cancelarNovoSrv();
   // Guardar imediatamente no Supabase
+  await saveEvExtras(true);
+}
+
+// ===== CATÁLOGO DE DECORAÇÃO BASE =====
+// mesa:true → valor = nº mesas (pack de 5 mesas tem preço próprio)
+const DECO_CAT=[
+  {g:'🎭 Palco Rosé',items:[
+    {id:'pr1',n:'Palco Rosé 1 — Brilho Rosé',v:300,d:'Painel lantejoulas rosa-cobre, painel em arco com nome personalizado e balões na lateral (sem flores)'},
+    {id:'pr2',n:'Palco Rosé 2 — Elegância Rosé',v:575,d:'Painel lantejoulas rosa-cobre, painéis lisos de várias alturas e balões orgânicos (sem flores)'},
+    {id:'pr3',n:'Palco Rosé 3 — Essencial Rosé',v:250,d:'Painel lantejoulas rosa-cobre com balões em composição orgânica (sem flores)'}]},
+  {g:'🎭 Palco Clássico',items:[
+    {id:'pc1',n:'Palco Clássico 1 — Essencial',v:350,d:'Painéis com led "Happy Birthday" e balões na lateral'},
+    {id:'pc2',n:'Palco Clássico 2 — Clássica',v:450,d:'Painéis em tons neutros com colunas laterais e flores'},
+    {id:'pc3',n:'Palco Clássico 3 — Elegante',v:425,d:'Painéis com led, balões e laço decorativo (90 cm)'},
+    {id:'pc4',n:'Palco Clássico 4 — Moderna',v:550,d:'Painéis com texturas, led "Happy Birthday", balões e flores'},
+    {id:'pc5',n:'Palco Clássico 5 — Harmonia',v:550,d:'Painéis com led, balões e flores em ambos os lados'},
+    {id:'pc6',n:'Palco Clássico 6 — Sofisticada',v:550,d:'Painéis em várias alturas, led, balões e flores'}]},
+  {g:'🍽️ Decoração de mesas (mesa 1,60×1,60 · 8 lugares)',items:[
+    {id:'m1',n:'Mesas — Opção 1 com velas',mesa:true,pm:55,p5:250},
+    {id:'m2',n:'Mesas — Opção 2 com flores',mesa:true,pm:75,p5:350},
+    {id:'m3',n:'Mesas — Opção 3 com velas e flores',mesa:true,pm:95,p5:450}]},
+  {g:'➕ Extras',items:[
+    {id:'x1',n:'Suporte de bolo acrílico alto (33×80 cm)',v:0,d:'Extra — definir valor'},
+    {id:'x2',n:'Suporte de bolo acrílico baixo (27×44 cm)',v:0,d:'Extra — definir valor'},
+    {id:'x3',n:'Suporte de bolo dourado (27×80 cm)',v:0,d:'Extra — definir valor'}]}
+];
+function decoCatFind(id){for(const g of DECO_CAT){const i=g.items.find(x=>x.id===id);if(i)return i;}return null;}
+function abrirCatDeco(){
+  $('catDecoSel').innerHTML=DECO_CAT.map(g=>`<optgroup label="${esc(g.g)}">`+g.items.map(i=>`<option value="${i.id}">${esc(i.n)}${i.mesa?` — ${i.pm}€/mesa`:i.v?` — ${i.v}€`:''}</option>`).join('')+'</optgroup>').join('');
+  $('catDecoCores').value='';$('catDecoQtd').value=5;
+  $('catDecoForm').style.display='block';
+  catDecoMudou();
+}
+function catDecoMudou(soQtd){
+  const it=decoCatFind($('catDecoSel').value);if(!it)return;
+  const q=$('catDecoQtd');
+  q.style.display=it.mesa?'block':'none';
+  if(it.mesa){
+    const n=Math.max(1,parseInt(q.value)||1);
+    $('catDecoValor').value=n===5?it.p5:it.pm*n;
+    $('catDecoHint').textContent=`${n} mesa(s) · ${it.pm}€/mesa · pack 5 mesas = ${it.p5}€. Muda o valor se for preciso.`;
+  }else{
+    if(!soQtd)$('catDecoValor').value=it.v||'';
+    $('catDecoHint').textContent=it.d||'';
+  }
+}
+async function confirmarCatDeco(){
+  const it=decoCatFind($('catDecoSel').value);if(!it)return;
+  const cores=$('catDecoCores').value.trim();
+  const valor=parseFloat($('catDecoValor').value)||0;
+  let nome=it.n;
+  if(it.mesa)nome+=` (${Math.max(1,parseInt($('catDecoQtd').value)||1)} mesas)`;
+  if(cores)nome+=` · cores: ${cores}`;
+  if(!curEvExtras.decoracao)curEvExtras.decoracao=[];
+  curEvExtras.decoracao.push({nome,valor});
+  $('catDecoForm').style.display='none';
   await saveEvExtras(true);
 }
 
